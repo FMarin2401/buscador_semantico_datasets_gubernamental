@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="{% block meta_desc %}Portal de Datos Abiertos del Municipio de León, Guanajuato.{% endblock %}">
+    <title>{% block title %}Portal de Datos Abiertos - Municipio de León{% endblock %}</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    {% block top_banner %}
+    <aside class="top-banner" role="alert">
+        PROTOTIPO · DATOS FICTICIOS
+    </aside>
+    {% endblock %}
+
+    {% block header %}
+    <header>
+        <nav class="main-nav" aria-label="Navegación principal">
+            <div class="nav-top">
+                <a href="/" class="logo-link">
+                    <div class="logo-section">
+                        <img src="/assets/logo-leon-sin-borde.svg" alt="Logo Municipio de León" class="logo">
+                        <div class="logo-text">
+                            <span class="site-title">Portal de Datos Abiertos<br>Municipio de León</span>
+                            <span class="site-slogan">SOMOS GRANDES · SOMOS FUERTES · SOMOS LEÓN</span>
+                        </div>
+                    </div>
+                </a>
+                <div class="nav-actions">
+                    <span class="badge-transparencia">UNIDAD DE TRANSPARENCIA</span>
+                    <div class="accessibility-controls" aria-label="Controles de accesibilidad">
+                        <span aria-hidden="true">A</span>
+                        <button type="button" id="btnDisminuir" aria-label="Disminuir tamaño de fuente">-</button>
+                        <button type="button" id="btnAumentar" aria-label="Aumentar tamaño de fuente">+</button>
+                    </div>
+                </div>
+            </div>
+            
+            <ul class="nav-links">
+                <li><a href="/" class="{% if request.url.path == '/' %}active{% endif %}">Inicio</a></li>
+                <li><a href="/conjunto_datos.html" class="{% if request.url.path == '/conjunto_datos.html' %}active{% endif %}">Conjuntos de Datos</a></li>
+                <li><a href="/gobierno_abierto.html" class="{% if request.url.path == '/gobierno_abierto.html' %}active{% endif %}">Gobierno Abierto</a></li>
+                <li><a href="/contacto.html" class="{% if request.url.path == '/contacto.html' %}active{% endif %}">Contacto</a></li>
+                <li><a href="/noticias.html" class="{% if request.url.path == '/noticias.html' %}active{% endif %}">Noticias</a></li>
+                <li><a href="/apis.html" class="{% if request.url.path == '/apis.html' %}active{% endif %}">APIs</a></li>
+                <li><a href="/guia_usuario.html" class="{% if request.url.path == '/guia_usuario.html' %}active{% endif %}">Guía de Usuario</a></li>
+            </ul>
+        </nav>
+    </header>
+    {% endblock %}
+
+    {% block content %}
+    {% endblock %}
+
+    <footer>
+        <p>&copy; 2026 Municipio de León, Guanajuato. · <a href="/login.html" style="color: inherit; text-decoration: none; font-size: 0.85rem;">Acceso Funcionarios</a></p>
+    </footer>
+
+    <script src="/js/config.js"></script>
+    <script src="/js/accesibilidad.js"></script>
+    {% block scripts %}
+    {% endblock %}
+</body>
+</html>

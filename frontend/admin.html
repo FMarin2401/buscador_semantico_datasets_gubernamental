@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block title %}Panel de Administración - Portal León{% endblock %}
+
+{% block top_banner %}
+<aside class="top-banner" role="alert">PORTAL INTERNO · ACCESO EXCLUSIVO PARA FUNCIONARIOS</aside>
+{% endblock %}
+
+{% block header %}
+<!-- Omitimos la navegación pública del portal en la vista de administración -->
+{% endblock %}
+
+{% block content %}
+<div class="admin-layout">
+    <aside class="admin-sidebar">
+        <h3>Centro de Mando</h3>
+        <nav aria-label="Menú de administración" class="admin-nav">
+            <button type="button" class="admin-tab-btn active" data-target="tab-dashboard">Resumen</button>
+            <button type="button" class="admin-tab-btn" data-target="tab-subir">Publicar Dataset</button>
+            <button type="button" class="admin-tab-btn" data-target="tab-gestionar">Gestionar Catálogo</button>
+            <hr class="admin-divider">
+            <a href="/" class="admin-tab-btn btn-salir">Salir al Portal</a>
+        </nav>
+    </aside>
+
+    <main class="admin-main">
+        <section id="tab-dashboard" class="pestana-admin">
+            <h2>Bienvenido, Administrador</h2>
+            <p>Selecciona una herramienta del menú lateral para gestionar los datos del municipio.</p>
+        </section>
+
+        <section id="tab-subir" class="pestana-admin pestana-oculta">
+            <h2>Publicar Nuevo Conjunto de Datos</h2>
+            <p>Sube el archivo CSV oficial para que la IA lo procese e indexe automáticamente.</p>
+
+            <div class="hero-section">
+                <div class="hero-card admin-card">
+                    <form id="formSubirDataset">
+                        <div class="filter-group">
+                            <label for="inputTitulo" class="admin-label">TÍTULO DEL DATASET</label>
+                            <input type="text" id="inputTitulo" class="form-input" placeholder="Ej. Padrón de Comercios 2026" required>
+                        </div>
+
+                        <div class="filter-group">
+                            <label for="inputDescripcion" class="admin-label">DESCRIPCIÓN</label>
+                            <textarea id="inputDescripcion" class="form-input" placeholder="Describe brevemente el contenido de la tabla..." rows="4" required></textarea>
+                        </div>
+
+                        <div class="filter-group">
+                            <label for="selectDependencia" class="admin-label">DEPENDENCIA PUBLICADORA</label>
+                            <select id="selectDependencia" class="form-input" required>
+                                <option value="">Selecciona una secretaría...</option>
+                                <option value="Seguridad">Seguridad</option>
+                                <option value="Salud Pública">Salud Pública</option>
+                                <option value="Educación">Educación</option>
+                                <option value="Movilidad y Transporte">Movilidad y Transporte</option>
+                                <option value="Desarrollo Económico">Desarrollo Económico</option>
+                            </select>
+                        </div>
+
+                        <div class="filter-group">
+                            <label for="inputArchivo" class="admin-label">ARCHIVO DE DATOS (CSV)</label>
+                            <input type="file" id="inputArchivo" class="form-input file-input" accept=".csv" required>
+                        </div>
+
+                        <button type="submit" class="btn-primary btn-full">Procesar y Publicar</button>
+                        <p id="mensajeEstado" aria-live="polite" class="admin-mensaje"></p>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <section id="tab-gestionar" class="pestana-admin pestana-oculta">
+            <h2>Catálogo Activo</h2>
+            <p>Gestiona los conjuntos de datos publicados en el portal.</p>
+            
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th scope="col">Título del Dataset</th>
+                        <th scope="col">Dependencia</th>
+                        <th scope="col">Actualización</th>
+                        <th scope="col" class="text-center">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="tablaCuerpoDatasets">
+                </tbody>
+            </table>
+        </section>
+    </main>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/js/admin.js"></script>
+{% endblock %}

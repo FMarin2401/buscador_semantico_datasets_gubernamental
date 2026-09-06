@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}Contacto - Portal León{% endblock %}
+{% block meta_desc %}Ponte en contacto con la Unidad de Transparencia y el equipo del Portal de Datos Abiertos de León.{% endblock %}
+
+{% block content %}
+<main class="content-wrapper-narrow">
+    <header class="page-header" style="padding:0;">
+        <h1>Contacto</h1>
+        <p>¿Tienes dudas sobre los datasets o sugerencias para el portal? Escríbenos.</p>
+    </header>
+
+    <div class="hero-card card-content-block">
+        <form onsubmit="event.preventDefault(); alert('Mensaje enviado con éxito. Nos pondremos en contacto pronto.');">
+            <div class="filter-group">
+                <label for="nombreContacto" class="admin-label">NOMBRE COMPLETO</label>
+                <input type="text" id="nombreContacto" class="form-input" placeholder="Tu nombre" required>
+            </div>
+            <div class="filter-group">
+                <label for="emailContacto" class="admin-label">CORREO ELECTRÓNICO</label>
+                <input type="email" id="emailContacto" class="form-input" placeholder="correo@ejemplo.com" required>
+            </div>
+            <div class="filter-group">
+                <label for="mensajeContacto" class="admin-label">MENSAJE</label>
+                <textarea id="mensajeContacto" class="form-input" rows="5" placeholder="Escribe tu consulta o reporte..." required></textarea>
+            </div>
+            <button type="submit" class="btn-primary btn-full">Enviar Mensaje</button>
+        </form>
+    </div>
+</main>
+{% endblock %}
+
+{% block scripts %}{% endblock %}

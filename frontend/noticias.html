@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}Noticias - Portal León{% endblock %}
+{% block meta_desc %}Entérate de las últimas actualizaciones, nuevos conjuntos de datos publicados y eventos del municipio.{% endblock %}
+
+{% block content %}
+<main class="content-wrapper">
+    <header class="page-header" style="padding:0;">
+        <h1>Noticias y Actualizaciones</h1>
+        <p>Novedades sobre la apertura de datos e iniciativas tecnológicas en el municipio.</p>
+    </header>
+
+    <div class="grid-noticias">
+        <article class="card-resultado-v2" style="display: block;">
+            <span class="noticia-fecha">15 DE MAYO, 2026</span>
+            <h2 class="noticia-titulo">Lanzamiento del nuevo buscador semántico con IA</h2>
+            <p class="card-desc" style="max-width: 100%;">Ahora puedes encontrar información pública utilizando lenguaje natural gracias a la integración de modelos de procesamiento de lenguaje y vectores en ChromaDB.</p>
+        </article>
+        <article class="card-resultado-v2" style="display: block;">
+            <span class="noticia-fecha">02 DE MAYO, 2026</span>
+            <h2 class="noticia-titulo">Incorporación de nuevos datasets de Movilidad</h2>
+            <p class="card-desc" style="max-width: 100%;">Se han liberado conjuntos de datos actualizados correspondientes al aforo vehicular y rutas estratégicas de transporte en León.</p>
+        </article>
+    </div>
+</main>
+{% endblock %}
+
+{% block scripts %}{% endblock %}

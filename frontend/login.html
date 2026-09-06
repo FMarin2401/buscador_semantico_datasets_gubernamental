@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}Iniciar Sesión - Portal León{% endblock %}
+{% block meta_desc %}Acceso restringido para funcionarios y administradores del portal.{% endblock %}
+
+{% block content %}
+<main class="content-wrapper-narrow">
+    <header class="page-header" style="padding:0;">
+        <h1>Acceso Administrativo</h1>
+        <p>Introduce tus credenciales institucionales para gestionar los conjuntos de datos.</p>
+    </header>
+
+    <div class="hero-card card-content-block">
+        <form id="formLogin">
+            <div class="filter-group">
+                <label for="inputUsuario" class="admin-label">USUARIO</label>
+                <input type="text" id="inputUsuario" class="form-input" placeholder="Ej. admin" required>
+            </div>
+            <div class="filter-group">
+                <label for="inputPassword" class="admin-label">CONTRASEÑA</label>
+                <input type="password" id="inputPassword" class="form-input" placeholder="••••••••" required>
+            </div>
+            <button type="submit" class="btn-primary btn-full">Ingresar al Sistema</button>
+            <p id="mensajeErrorLogin" class="admin-mensaje" style="color: red;"></p>
+        </form>
+    </div>
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script src="/js/login.js"></script>
+{% endblock %}

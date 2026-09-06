@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block title %}Conjuntos de Datos - Portal León{% endblock %}
+{% block meta_desc %}Explora y filtra conjuntos de datos públicos del Municipio de León.{% endblock %}
+
+{% block content %}
+<main>
+    <header class="page-header">
+        <h1>Conjuntos de datos</h1>
+        <p>Busca por palabra clave y refina por categoría, dependencia publicadora y formato.</p>
+    </header>
+
+    <section class="search-sort-bar" aria-label="Barra de búsqueda y ordenamiento">
+        <form class="search-input-wrapper" role="search" id="formBusquedaInterna">
+            <span aria-hidden="true">🔍</span>
+            <label for="searchInputResultados" class="sr-only">Buscar conjuntos de datos</label>
+            <input type="search" id="searchInputResultados" placeholder="Cargando total de datos...">
+            <button type="submit" class="btn-buscar-small">Buscar</button>
+        </form>
+        <div class="sort-wrapper">
+            <label for="selectOrdenar">Ordenar por</label>
+            <select id="selectOrdenar">
+                <option value="coincidencia">Mejor coincidencia</option>
+                <option value="recientes">Más recientes</option>
+                <option value="alfabetico">Alfabético (A-Z)</option>
+            </select>
+        </div>
+    </section>
+
+    <div class="layout-resultados">
+        <aside class="sidebar" id="sidebarFiltros" aria-label="Filtros de búsqueda">
+            <div class="sidebar-header">
+                <h2>Filtros</h2>
+                <a href="#" class="link-limpiar" id="btnLimpiar">Limpiar</a>
+            </div>
+            
+            <fieldset class="filter-group">
+                <legend>TIPO DE BÚSQUEDA</legend>
+                <div class="toggle-busqueda" role="group" aria-label="Modo de filtro">
+                    <button type="button" id="btn-modo-and" class="active">Todos los filtros (Y)</button>
+                    <button type="button" id="btn-modo-or">Cualquiera (O)</button>
+                </div>
+            </fieldset>
+
+            <fieldset class="filter-group">
+                <legend>CATEGORÍA</legend>
+                <label class="filter-item"><input type="checkbox" class="filtro-cat" value="Seguridad"> Seguridad <span id="count-seguridad">0</span></label>
+                <label class="filter-item"><input type="checkbox" class="filtro-cat" value="Salud Pública"> Salud Pública <span id="count-salud">0</span></label>
+                <label class="filter-item"><input type="checkbox" class="filtro-cat" value="Educación"> Educación <span id="count-educacion">0</span></label>
+                <label class="filter-item"><input type="checkbox" class="filtro-cat" value="Movilidad y Transporte"> Movilidad y Transporte <span id="count-movilidad">0</span></label>
+            </fieldset>
+        </aside>
+
+        <section class="main-content" aria-label="Resultados de búsqueda">
+            <div class="resultados-header">
+                <span id="texto-resultados"><strong>0</strong> conjuntos encontrados</span>
+                <a href="#" class="link-explorar-cat" id="btnExplorarCat">Explorar por categoría</a>
+            </div>
+            
+            <div id="contenedor-tarjetas"></div>
+        </section>
+    </div>
+</main>
+
+<div id="modalFicha" class="modal-overlay" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="modalTitulo">
+    <div class="modal-card">
+        <header class="modal-header">
+            <h3 id="modalTituloLabel">Ficha Técnica del Dataset</h3>
+            <button type="button" class="modal-close btn-cerrar-modal" aria-label="Cerrar modal">&times;</button>
+        </header>
+        <div class="modal-body">
+            <p><strong>Título:</strong> <span id="modalTitulo"></span></p>
+            <p><strong>Dependencia:</strong> <span id="modalDependencia"></span></p>
+            <p><strong>Última Actualización:</strong> <span id="modalFecha"></span></p>
+            <p style="margin-top: 20px; font-weight: bold;">Descargar directamente:</p>
+            <div id="modalDownloadLinks" style="display: flex; gap: 10px; flex-wrap: wrap;"></div>
+        </div>
+        <footer class="modal-footer">
+            <button type="button" class="btn-primary btn-cerrar-modal">Cerrar</button>
+        </footer>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/js/busqueda.js"></script>
+{% endblock %}

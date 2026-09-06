@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}Portal de Datos Abiertos - Municipio de León{% endblock %}
+{% block meta_desc %}Portal de Datos Abiertos del Municipio de León, Guanajuato. Consulta, descarga y reutiliza información pública.{% endblock %}
+
+{% block content %}
+<main class="hero-section">
+    <div class="hero-card">
+        <h1>Los datos del<br>municipio, abiertos<br>para todos</h1>
+        <p>Consulta, descarga y reutiliza información pública de las<br>dependencias del Ayuntamiento de León, Guanajuato.</p>
+        
+        <form class="search-box" role="search" id="searchForm">
+            <span class="search-icon" aria-hidden="true">🔍</span>
+            <label for="searchInput" class="sr-only">Buscar datos</label>
+            <input type="search" id="searchInput" placeholder="Ej. padrón de comercios, incidencia delictiva, aforo vehicular">
+            <button type="submit">Buscar</button>
+        </form>
+        
+        <div class="action-buttons">
+            <a href="/conjunto_datos.html" class="btn-primary">EXPLORAR DATOS</a>
+            <a href="/login.html" class="btn-primary">PUBLICAR DATOS</a>
+        </div>
+    </div>
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script src="/js/index.js"></script>
+{% endblock %}
