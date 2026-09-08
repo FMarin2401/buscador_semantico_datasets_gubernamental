@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}Guía de Usuario - Portal León{% endblock %}
+{% block meta_desc %}Aprende a navegar, buscar y descargar los conjuntos de datos disponibles en el portal.{% endblock %}
+
+{% block content %}
+<main class="content-wrapper">
+    <header class="page-header" style="padding:0;">
+        <h1>Guía de Usuario</h1>
+        <p>Instrucciones paso a paso para aprovechar al máximo el portal de datos abiertos.</p>
+    </header>
+
+    <div class="hero-card card-content-block">
+        <ol class="guia-lista">
+            <li><strong>Búsqueda Inteligente:</strong> Utiliza la barra principal en la página de inicio o en la sección de conjuntos de datos para buscar por palabras clave o frases completas.</li>
+            <li><strong>Filtros por Categoría:</strong> Refina tus resultados seleccionando dependencias específicas como Seguridad, Salud Pública, Educación o Movilidad.</li>
+            <li><strong>Modos de Combinación (Y / O):</strong> Cambia entre el modo estricto (todos los filtros seleccionados) o flexible (cualquiera de los filtros) en el panel lateral.</li>
+            <li><strong>Descarga en múltiples formatos:</strong> Cada dataset cuenta con opciones de descarga directa en formatos estándar como <strong>CSV, JSON, XML y GeoJSON</strong>.</li>
+        </ol>
+    </div>
+</main>
+{% endblock %}
+
+{% block scripts %}{% endblock %}

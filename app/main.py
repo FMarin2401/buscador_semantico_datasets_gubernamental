@@ -9,17 +9,39 @@ import uuid
 from datetime import datetime
 
 # Librerías de terceros 
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile, status, Request
+from fastapi import FastAPI, File, Form, Depends, HTTPException, UploadFile, status, Request
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from datetime import datetime, timedelta
+from jose import JWTError, jwt
 import pandas as pd
 from pydantic import BaseModel
 
 # Módulos internos del proyecto
 from app.database import buscar_similares, coleccion, guardar_datasets, obtener_todos_datasets
 from app.nlp_model import generar_embedding
+
+# Configuración de seguridad JWT
+SECRET_KEY = "tu_clave_secreta_super_segura_leon_2026"  # En producción va en variable de entorno
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
+
+security = HTTPBearer()
+
+# Función para verificar el token en rutas protegidas
+def verificar_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    token = credentials.credentials
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        usuario: str = payload.get("sub")
+        if usuario is None:
+            raise HTTPException(status_code=401, detail="Credenciales inválidas")
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Token expirado o inválido")
+    return usuario
 
 # Configuración de logging para depuración
 logging.basicConfig(level=logging.DEBUG, format='%(levelname)s: %(message)s')
@@ -79,13 +101,29 @@ async def vista_apis(request: Request):
 async def vista_guia(request: Request):
     return templates.TemplateResponse(request, "guia_usuario.html")
 
-@app.get("/admin.html")
-async def vista_admin(request: Request):
-    return templates.TemplateResponse(request,"admin.html")
+@app.get("/preguntas_frecuentes.html")
+async def vista_preguntas(request: Request):
+    return templates.TemplateResponse(request, "preguntas_frecuentes.html")
+
+@app.get("/aviso_privacidad.html")
+async def vista_aviso_privacidad(request: Request):
+    return templates.TemplateResponse(request, "aviso_privacidad.html")
+
+@app.get("/terminos_uso.html")
+async def vista_terminos_uso(request: Request):
+    return templates.TemplateResponse(request, "terminos_uso.html")
+
+@app.get("/politicas.html")
+async def vista_politicas_datos_abiertos(request: Request):
+    return templates.TemplateResponse(request, "politicas.html")
 
 @app.get("/login.html")
 async def vista_login(request: Request):
     return templates.TemplateResponse(request, "login.html")
+
+@app.get("/admin.html")
+async def vista_admin(request: Request):
+    return templates.TemplateResponse(request,"admin.html")
 
 @app.get("/api/admin/datasets")
 def listar_datasets_admin():
@@ -320,3 +358,27 @@ def login_admin(credenciales: CredencialesAdmin):
             detail="Credenciales incorrectas"
         )
 
+""""@app.post("/api/login")
+def login_admin(credenciales: CredencialesAdmin):
+    # Aquí se valida contra una contraseña hasheada en base de datos o fija
+    if credenciales.usuario == "admin" and credenciales.password == "admin123":
+        tiempo_expiracion = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        expira_en = datetime.utcnow() + tiempo_expiracion
+        
+        # Creamos el payload del JWT
+        payload = {
+            "sub": credenciales.usuario,
+            "exp": expira_en
+        }
+        
+        token_jwt = jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+        
+        return {
+            "access_token": token_jwt,
+            "token_type": "bearer"
+        }
+        
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Usuario o contraseña incorrectos"
+    )"""
