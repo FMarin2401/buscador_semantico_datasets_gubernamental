@@ -6,7 +6,8 @@ import logging
 import os
 import shutil
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
+from dotenv import load_dotenv
 
 # Librerías de terceros 
 from fastapi import FastAPI, File, Form, Depends, HTTPException, UploadFile, status, Request
@@ -15,7 +16,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from datetime import datetime, timedelta
 from jose import JWTError, jwt
 import pandas as pd
 from pydantic import BaseModel
@@ -25,7 +25,8 @@ from app.database import buscar_similares, coleccion, guardar_datasets, obtener_
 from app.nlp_model import generar_embedding
 
 # Configuración de seguridad JWT
-SECRET_KEY = "tu_clave_secreta_super_segura_leon_2026"  # En producción va en variable de entorno
+load_dotenv()
+SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
