@@ -585,7 +585,7 @@ fieldset.filter-group legend {
     text-decoration: none;
 }
 
-/* Tarjetas de Resultados (V2) */
+/* Tarjetas de Resultados */
 .card-resultado-v2 {
     display: flex;
     gap: 20px;
@@ -635,36 +635,58 @@ fieldset.filter-group legend {
     color: #777;
 }
 
-.card-formats-right {
-    position: absolute;
-    top: 25px;
-    right: 25px;
+.card-actions {
     display: flex;
-    gap: 5px;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 15px;
+    flex-shrink: 0;
+    min-width: 140px;
 }
 
-.card-formats-right span {
+.format-badges {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.format-badges a {
+    text-decoration: none;
+}
+
+.format-badges span {
     border: 1px solid #ddd;
     padding: 4px 8px;
     border-radius: 4px;
     font-size: 0.75rem;
     font-weight: bold;
     color: var(--text-muted);
+    transition: all 0.2s;
+    background: white;
 }
 
-.btn-ficha {
-    position: absolute;
-    top: 70px;
-    right: 25px;
+.format-badges a:hover span {
+    background: #f0f7ff;
+    border-color: var(--blue-primary);
+    color: var(--blue-primary);
+}
+
+.btn-ficha-v2 {
     background: var(--blue-primary);
     color: white;
     border: none;
-    padding: 10px 25px;
+    padding: 10px 20px;
     border-radius: 20px;
     font-weight: bold;
     cursor: pointer;
+    transition: background 0.2s;
+    width: 100%;
 }
 
+.btn-ficha-v2:hover {
+    background: #004b87;
+}
 
 /* 
    5. FORMULARIOS Y PANEL ADMIN
@@ -1015,6 +1037,18 @@ fieldset.filter-group legend {
         text-align: center;
     }
 
+    .card-actions {
+        align-items: stretch;
+        width: 100%;
+        margin-top: 15px;
+        border-top: 1px solid #eaeaea;
+        padding-top: 15px;
+    }
+    
+    .format-badges {
+        justify-content: flex-start;
+    }
+
     .footer-container {
         grid-template-columns: 1fr;
         gap: 40px;
@@ -1046,3 +1080,7 @@ fieldset.filter-group legend {
     }
 }
 
+/* Ajuste móvil para las acciones */
+@media (max-width: 768px) {
+    
+}

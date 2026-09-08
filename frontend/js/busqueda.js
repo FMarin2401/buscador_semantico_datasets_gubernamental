@@ -30,7 +30,7 @@ window.onload = async function() {
         checkbox.addEventListener('change', aplicarFiltrosLocales);
     });
 
-    // 2.3. Asignación de Event Listeners (Buenas Prácticas)
+    // 2.3. Asignación de Event Listeners
     
     // Formulario de búsqueda
     const formBusqueda = document.getElementById('formBusquedaInterna');
@@ -295,19 +295,21 @@ function renderizarTarjetas(listaItems) {
                         <span>0 descargas</span>
                     </footer>
                 </div>
-                <div class="card-formats-right" aria-label="Formatos de descarga disponibles">
-                    <a href="${CONFIG.API_BASE_URL}/api/descargar/${item.id}?formato=csv" style="text-decoration:none;"><span>CSV</span></a>
-                    <a href="${CONFIG.API_BASE_URL}/api/descargar/${item.id}?formato=json" style="text-decoration:none;"><span>JSON</span></a>
-                    <a href="${CONFIG.API_BASE_URL}/api/descargar/${item.id}?formato=xml" style="text-decoration:none;"><span>XML</span></a>
-                    <a href="${CONFIG.API_BASE_URL}/api/descargar/${item.id}?formato=geojson" style="text-decoration:none;"><span>GeoJSON</span></a>
+                <div class="card-actions">
+                    <div class="format-badges" aria-label="Formatos de descarga disponibles">
+                        <a href="${CONFIG.API_BASE_URL}/api/descargar/${item.id}?formato=csv"><span>CSV</span></a>
+                        <a href="${CONFIG.API_BASE_URL}/api/descargar/${item.id}?formato=json"><span>JSON</span></a>
+                        <a href="${CONFIG.API_BASE_URL}/api/descargar/${item.id}?formato=xml"><span>XML</span></a>
+                        <a href="${CONFIG.API_BASE_URL}/api/descargar/${item.id}?formato=geojson"><span>GeoJSON</span></a>
+                    </div>
+                    <button type="button" class="btn-ficha-v2" 
+                        data-titulo="${tituloSeguro}" 
+                        data-dependencia="${item.dependencia}" 
+                        data-fecha="${item.fecha_actualizacion}" 
+                        data-id="${item.id}">
+                        Ver ficha
+                    </button>
                 </div>
-                <button type="button" class="btn-ficha" 
-                    data-titulo="${tituloSeguro}" 
-                    data-dependencia="${item.dependencia}" 
-                    data-fecha="${item.fecha_actualizacion}" 
-                    data-id="${item.id}">
-                    Ver ficha
-                </button>
             </article>
         `;
     });
