@@ -54,6 +54,95 @@ fieldset.filter-group legend {
     font-weight: bold;
 }
 
+.site-footer {
+    background-color: var(--blue-dark);
+    color: white;
+    padding: 60px 20px 20px;
+    margin-top: 60px;
+}
+
+.footer-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 30px;
+    margin-bottom: 40px;
+}
+
+.footer-col h4 {
+    color: white;
+    font-size: 1.1rem;
+    margin-bottom: 20px;
+    border-bottom: 2px solid var(--blue-primary);
+    padding-bottom: 10px;
+    display: inline-block;
+}
+
+.site-footer p {
+    color: #d1e2f3;
+    font-size: 0.9rem;
+    line-height: 1.6;
+    text-align: left; 
+    padding: 0;
+}
+
+.footer-logo {
+    max-width: 140px;
+    margin-bottom: 15px;
+    /* Este filtro convierte cualquier imagen oscura a blanca puro */
+    filter: brightness(0) invert(1); 
+}
+
+.footer-links {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.footer-links li {
+    margin-bottom: 12px;
+}
+
+.footer-links a {
+    color: #d1e2f3;
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: color 0.2s ease;
+}
+
+.footer-links a:hover {
+    color: white;
+    text-decoration: underline;
+}
+
+.btn-admin-footer {
+    display: inline-block;
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: background 0.2s;
+    border: 1px solid rgba(255,255,255,0.2);
+}
+
+.btn-admin-footer:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.footer-bottom {
+    max-width: 1200px;
+    margin: 0 auto;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding-top: 20px;
+}
+
+.footer-bottom p {
+    text-align: center;
+}
+
 /* 
    2. COMPONENTES GLOBALES (Navegación, Botones, Footer)
     */
@@ -226,12 +315,6 @@ fieldset.filter-group legend {
     gap: 20px;
 }
 
-footer p {
-    text-align: center; 
-    padding: 20px; 
-    color: var(--text-muted);
-    margin: 0;
-}
 
 /* 
    3. VISTA DE INICIO (HERO SECTION)
@@ -931,6 +1014,25 @@ footer p {
         margin-top: 10px;
         text-align: center;
     }
+
+    .footer-container {
+        grid-template-columns: 1fr;
+        gap: 40px;
+    }
+    
+    .footer-col h4, .site-footer p {
+        text-align: center;
+    }
+
+    .footer-logo {
+        display: block;
+        margin: 0 auto 15px;
+    }
+
+    .btn-admin-footer {
+        display: block;
+        text-align: center;
+    }
 }
 
 @keyframes fadeIn {
@@ -943,3 +1045,4 @@ footer p {
         transform: translateY(0);
     }
 }
+

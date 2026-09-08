@@ -39,12 +39,9 @@
             
             <ul class="nav-links">
                 <li><a href="/" class="{% if request.url.path == '/' %}active{% endif %}">Inicio</a></li>
-                <li><a href="/conjunto_datos.html" class="{% if request.url.path == '/conjunto_datos.html' %}active{% endif %}">Conjuntos de Datos</a></li>
+                <li><a href="/explorar_datos.html" class="{% if request.url.path == '/conjunto_datos.html' %}active{% endif %}">Explorar Datos</a></li>
                 <li><a href="/gobierno_abierto.html" class="{% if request.url.path == '/gobierno_abierto.html' %}active{% endif %}">Gobierno Abierto</a></li>
-                <li><a href="/contacto.html" class="{% if request.url.path == '/contacto.html' %}active{% endif %}">Contacto</a></li>
-                <li><a href="/noticias.html" class="{% if request.url.path == '/noticias.html' %}active{% endif %}">Noticias</a></li>
-                <li><a href="/apis.html" class="{% if request.url.path == '/apis.html' %}active{% endif %}">APIs</a></li>
-                <li><a href="/guia_usuario.html" class="{% if request.url.path == '/guia_usuario.html' %}active{% endif %}">Guía de Usuario</a></li>
+                <li><a href="/apis.html" class="{% if request.url.path == '/apis.html' %}active{% endif %}">APIs</a></li>   
             </ul>
         </nav>
     </header>
@@ -53,8 +50,46 @@
     {% block content %}
     {% endblock %}
 
-    <footer>
-        <p>&copy; 2026 Municipio de León, Guanajuato. · <a href="/login.html" style="color: inherit; text-decoration: none; font-size: 0.85rem;">Acceso Funcionarios</a></p>
+    <footer class="site-footer">
+        <div class="footer-container">
+            <!-- Columna 1: Identidad -->
+            <div class="footer-col">
+                <h4>Ayuntamiento de León 2024-2027</h4>
+                <p>Plaza Principal S/N, Centro<br>León, Guanajuato.</p>
+            </div>
+
+            <!-- Columna 2: Soporte -->
+            <div class="footer-col">
+                <h4>Soporte Ciudadano</h4>
+                <ul class="footer-links">
+                    <li><a href="/guia_usuario.html">Guía de Usuario</a></li>
+                    <li><a href="/contacto.html">Contacto</a></li>
+                    <li><a href="#">Preguntas Frecuentes</a></li>
+                </ul>
+            </div>
+
+            <!-- Columna 3: Legal -->
+            <div class="footer-col">
+                <h4>Marco Legal</h4>
+                <ul class="footer-links">
+                    <li><a href="#">Aviso de Privacidad</a></li>
+                    <li><a href="#">Términos de Uso</a></li>
+                    <li><a href="#">Políticas de Datos Abiertos</a></li>
+                </ul>
+            </div>
+
+            <!-- Columna 4: Admin -->
+            <div class="footer-col admin-col">
+                <h4>Administración</h4>
+                <a href="/login.html" class="btn-admin-footer">
+                    🔒 Acceso Funcionarios
+                </a>
+            </div>
+        </div>
+        
+        <div class="footer-bottom">
+            <p>&copy; 2026 Municipio de León, Guanajuato.</p>
+        </div>
     </footer>
 
     <script src="/js/config.js"></script>

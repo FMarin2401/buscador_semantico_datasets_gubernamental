@@ -54,9 +54,9 @@ def status_check():
 async def vista_inicio(request: Request):
     return templates.TemplateResponse(request,"index.html")
 
-@app.get("/conjunto_datos.html")
+@app.get("/explorar_datos.html")
 async def vista_datos(request: Request):
-    return templates.TemplateResponse(request,"conjunto_datos.html")
+    return templates.TemplateResponse(request,"explorar_datos.html")
 
 
 @app.get("/gobierno_abierto.html")
