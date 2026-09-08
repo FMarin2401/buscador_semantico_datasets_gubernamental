@@ -25,8 +25,20 @@
 
     <main class="admin-main">
         <section id="tab-dashboard" class="pestana-admin">
-            <h2>Bienvenido, Administrador</h2>
-            <p>Selecciona una herramienta del menú lateral para gestionar los datos del municipio.</p>
+            <h2>Resumen Operativo</h2>
+            <p>Estado actual del catálogo de datos abiertos del municipio.</p>
+            
+            <div class="dashboard-kpis">
+                <div class="kpi-card">
+                    <h3 class="kpi-title">Total Publicados</h3>
+                    <p id="kpi-total" class="kpi-value">-</p>
+                </div>
+            </div>
+
+            <div class="dashboard-chart-container">
+                <h3 class="dashboard-chart-title">Distribución por Secretaría</h3>
+                <canvas id="graficaDependencias"></canvas>
+            </div>
         </section>
 
         <section id="tab-subir" class="pestana-admin pestana-oculta">
@@ -92,5 +104,6 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="/js/admin.js"></script>
 {% endblock %}

@@ -6,10 +6,10 @@ import uuid
 import shutil
 import pandas as pd
 from datetime import datetime
-from app.database import guardar_datasets, coleccion
+from app.database import guardar_datasets
 from app.nlp_model import generar_embedding
 
-# Rutas corregidas apuntando a tu estructura dentro de data/
+# Rutas 
 CATALOGO = "data/clean/catalogo_maestro_procesado.csv"
 CARPETA_ORIGINALES = "data/entregados_municipio/"
 CARPETA_RAW_PRODUCCION = "data/raw/"

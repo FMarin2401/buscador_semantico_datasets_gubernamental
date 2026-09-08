@@ -5,6 +5,7 @@ if (!token) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    // 1. Configurar botones del menú lateral
     const botonesMenu = document.querySelectorAll('button.admin-tab-btn');
     botonesMenu.forEach(boton => {
         boton.addEventListener('click', function() {
@@ -13,9 +14,11 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    // 2. Configurar formulario de subida de datasets
     const formSubir = document.getElementById('formSubirDataset');
     if (formSubir) formSubir.addEventListener('submit', manejarSubidaDataset);
 
+    // 3. Configurar acciones en la tabla de gestión (botón borrar)
     const tablaCuerpo = document.getElementById('tablaCuerpoDatasets');
     if (tablaCuerpo) {
         tablaCuerpo.addEventListener('click', function(e) {
@@ -25,8 +28,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+
+    // 4. Cargar métricas del dashboard al iniciar
+    renderizarDashboard();
 });
 
+// Control de pestañas del Centro de Mando
 function cambiarPestana(idPestana, botonClickeado) {
     const vistas = document.querySelectorAll('.pestana-admin');
     vistas.forEach(vista => {
@@ -47,9 +54,66 @@ function cambiarPestana(idPestana, botonClickeado) {
 
     if (idPestana === 'tab-gestionar') {
         cargarCatalogoAdmin();
+    } else if (idPestana === 'tab-dashboard') {
+        renderizarDashboard(); // Recargar métricas al volver al resumen
     }
 }
 
+// Renderizar métricas y gráfica de Chart.js en el Dashboard
+async function renderizarDashboard() {
+    try {
+        const respuesta = await fetch(`${CONFIG.API_BASE_URL}/api/admin/datasets`);
+        const data = await respuesta.json();
+        
+        if (!data.resultados) return;
+
+        // Actualizar indicador KPI de total publicados
+        const kpiTotal = document.getElementById('kpi-total');
+        if (kpiTotal) {
+            kpiTotal.textContent = data.resultados.length;
+        }
+
+        // Agrupar datasets por dependencia para la gráfica
+        const conteo = {};
+        data.resultados.forEach(item => {
+            conteo[item.dependencia] = (conteo[item.dependencia] || 0) + 1;
+        });
+
+        // Validar si el elemento canvas existe antes de instanciar Chart.js
+        const canvasElement = document.getElementById('graficaDependencias');
+        if (!canvasElement) return;
+
+        const ctx = canvasElement.getContext('2d');
+        
+        // Destruir gráfica previa si ya existía para evitar duplicados al cambiar de pestaña
+        if (window.miGraficaDona instanceof Chart) {
+            window.miGraficaDona.destroy();
+        }
+
+        window.miGraficaDona = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(conteo),
+                datasets: [{
+                    data: Object.values(conteo),
+                    backgroundColor: ['#004b87', '#005eb8', '#4b9cd3', '#81b2e2', '#e6f0fa']
+                }]
+            },
+            options: { 
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    } catch (error) {
+        console.error("Error al cargar las métricas del dashboard:", error);
+    }
+}
+
+// Ingesta y subida de nuevos datasets
 async function manejarSubidaDataset(evento) {
     evento.preventDefault(); 
     
@@ -91,8 +155,11 @@ async function manejarSubidaDataset(evento) {
     }
 }
 
+// Cargar tabla del catálogo activo para los administradores
 async function cargarCatalogoAdmin() {
     const tbody = document.getElementById('tablaCuerpoDatasets');
+    if (!tbody) return;
+    
     tbody.innerHTML = '<tr><td colspan="4" class="text-center">Cargando catálogo...</td></tr>';
     
     try {
@@ -124,6 +191,7 @@ async function cargarCatalogoAdmin() {
     }
 }
 
+// Eliminar dataset en cascada (vector y archivo físico)
 async function eliminarDataset(idDataset) {
     const confirmacion = confirm("¿Estás seguro de que deseas eliminar este dataset de forma permanente? Esta acción no se puede deshacer.");
     if (!confirmacion) return;
