@@ -2,8 +2,7 @@
  * 1. CONFIGURACIÓN Y ESTADO GLOBAL
  */
 let resultadosOriginales = [];
-let modoFiltroActual = 'and'; // 
-
+let modoFiltroActual = 'and'; 
 
 /**
  * 2. INICIALIZACIÓN (WINDOW.ONLOAD)
@@ -25,14 +24,7 @@ window.onload = async function() {
         console.error("Error cargando total de catálogos:", e);
     }
 
-    // 2.2. Escuchar cambios en los checkboxes de categoría
-    document.querySelectorAll('.filtro-cat').forEach(checkbox => {
-        checkbox.addEventListener('change', aplicarFiltrosLocales);
-    });
-
-    // 2.3. Asignación de Event Listeners
-    
-    // Formulario de búsqueda
+    // 2.2. Asignación de Event Listeners
     const formBusqueda = document.getElementById('formBusquedaInterna');
     if (formBusqueda) {
         formBusqueda.addEventListener('submit', (e) => {
@@ -41,13 +33,11 @@ window.onload = async function() {
         });
     }
 
-    // Select de ordenamiento
     const selectOrdenar = document.getElementById('selectOrdenar');
     if (selectOrdenar) {
         selectOrdenar.addEventListener('change', aplicarOrdenamiento);
     }
 
-    // Botones de la barra lateral (Filtros)
     const btnLimpiar = document.getElementById('btnLimpiar');
     if (btnLimpiar) {
         btnLimpiar.addEventListener('click', limpiarFiltros);
@@ -65,15 +55,13 @@ window.onload = async function() {
 
     const btnExplorarCat = document.getElementById('btnExplorarCat');
     if (btnExplorarCat) {
-        btnExplorarCat.addEventListener('click', toggleFiltrosMovil);
+        btnExplorarCat.addEventListener('click', alternarSidebarFiltros);
     }
 
-    // Cerrar el modal de la ficha
     document.querySelectorAll('.btn-cerrar-modal').forEach(btn => {
         btn.addEventListener('click', cerrarFichaModal);
     });
 
-    // Delegación de eventos para las tarjetas (que se inyectan dinámicamente)
     const contenedorTarjetas = document.getElementById('contenedor-tarjetas');
     if (contenedorTarjetas) {
         contenedorTarjetas.addEventListener('click', (e) => {
@@ -87,7 +75,6 @@ window.onload = async function() {
         });
     }
 
-    // 2.4. Evaluar si hay búsqueda por parámetro o cargar el catálogo completo
     if (busqueda && busqueda.trim() !== "") {
         const inputSmall = document.getElementById('searchInputResultados');
         if (inputSmall) inputSmall.value = busqueda;
@@ -101,12 +88,9 @@ window.onload = async function() {
     }
 };
 
-
 /**
  * 3. PETICIONES A LA API
  */
-
-// Petición para búsqueda semántica
 async function ejecutarBusquedaAPI(busq) {
     try {
         const respuesta = await fetch(`${CONFIG.API_BASE_URL}/api/buscar?prompt=${encodeURIComponent(busq)}`);
@@ -123,7 +107,6 @@ async function ejecutarBusquedaAPI(busq) {
     }
 }
 
-// Petición para traer todo el catálogo sin IA
 async function cargarCatalogoCompleto() {
     try {
         const respuesta = await fetch(`${CONFIG.API_BASE_URL}/api/catalogos`);
@@ -140,12 +123,9 @@ async function cargarCatalogoCompleto() {
     }
 }
 
-
 /**
  * 4. MANEJO DE BÚSQUEDA Y FILTROS
  */
-
-// Función que se activa al hacer clic en el botón "Buscar" o presionar Enter
 function ejecutarBusquedaDesdeInput() {
     const inputSmall = document.getElementById('searchInputResultados');
     if (!inputSmall) return;
@@ -160,7 +140,6 @@ function ejecutarBusquedaDesdeInput() {
 
 function cambiarModoFiltro(modo) {
     modoFiltroActual = modo;
-    
     const btnAnd = document.getElementById('btn-modo-and');
     const btnOr = document.getElementById('btn-modo-or');
     
@@ -177,16 +156,11 @@ function cambiarModoFiltro(modo) {
     aplicarFiltrosLocales();
 }
 
-// Restablecer únicamente los filtros de categoría
 function limpiarFiltros(evento) {
     if (evento) evento.preventDefault(); 
-
-    // 1. Desmarca todos los checkboxes de categoría
     document.querySelectorAll('.filtro-cat').forEach(checkbox => {
         checkbox.checked = false;
     });
-
-    // 2. Vuelve a renderizar las tarjetas usando los resultados originales 
     renderizarTarjetas(resultadosOriginales);
 }
 
@@ -200,14 +174,11 @@ function aplicarFiltrosLocales() {
     }
 
     const resultadosFiltrados = resultadosOriginales.filter(item => {
+        const catItem = item.categoria || "General";
         if (modoFiltroActual === 'and') {
-            return categoriasSeleccionadas.every(cat => 
-                item.dependencia.toLowerCase().includes(cat.toLowerCase())
-            );
+            return categoriasSeleccionadas.every(cat => catItem === cat);
         } else {
-            return categoriasSeleccionadas.some(cat => 
-                item.dependencia.toLowerCase().includes(cat.toLowerCase())
-            );
+            return categoriasSeleccionadas.some(cat => catItem === cat);
         }
     });
 
@@ -226,14 +197,11 @@ function aplicarOrdenamiento() {
     
     if (categoriasSeleccionadas.length > 0) {
         listaActual = listaActual.filter(item => {
+            const catItem = item.categoria || "General";
             if (modoFiltroActual === 'and') {
-                return categoriasSeleccionadas.every(cat => 
-                    item.dependencia.toLowerCase().includes(cat.toLowerCase())
-                );
+                return categoriasSeleccionadas.every(cat => catItem === cat);
             } else {
-                return categoriasSeleccionadas.some(cat => 
-                    item.dependencia.toLowerCase().includes(cat.toLowerCase())
-                );
+                return categoriasSeleccionadas.some(cat => catItem === cat);
             }
         });
     }
@@ -247,12 +215,47 @@ function aplicarOrdenamiento() {
     renderizarTarjetas(listaActual);
 }
 
-
 /**
  * 5. RENDERIZADO Y UI
  */
 
-// Función auxiliar para pintar las tarjetas en el DOM
+// Renderizar checkboxes usando la categoría corta y limpia
+function renderizarFiltrosDependencias(lista) {
+    const contenedorFiltros = document.getElementById('contenedor-filtros-dependencias');
+    if (!contenedorFiltros) return;
+
+    let conteosCat = {};
+    lista.forEach(item => {
+        const cat = item.categoria || "General";
+        conteosCat[cat] = (conteosCat[cat] || 0) + 1;
+    });
+
+    const checkboxesActivos = document.querySelectorAll('.filtro-cat:checked');
+    const seleccionadasPrevias = Array.from(checkboxesActivos).map(cb => cb.value);
+
+    let htmlFiltros = '';
+    Object.keys(conteosCat).sort().forEach(cat => {
+        const isChecked = seleccionadasPrevias.includes(cat) ? 'checked' : '';
+        htmlFiltros += `
+            <label class="filter-item">
+                <input type="checkbox" class="filtro-cat" value="${cat}" ${isChecked}> 
+                <span title="${cat}">${cat}</span> 
+                <span>${conteosCat[cat]}</span>
+            </label>
+        `;
+    });
+
+    contenedorFiltros.innerHTML = htmlFiltros;
+
+    document.querySelectorAll('.filtro-cat').forEach(checkbox => {
+        checkbox.addEventListener('change', aplicarFiltrosLocales);
+    });
+}
+
+function actualizarContadores(lista) {
+    renderizarFiltrosDependencias(lista);
+}
+
 function renderizarTarjetas(listaItems) {
     const contenedor = document.getElementById('contenedor-tarjetas');
     const textoResultados = document.getElementById('texto-resultados');
@@ -277,8 +280,8 @@ function renderizarTarjetas(listaItems) {
     
     listaItems.forEach(item => {
         const tituloSeguro = item.dataset_recomendado.replace(/'/g, "\\'");
+        const descripcionSegura = item.descripcion || "Conjunto de datos oficial disponible para consulta y descarga municipal.";
         
-        // Aquí reemplazamos el onclick por los atributos data-
         htmlContent += `
             <article class="card-resultado-v2">
                 <div class="card-icon" aria-hidden="true">📁</div>
@@ -288,9 +291,9 @@ function renderizarTarjetas(listaItems) {
                         <span class="badge-pub">DOMINIO PÚBLICO</span>
                     </header>
                     <h3>${item.dataset_recomendado}</h3>
-                    <p class="card-desc">Conjunto de datos oficial disponible para consulta y descarga municipal.</p>
+                    <p class="card-desc">${descripcionSegura}</p>
                     <footer class="card-meta">
-                        <span>Secretaría de ${item.dependencia}</span>
+                        <span>Categoría: ${item.categoria || "General"}</span>
                         <span>Actualizado: ${item.fecha_actualizacion}</span>
                         <span>0 descargas</span>
                     </footer>
@@ -337,38 +340,11 @@ function cerrarFichaModal() {
     document.getElementById('modalFicha').style.display = 'none';
 }
 
-// Función para actualizar contadores laterales
-function actualizarContadores(lista) {
-    let conteos = {
-        "Seguridad": 0,
-        "Salud Pública": 0,
-        "Educación": 0,
-        "Movilidad y Transporte": 0
-    };
-
-    lista.forEach(item => {
-        if (conteos[item.dependencia] !== undefined) {
-            conteos[item.dependencia]++;
-        }
-    });
-
-    const elSeguridad = document.getElementById('count-seguridad');
-    const elSalud = document.getElementById('count-salud');
-    const elEducacion = document.getElementById('count-educacion');
-    const elMovilidad = document.getElementById('count-movilidad');
-
-    if (elSeguridad) elSeguridad.textContent = conteos["Seguridad"];
-    if (elSalud) elSalud.textContent = conteos["Salud Pública"];
-    if (elEducacion) elEducacion.textContent = conteos["Educación"];
-    if (elMovilidad) elMovilidad.textContent = conteos["Movilidad y Transporte"];
-}
-
-// Función para mostrar u ocultar el panel de filtros en dispositivos móviles
-function toggleFiltrosMovil(evento) {
+function alternarSidebarFiltros(evento) {
     if (evento) evento.preventDefault();
-    
     const sidebar = document.getElementById('sidebarFiltros');
     if (sidebar) {
+        sidebar.classList.toggle('oculto');
         sidebar.classList.toggle('activo');
     }
 }

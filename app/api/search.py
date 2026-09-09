@@ -24,6 +24,7 @@ def obtener_todo_el_catalogo():
 
             meta = metadatas[i] if metadatas and i < len(metadatas) and metadatas[i] else {}
             dependencia = meta.get("dependencia", "No registrada")
+            categoria = meta.get("categoria", "General")
             fecha_act = meta.get("fecha_actualizacion", "2026-01-01")
             descripcion = meta.get("descripcion", "Sin descripcion disponible") 
             
@@ -32,6 +33,7 @@ def obtener_todo_el_catalogo():
                 "dataset_recomendado": documento,
                 "descripcion": descripcion,
                 "dependencia": dependencia,
+                "categoria": categoria,
                 "fecha_actualizacion": fecha_act,
                 "distancia": 0.0 
             })
@@ -68,7 +70,8 @@ def buscar_dataset(prompt: str):
             documento = documents[i]
 
             meta = metadatas[i] if metadatas and i < len(metadatas) else {}
-            dependencia = meta.get('dependencia', "No registrada") 
+            dependencia = meta.get('dependencia', "No registrada")
+            categoria = meta.get('categoria', "General")
             fecha_act = meta.get("fecha_actualizacion", "2026-01-01") 
             descripcion = meta.get("descripcion", "Sin descripcion disponible")
             
@@ -77,6 +80,7 @@ def buscar_dataset(prompt: str):
                 "dataset_recomendado": documento,
                 "descripcion": descripcion,
                 "dependencia": dependencia,
+                "categoria": categoria,
                 "fecha_actualizacion": fecha_act,
                 "distancia": round(distancia, 4)
             })

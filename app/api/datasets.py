@@ -30,6 +30,7 @@ def listar_datasets_admin():
                 "id": datos["ids"][i],
                 "titulo": datos["documents"][i],
                 "dependencia": meta.get("dependencia", "No registrada"),
+                "categoria": meta.get("categoria", "No registrada"),
                 "fecha": meta.get("fecha_actualizacion", "N/A")
             })
             
@@ -40,6 +41,7 @@ async def publicar_dataset(
     titulo: str = Form(...),
     descripcion: str = Form(...),
     dependencia: str = Form(...),
+    categoria: str = Form(...),
     archivo: UploadFile = File(...),
     usuario_autenticado: str = Depends(verificar_token)
 ):
@@ -89,6 +91,7 @@ async def publicar_dataset(
     
     metadata = {
         "dependencia": dependencia,
+        "categoria": categoria, 
         "descripcion": descripcion,
         "fecha_actualizacion": fecha_actual,
         "hash_sha256": hash_calculado

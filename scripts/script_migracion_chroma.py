@@ -10,7 +10,7 @@ from app.database import guardar_datasets
 from app.nlp_model import generar_embedding
 
 # Rutas 
-CATALOGO = "data/clean/catalogo_maestro_procesado.csv"
+CATALOGO = "data/clean/catalogo_maestro.csv"
 CARPETA_ORIGINALES = "data/entregados_municipio/"
 CARPETA_RAW_PRODUCCION = "data/raw/"
 
@@ -41,10 +41,11 @@ for index, row in df_catalogo.iterrows():
     embeddings.append(vector)
     metadatas.append({
         "dependencia": row["dependencia"],
+        "categoria": row["categoria"],
         "descripcion": row["descripcion"],
         "fecha_actualizacion": fecha_actual
     })
-    print(f"Procesado: {row['titulo']}")
+    print(f"Procesado: {row['titulo']} -> Categoría: {row['categoria']}")
 
 # Inyección masiva 
 guardar_datasets(ids=ids, textos=textos, embeddings=embeddings, metadatas=metadatas)
