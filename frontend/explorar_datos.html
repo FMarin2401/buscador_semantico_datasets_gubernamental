@@ -56,8 +56,18 @@
                 <span id="texto-resultados"><strong>0</strong> conjuntos encontrados</span>
                 <a href="#" class="link-explorar-cat" id="btnExplorarCat">Explorar por categoría</a>
             </div>
-            
             <div id="contenedor-tarjetas"></div>
+            <div id="emptyState" class="empty-state" style="display: none;" aria-live="polite">
+                <div class="empty-state-icon" aria-hidden="true">📭</div>
+                <h3 class="empty-state-title">No encontramos datos para esta búsqueda</h3>
+                <p class="empty-state-desc">El motor semántico no encontró resultados suficientemente cercanos a tu consulta. Te sugerimos:</p>
+                <ul class="empty-state-tips">
+                    <li>Intentar con palabras más generales o sinónimos.</li>
+                    <li>Verificar que no haya errores ortográficos.</li>
+                    <li>Desactivar algunos filtros si estás usando el modo estricto (Y).</li>
+                </ul>
+                <button type="button" class="btn-primary" id="btnLimpiarEmpty">Limpiar filtros y recargar</button>
+            </div>
         </section>
     </div>
 </main>

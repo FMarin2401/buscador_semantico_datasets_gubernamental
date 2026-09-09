@@ -42,7 +42,7 @@ def obtener_todo_el_catalogo():
 def buscar_dataset(prompt: str):
     vector_prompt = generar_embedding(prompt) 
     
-    n_meta = 15
+    n_meta = 10
     resultados = buscar_similares(vector_prompt, n_resultados=n_meta) 
     
     logger.debug("--- INICIO DE BÚSQUEDA ---") 

@@ -1,24 +1,23 @@
 {% extends "base.html" %}
 
-{% block title %}Guía de Usuario - Portal León{% endblock %}
-{% block meta_desc %}Aprende a navegar, buscar y descargar los conjuntos de datos disponibles en el portal.{% endblock %}
+{% block title %}Políticas de Datos Abiertos - Portal León{% endblock %}
+{% block meta_desc %}Principios rectores de la apertura de datos gubernamentales en León.{% endblock %}
 
 {% block content %}
 <main class="content-wrapper">
     <header class="page-header" style="padding:0;">
-        <h1>Guía de Usuario</h1>
-        <p>Instrucciones paso a paso para aprovechar al máximo el portal de datos abiertos.</p>
+        <h1>Políticas de Datos Abiertos</h1>
+        <p>Nuestros compromisos para fomentar la transparencia y participación ciudadana.</p>
     </header>
 
     <div class="hero-card card-content-block">
+        <h2>Principios Rectores</h2>
         <ol class="guia-lista">
-            <li><strong>Búsqueda Inteligente:</strong> Utiliza la barra principal en la página de inicio o en la sección de conjuntos de datos para buscar por palabras clave o frases completas.</li>
-            <li><strong>Filtros por Categoría:</strong> Refina tus resultados seleccionando dependencias específicas como Seguridad, Salud Pública, Educación o Movilidad.</li>
-            <li><strong>Modos de Combinación (Y / O):</strong> Cambia entre el modo estricto (todos los filtros seleccionados) o flexible (cualquiera de los filtros) en el panel lateral.</li>
-            <li><strong>Descarga en múltiples formatos:</strong> Cada dataset cuenta con opciones de descarga directa en formatos estándar como <strong>CSV, JSON, XML y GeoJSON</strong>.</li>
+            <li><strong>Abiertos por defecto:</strong> Toda información gubernamental se asume pública y susceptible a publicarse, salvo restricciones legales explícitas de seguridad o privacidad.</li>
+            <li><strong>Oportunos y exhaustivos:</strong> Los datos se publicarán en su forma original, tan crudos como sea posible, para evitar alteraciones de interpretación.</li>
+            <li><strong>Accesibles e Interoperables:</strong> Proveemos formatos estándar estructurados y legibles por máquina (CSV, JSON, XML, GeoJSON).</li>
+            <li><strong>No discriminatorios:</strong> El acceso a los catálogos y motor de búsqueda no requiere registro de cuenta, autenticación ni pago alguno.</li>
         </ol>
     </div>
 </main>
 {% endblock %}
-
-{% block scripts %}{% endblock %}

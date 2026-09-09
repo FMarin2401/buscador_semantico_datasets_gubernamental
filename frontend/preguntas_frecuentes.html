@@ -1,24 +1,24 @@
 {% extends "base.html" %}
 
-{% block title %}Guía de Usuario - Portal León{% endblock %}
-{% block meta_desc %}Aprende a navegar, buscar y descargar los conjuntos de datos disponibles en el portal.{% endblock %}
+{% block title %}Preguntas Frecuentes - Portal León{% endblock %}
+{% block meta_desc %}Encuentra respuestas a las dudas más comunes sobre el uso del portal de datos abiertos.{% endblock %}
 
 {% block content %}
 <main class="content-wrapper">
     <header class="page-header" style="padding:0;">
-        <h1>Guía de Usuario</h1>
-        <p>Instrucciones paso a paso para aprovechar al máximo el portal de datos abiertos.</p>
+        <h1>Preguntas Frecuentes</h1>
+        <p>Respuestas rápidas a las consultas más comunes sobre el portal.</p>
     </header>
 
     <div class="hero-card card-content-block">
-        <ol class="guia-lista">
-            <li><strong>Búsqueda Inteligente:</strong> Utiliza la barra principal en la página de inicio o en la sección de conjuntos de datos para buscar por palabras clave o frases completas.</li>
-            <li><strong>Filtros por Categoría:</strong> Refina tus resultados seleccionando dependencias específicas como Seguridad, Salud Pública, Educación o Movilidad.</li>
-            <li><strong>Modos de Combinación (Y / O):</strong> Cambia entre el modo estricto (todos los filtros seleccionados) o flexible (cualquiera de los filtros) en el panel lateral.</li>
-            <li><strong>Descarga en múltiples formatos:</strong> Cada dataset cuenta con opciones de descarga directa en formatos estándar como <strong>CSV, JSON, XML y GeoJSON</strong>.</li>
-        </ol>
+        <h3>¿Qué son los datos abiertos?</h3>
+        <p>Son datos digitales de carácter público, accesibles en línea que pueden ser usados, reutilizados y redistribuidos por cualquier persona u organización sin restricciones.</p>
+        
+        <h3>¿Tiene algún costo descargar la información?</h3>
+        <p>No, todos los conjuntos de datos disponibles en este portal municipal son completamente gratuitos.</p>
+        
+        <h3>¿Con qué frecuencia se actualizan los datos?</h3>
+        <p>La temporalidad depende de los procesos operativos de cada dependencia (SAPAL, Seguridad, Medio Ambiente, etc.), pero la fecha exacta de la última actualización siempre se muestra en la ficha de cada dataset.</p>
     </div>
 </main>
 {% endblock %}
-
-{% block scripts %}{% endblock %}
