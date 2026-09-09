@@ -29,7 +29,13 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 4. Cargar métricas del dashboard al iniciar
+    // 4. Configurar botón de cerrar sesión (si agregaste uno en tu HTML con id="btnCerrarSesion")
+    const btnCerrar = document.getElementById('btnCerrarSesion');
+    if (btnCerrar) {
+        btnCerrar.addEventListener('click', cerrarSesion);
+    }
+
+    // 5. Cargar métricas del dashboard al iniciar
     renderizarDashboard();
 });
 
@@ -62,7 +68,12 @@ function cambiarPestana(idPestana, botonClickeado) {
 // Renderizar métricas y gráfica de Chart.js en el Dashboard
 async function renderizarDashboard() {
     try {
-        const respuesta = await fetch(`${CONFIG.API_BASE_URL}/api/admin/datasets`);
+        const respuesta = await fetch(`${CONFIG.API_BASE_URL}/api/admin/datasets`, {
+            method: "GET",
+            headers: {
+                "Authorization": `Bearer ${token}`
+            }
+        });
         const data = await respuesta.json();
         
         if (!data.resultados) return;
@@ -135,6 +146,9 @@ async function manejarSubidaDataset(evento) {
     try {
         const respuesta = await fetch(`${CONFIG.API_BASE_URL}/api/admin/subir`, {
             method: "POST",
+            headers: {
+                "Authorization": `Bearer ${token}`
+            },
             body: formData 
         });
 
@@ -163,7 +177,12 @@ async function cargarCatalogoAdmin() {
     tbody.innerHTML = '<tr><td colspan="4" class="text-center">Cargando catálogo...</td></tr>';
     
     try {
-        const respuesta = await fetch(`${CONFIG.API_BASE_URL}/api/admin/datasets`);
+        const respuesta = await fetch(`${CONFIG.API_BASE_URL}/api/admin/datasets`, {
+            method: "GET",
+            headers: {
+                "Authorization": `Bearer ${token}`
+            }
+        });
         const data = await respuesta.json();
         
         tbody.innerHTML = '';
@@ -198,7 +217,10 @@ async function eliminarDataset(idDataset) {
 
     try {
         const respuesta = await fetch(`${CONFIG.API_BASE_URL}/api/admin/datasets/${idDataset}`, {
-            method: "DELETE"
+            method: "DELETE",
+            headers: {
+                "Authorization": `Bearer ${token}`
+            }
         });
 
         if (respuesta.ok) {
@@ -210,4 +232,10 @@ async function eliminarDataset(idDataset) {
     } catch (error) {
         alert("Error de conexión con el servidor al intentar eliminar.");
     }
+}
+
+// Función para cerrar sesión y destruir el JWT
+function cerrarSesion() {
+    localStorage.removeItem("authToken");
+    window.location.href = "/login.html";
 }
