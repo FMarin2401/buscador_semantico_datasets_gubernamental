@@ -44,9 +44,9 @@ async def vista_aviso_privacidad(request: Request):
 async def vista_terminos_uso(request: Request):
     return templates.TemplateResponse(request, "terminos_uso.html")
 
-@router.get("/politicas.html")
+@router.get("/politicas_datos_abiertos.html")
 async def vista_politicas_datos_abiertos(request: Request):
-    return templates.TemplateResponse(request, "politicas.html")
+    return templates.TemplateResponse(request, "politicas_datos_abiertos.html")
 
 @router.get("/login.html")
 async def vista_login(request: Request):
