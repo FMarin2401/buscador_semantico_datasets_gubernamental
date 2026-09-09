@@ -62,8 +62,9 @@ else:
             except Exception as e:
                 print(f"Error procesando {archivo}: {e}")
 
-            # Pausa de 5 segundos para darle respiro a la API entre llamadas
-            time.sleep(5) 
+            # Pausa de 10 segundos para darle respiro a la API entre llamadas
+            time.sleep(10)
+
     if datos_catalogo:
         df_final = pd.DataFrame(datos_catalogo)
         df_final.to_csv(CATALOGO_SALIDA, index=False)
