@@ -12,6 +12,9 @@ data/raw/
 data/clean/
 data/chroma_db/
 
+# logs
+logs/auditoria.log
+
 # Caché de Python
 __pycache__/
 *.py[cod]

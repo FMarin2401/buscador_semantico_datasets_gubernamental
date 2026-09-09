@@ -5,7 +5,7 @@ import json
 from datetime import datetime
 import pandas as pd
 
-from fastapi import APIRouter, File, Form, HTTPException, UploadFile, status, Depends
+from fastapi import APIRouter, File, Form, HTTPException, UploadFile, logger, status, Depends
 from fastapi.responses import FileResponse, Response
 
 # Módulos internos del proyecto
@@ -40,6 +40,8 @@ async def publicar_dataset(
     archivo: UploadFile = File(...),
     usuario_autenticado: str = Depends(verificar_token)
 ):
+
+    logger.info(f"[BITACORA AUDITORIA] El administrador '{usuario_autenticado}' subió el dataset '{titulo}' con el archivo '{archivo.filename}' a la dependencia '{dependencia}'.")
     if not archivo.filename.endswith(".csv"):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -89,6 +91,10 @@ def eliminar_dataset(
     id_dataset: str, 
     usuario_autenticado: str = Depends(verificar_token)
     ):
+
+    # Bitácora de auditoría
+    logger.info(f"[BITACORA AUDITORIA] El administrador '{usuario_autenticado}' eliminó el dataset con ID: {id_dataset}")
+
     try:
         coleccion.delete(ids=[id_dataset])
     except Exception as e:

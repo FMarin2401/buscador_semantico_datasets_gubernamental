@@ -1,6 +1,7 @@
 # Este archivo contiene la logica principal de la API de FastAPI para el buscador semántico gubernamental
 
 # Librerías estándar de Python
+import os
 import logging
 
 # Librerías de terceros 
@@ -10,8 +11,18 @@ from fastapi.staticfiles import StaticFiles
 
 from app.api import pages, search, datasets, auth
 
-# Configuración de logging para depuración
-logging.basicConfig(level=logging.DEBUG, format='%(levelname)s: %(message)s')
+# Configuración de logging para consola y archivo para auditoria
+os.makedirs("logs", exist_ok=True)
+
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler("logs/auditoria.log"),
+        logging.StreamHandler()
+    ]
+)
+
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="API Buscador Semántico Gubernamental") # Crea un servidor FastAPI con el nombre de la API
