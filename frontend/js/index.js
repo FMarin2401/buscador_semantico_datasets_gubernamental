@@ -15,9 +15,9 @@ function irABuscar() {
     
     // Si la barra está vacía, lo mandamos al catálogo general
     if (texto === "") {
-        window.location.href = "conjunto_datos.html";
+        window.location.href = "explorar_datos.html";
     } else {
         // Si escribió algo, hacemos la búsqueda con parámetros
-        window.location.href = `conjunto_datos.html?q=${encodeURIComponent(texto)}`;
+        window.location.href = `explorar_datos.html?q=${encodeURIComponent(texto)}`;
     }
 }

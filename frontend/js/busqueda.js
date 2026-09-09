@@ -152,9 +152,9 @@ function ejecutarBusquedaDesdeInput() {
     
     const texto = inputSmall.value.trim();
     if (texto === "") {
-        window.location.href = "conjunto_datos.html";
+        window.location.href = "explorar_datos.html";
     } else {
-        window.location.href = `conjunto_datos.html?q=${encodeURIComponent(texto)}`;
+        window.location.href = `explorar_datos.html?q=${encodeURIComponent(texto)}`;
     }
 }
 
