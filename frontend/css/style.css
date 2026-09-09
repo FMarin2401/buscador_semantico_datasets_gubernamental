@@ -671,7 +671,7 @@ fieldset.filter-group legend {
     color: var(--blue-primary);
 }
 
-.btn-ficha-v2 {
+.btn-ficha {
     background: var(--blue-primary);
     color: white;
     border: none;
@@ -683,7 +683,7 @@ fieldset.filter-group legend {
     width: 100%;
 }
 
-.btn-ficha-v2:hover {
+.btn-ficha:hover {
     background: #004b87;
 }
 
@@ -1068,13 +1068,6 @@ fieldset.filter-group legend {
         max-width: 100%;
     }
 
-    .btn-ficha {
-        position: static;
-        width: 100%;
-        margin-top: 10px;
-        text-align: center;
-    }
-
     .card-actions {
         align-items: stretch;
         width: 100%;
@@ -1116,9 +1109,4 @@ fieldset.filter-group legend {
         opacity: 1;
         transform: translateY(0);
     }
-}
-
-/* Ajuste móvil para las acciones */
-@media (max-width: 768px) {
-    
 }

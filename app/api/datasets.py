@@ -119,7 +119,10 @@ def descargar_dataset(id_dataset: str, formato: str = "csv"):
     if formato == "csv":
         return FileResponse(path=ruta_csv, filename=f"{id_dataset}.csv", media_type="text/csv")
         
-    df = pd.read_csv(ruta_csv)
+    try:
+        df = pd.read_csv(ruta_csv, encoding="utf-8")
+    except UnicodeDecodeError:
+        df = pd.read_csv(ruta_csv, encoding="latin-1")
     
     if formato == "json":
         json_data = df.to_json(orient="records")

@@ -1,7 +1,9 @@
 # Este archivo contiene la logica para guardar y buscar datasets en la base de datos ChromaDB
 
 import chromadb
+import logging
 
+logger = logging.getLogger(__name__)
 cliente = chromadb.PersistentClient(path="./data/chroma_db") # Al usar PersistentClient, los datos se guardan en el disco y se pueden recuperar despues de reiniciar la aplicacion
 
 coleccion = cliente.get_or_create_collection( # Busca o crea una coleccion en la base de datos ChromaDB para guardar los datasets

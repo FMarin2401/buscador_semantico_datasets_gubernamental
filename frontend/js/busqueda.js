@@ -302,7 +302,7 @@ function renderizarTarjetas(listaItems) {
                         <a href="${CONFIG.API_BASE_URL}/api/descargar/${item.id}?formato=xml"><span>XML</span></a>
                         <a href="${CONFIG.API_BASE_URL}/api/descargar/${item.id}?formato=geojson"><span>GeoJSON</span></a>
                     </div>
-                    <button type="button" class="btn-ficha-v2" 
+                    <button type="button" class="btn-ficha" 
                         data-titulo="${tituloSeguro}" 
                         data-dependencia="${item.dependencia}" 
                         data-fecha="${item.fecha_actualizacion}" 
