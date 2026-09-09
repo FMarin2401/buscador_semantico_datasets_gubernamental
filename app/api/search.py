@@ -24,11 +24,13 @@ def obtener_todo_el_catalogo():
 
             meta = metadatas[i] if metadatas and i < len(metadatas) and metadatas[i] else {}
             dependencia = meta.get("dependencia", "No registrada")
-            fecha_act = meta.get("fecha_actualizacion", "2026-01-01") 
+            fecha_act = meta.get("fecha_actualizacion", "2026-01-01")
+            descripcion = meta.get("descripcion", "Sin descripcion disponible") 
             
             catalogos_completos.append({
                 "id": id_actual, 
                 "dataset_recomendado": documento,
+                "descripcion": descripcion,
                 "dependencia": dependencia,
                 "fecha_actualizacion": fecha_act,
                 "distancia": 0.0 
@@ -55,7 +57,7 @@ def buscar_dataset(prompt: str):
         logger.debug(f"Top {idx + 1}: {doc} | Distancia: {dist}")
     logger.debug("------------------\n")
     
-    umbral_maximo = 0.80 
+    umbral_maximo = 0.60 
 
     resultados_validos = [] 
     
@@ -68,10 +70,12 @@ def buscar_dataset(prompt: str):
             meta = metadatas[i] if metadatas and i < len(metadatas) else {}
             dependencia = meta.get('dependencia', "No registrada") 
             fecha_act = meta.get("fecha_actualizacion", "2026-01-01") 
+            descripcion = meta.get("descripcion", "Sin descripcion disponible")
             
             resultados_validos.append({ 
                 "id": ids[i] if i < len(ids) else "",
                 "dataset_recomendado": documento,
+                "descripcion": descripcion,
                 "dependencia": dependencia,
                 "fecha_actualizacion": fecha_act,
                 "distancia": round(distancia, 4)

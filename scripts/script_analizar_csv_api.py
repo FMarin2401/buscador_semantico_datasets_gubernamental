@@ -21,7 +21,7 @@ def analizar_csv_con_ia(nombre_archivo, muestra_datos):
     Devuelve ÚNICAMENTE un JSON válido con estas claves exactas sin formato markdown:
     {{
         "titulo": "Un nombre formal y corto para el dataset.",
-        "descripcion": "Qué contiene exactamente (máximo 2 líneas).",
+        "descripcion": "Qué contiene exactamente e incluye sinónimos del titulo y palabras clave comunes que la ciudadania teclea como "teléfono", "contacto", "horarios" o "citas" (máximo 2 líneas) .",
         "dependencia": "Infiere y escribe la dependencia oficial del Municipio de León responsable de estos datos (ej. Seguridad, Salud Pública, Educación, Movilidad y Transporte, Desarrollo Económico Dirección General de Medio Ambiente, Obra Pública, SAPAL, Protección Civil, Economía, etc.)"
     }}
     """
