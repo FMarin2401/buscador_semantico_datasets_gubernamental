@@ -4,6 +4,7 @@ import uuid
 import json
 from datetime import datetime
 import pandas as pd
+import logging
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile, logger, status, Depends
 from fastapi.responses import FileResponse, Response
@@ -14,6 +15,7 @@ from app.nlp_model import generar_embedding
 from app.api.auth import verificar_token
 
 router = APIRouter(tags=["Gestión y Descarga de Datasets"])
+logger = logging.getLogger(__name__)
 
 @router.get("/api/admin/datasets")
 def listar_datasets_admin():
