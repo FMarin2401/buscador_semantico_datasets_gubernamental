@@ -5,6 +5,7 @@ import json
 from datetime import datetime
 import pandas as pd
 import logging
+import hashlib
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile, logger, status, Depends
 from fastapi.responses import FileResponse, Response
@@ -44,6 +45,7 @@ async def publicar_dataset(
 ):
 
     logger.info(f"[BITACORA AUDITORIA] El administrador '{usuario_autenticado}' subió el dataset '{titulo}' con el archivo '{archivo.filename}' a la dependencia '{dependencia}'.")
+
     if not archivo.filename.endswith(".csv"):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -55,6 +57,22 @@ async def publicar_dataset(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="El contenido del archivo no es un CSV válido."
         )
+
+    contenido_archivo = await archivo.read()
+    hash_calculado = hashlib.sha256(contenido_archivo).hexdigest()
+
+    await archivo.seek(0)
+
+    datos_existentes = obtener_todos_datasets()
+    if datos_existentes and datos_existentes.get("metadatas"):
+        for meta in datos_existentes["metadatas"]:
+            # Validar que meta no sea None antes de buscar el hash
+            if meta and meta.get("hash_sha256") == hash_calculado:
+                logger.warning(f"[ALERTA] Ingesta bloqueada por duplicidad: {archivo.filename}")
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="Este dataset ya fue subido anteriormente (Duplicado detectado)."
+                )
 
     id_unico = str(uuid.uuid4())
     fecha_actual = datetime.now().strftime("%Y-%m-%d")
@@ -72,7 +90,8 @@ async def publicar_dataset(
     metadata = {
         "dependencia": dependencia,
         "descripcion": descripcion,
-        "fecha_actualizacion": fecha_actual
+        "fecha_actualizacion": fecha_actual,
+        "hash_sha256": hash_calculado
     }
     
     guardar_datasets(
@@ -82,6 +101,7 @@ async def publicar_dataset(
         metadatas=[metadata]
     )
     
+    logger.info(f"[EXITO] Dataset '{titulo}' subido exitosamente con ID: {id_unico}'.")
     return {
         "mensaje": "Dataset publicado exitosamente", 
         "id": id_unico,
@@ -139,6 +159,7 @@ def descargar_dataset(id_dataset: str, formato: str = "csv"):
                         headers={"Content-Disposition": f"attachment; filename={id_dataset}.xml"})
                         
     elif formato == "geojson":
+        df.columns = df.columns.str.lower() # Estandariza a minúsculas
         features = []
         for _, row in df.iterrows():
             feature = {"type": "Feature", "properties": row.to_dict(), "geometry": None}

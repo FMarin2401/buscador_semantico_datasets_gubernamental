@@ -22,7 +22,7 @@ def analizar_csv_con_ia(nombre_archivo, muestra_datos):
     {{
         "titulo": "Un nombre formal y corto para el dataset.",
         "descripcion": "Qué contiene exactamente (máximo 2 líneas).",
-        "dependencia": "Clasifícalo en una de estas: Seguridad, Salud Pública, Educación, Movilidad y Transporte, o Desarrollo Económico."
+        "dependencia": "Infiere y escribe la dependencia oficial del Municipio de León responsable de estos datos (ej. Seguridad, Salud Pública, Educación, Movilidad y Transporte, Desarrollo Económico Dirección General de Medio Ambiente, Obra Pública, SAPAL, Protección Civil, Economía, etc.)"
     }}
     """
     
@@ -64,3 +64,7 @@ else:
 
             # Pausa de 5 segundos para darle respiro a la API entre llamadas
             time.sleep(5) 
+    if datos_catalogo:
+        df_final = pd.DataFrame(datos_catalogo)
+        df_final.to_csv(CATALOGO_SALIDA, index=False)
+        print(f"¡Catálogo maestro guardado con éxito en {CATALOGO_SALIDA}!")
