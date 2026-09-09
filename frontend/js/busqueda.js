@@ -2,7 +2,6 @@
  * 1. CONFIGURACIÓN Y ESTADO GLOBAL
  */
 let resultadosOriginales = [];
-let modoFiltroActual = 'and'; 
 
 /**
  * 2. INICIALIZACIÓN (WINDOW.ONLOAD)
@@ -11,7 +10,6 @@ window.onload = async function() {
     const parametros = new URLSearchParams(window.location.search);
     const busqueda = parametros.get('q');
     
-    // 2.1. Cargar el total real de datasets para el placeholder del input pequeño
     try {
         const respCat = await fetch(`${CONFIG.API_BASE_URL}/api/catalogos`);
         const dataCat = await respCat.json();
@@ -24,7 +22,6 @@ window.onload = async function() {
         console.error("Error cargando total de catálogos:", e);
     }
 
-    // 2.2. Asignación de Event Listeners
     const formBusqueda = document.getElementById('formBusquedaInterna');
     if (formBusqueda) {
         formBusqueda.addEventListener('submit', (e) => {
@@ -41,16 +38,6 @@ window.onload = async function() {
     const btnLimpiar = document.getElementById('btnLimpiar');
     if (btnLimpiar) {
         btnLimpiar.addEventListener('click', limpiarFiltros);
-    }
-
-    const btnModoAnd = document.getElementById('btn-modo-and');
-    if (btnModoAnd) {
-        btnModoAnd.addEventListener('click', () => cambiarModoFiltro('and'));
-    }
-
-    const btnModoOr = document.getElementById('btn-modo-or');
-    if (btnModoOr) {
-        btnModoOr.addEventListener('click', () => cambiarModoFiltro('or'));
     }
 
     const btnExplorarCat = document.getElementById('btnExplorarCat');
@@ -138,24 +125,6 @@ function ejecutarBusquedaDesdeInput() {
     }
 }
 
-function cambiarModoFiltro(modo) {
-    modoFiltroActual = modo;
-    const btnAnd = document.getElementById('btn-modo-and');
-    const btnOr = document.getElementById('btn-modo-or');
-    
-    if (!btnAnd || !btnOr) return;
-
-    if (modo === 'and') {
-        btnAnd.classList.add('active');
-        btnOr.classList.remove('active');
-    } else {
-        btnOr.classList.add('active');
-        btnAnd.classList.remove('active');
-    }
-
-    aplicarFiltrosLocales();
-}
-
 function limpiarFiltros(evento) {
     if (evento) evento.preventDefault(); 
     document.querySelectorAll('.filtro-cat').forEach(checkbox => {
@@ -175,11 +144,7 @@ function aplicarFiltrosLocales() {
 
     const resultadosFiltrados = resultadosOriginales.filter(item => {
         const catItem = item.categoria || "General";
-        if (modoFiltroActual === 'and') {
-            return categoriasSeleccionadas.every(cat => catItem === cat);
-        } else {
-            return categoriasSeleccionadas.some(cat => catItem === cat);
-        }
+        return categoriasSeleccionadas.includes(catItem);
     });
 
     renderizarTarjetas(resultadosFiltrados);
@@ -198,11 +163,7 @@ function aplicarOrdenamiento() {
     if (categoriasSeleccionadas.length > 0) {
         listaActual = listaActual.filter(item => {
             const catItem = item.categoria || "General";
-            if (modoFiltroActual === 'and') {
-                return categoriasSeleccionadas.every(cat => catItem === cat);
-            } else {
-                return categoriasSeleccionadas.some(cat => catItem === cat);
-            }
+            return categoriasSeleccionadas.includes(catItem);
         });
     }
 
@@ -218,8 +179,6 @@ function aplicarOrdenamiento() {
 /**
  * 5. RENDERIZADO Y UI
  */
-
-// Renderizar checkboxes usando la categoría corta y limpia
 function renderizarFiltrosDependencias(lista) {
     const contenedorFiltros = document.getElementById('contenedor-filtros-dependencias');
     if (!contenedorFiltros) return;
