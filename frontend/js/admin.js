@@ -1,3 +1,6 @@
+// Definir el token global para todas las peticiones
+const token = localStorage.getItem("authToken");
+
 // Controlar el historial (Back/Forward Cache) y revelar el panel
 window.addEventListener("pageshow", (event) => {
     const tokenActual = localStorage.getItem("authToken");
@@ -94,7 +97,7 @@ function cambiarPestana(idPestana, botonClickeado) {
 // Renderizar métricas y gráfica de Chart.js en el Dashboard
 async function renderizarDashboard() {
     try {
-        const respuesta = await fetch(`${CONFIG.API_BASE_URL}/api/admin/datasets`, {
+        const respuesta = await fetch(`/api/admin/datasets`, {
             method: "GET",
             headers: {
                 "Authorization": `Bearer ${token}`
@@ -199,7 +202,7 @@ async function manejarSubidaDataset(evento) {
     formData.append("archivo", archivoInput.files[0]);
 
     try {
-        const respuesta = await fetch(`${CONFIG.API_BASE_URL}/api/admin/subir`, {
+        const respuesta = await fetch(`/api/admin/subir`, {
             method: "POST",
             headers: {
                 "Authorization": `Bearer ${token}`
@@ -232,7 +235,7 @@ async function cargarCatalogoAdmin() {
     tbody.innerHTML = '<tr><td colspan="4" class="text-center">Cargando catálogo...</td></tr>';
     
     try {
-        const respuesta = await fetch(`${CONFIG.API_BASE_URL}/api/admin/datasets`, {
+        const respuesta = await fetch(`/api/admin/datasets`, {
             method: "GET",
             headers: {
                 "Authorization": `Bearer ${token}`
@@ -293,7 +296,7 @@ async function manejarEdicionDataset(evento) {
     const categoria = document.getElementById('editCategoria').value;
 
     try {
-        const respuesta = await fetch(`${CONFIG.API_BASE_URL}/api/admin/datasets/${id}`, {
+        const respuesta = await fetch(`/api/admin/datasets/${id}`, {
             method: "PUT",
             headers: {
                 "Content-Type": "application/json",
@@ -322,7 +325,7 @@ async function eliminarDataset(idDataset) {
     if (!confirmacion) return;
 
     try {
-        const respuesta = await fetch(`${CONFIG.API_BASE_URL}/api/admin/datasets/${idDataset}`, {
+        const respuesta = await fetch(`/api/admin/datasets/${idDataset}`, {
             method: "DELETE",
             headers: {
                 "Authorization": `Bearer ${token}`
