@@ -168,9 +168,17 @@ def descargar_dataset(id_dataset: str, formato: str = "csv"):
             feature = {"type": "Feature", "properties": row.to_dict(), "geometry": None}
             lat = row.get("latitud") or row.get("lat")
             lon = row.get("longitud") or row.get("lon")
+
+            try:
+
+                lat_float = float(lat)
+                lon_float = float(lon)
             
-            if pd.notna(lat) and pd.notna(lon):
-                feature["geometry"] = {"type": "Point", "coordinates": [lon, lat]} 
+                if pd.notna(lat) and pd.notna(lon):
+                    feature["geometry"] = {"type": "Point", "coordinates": [lon_float, lat_float]} 
+
+            except (ValueError, TypeError):
+                pass
                 
             features.append(feature)
             

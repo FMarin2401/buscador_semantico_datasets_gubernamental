@@ -218,6 +218,7 @@ function actualizarContadores(lista) {
 function renderizarTarjetas(listaItems) {
     const contenedor = document.getElementById('contenedor-tarjetas');
     const textoResultados = document.getElementById('texto-resultados');
+    const emptyState = document.getElementById('emptyState');
     
     if (!contenedor || !textoResultados) return;
     
@@ -225,13 +226,11 @@ function renderizarTarjetas(listaItems) {
     
     if (listaItems.length === 0) {
         textoResultados.innerHTML = `<strong>0</strong> conjuntos encontrados`;
-        contenedor.innerHTML = `
-            <div style="background: white; padding: 40px 20px; border-radius: 12px; border: 1px dashed #ccc; text-align: center;">
-                <p style="color: #666; margin: 0;">Ningún conjunto de datos coincide con los criterios seleccionados.</p>
-            </div>
-        `;
+        if (emptyState) emptyState.style.display = 'flex'; // Mostramos tu diseño oficial
         return;
     }
+
+    if (emptyState) emptyState.style.display = 'none'; // Lo ocultamos si hay datos
 
     textoResultados.innerHTML = `<strong>${listaItems.length}</strong> conjuntos encontrados`;
     

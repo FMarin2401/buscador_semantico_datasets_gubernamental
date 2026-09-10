@@ -1,6 +1,8 @@
 document.addEventListener("DOMContentLoaded", () => {
     const btnAumentar = document.getElementById("btnAumentar");
     const btnDisminuir = document.getElementById("btnDisminuir");
+    const btnMenu = document.getElementById("btnMenuMovil");
+    const navLinks = document.querySelector(".nav-links");
     
     let currentSize = parseFloat(localStorage.getItem("portalFontSize")) || 100;
     
@@ -30,4 +32,17 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         });
     }
+
+    if (btnMenu && navLinks) {
+        btnMenu.addEventListener("click", () => {
+            // Alternar la clase activo
+            navLinks.classList.toggle("activo");
+            
+            // Cambiar el ícono (Hamburguesa a X)
+            const estaAbierto = navLinks.classList.contains("activo");
+            btnMenu.innerHTML = estaAbierto ? "✕" : "☰";
+            btnMenu.setAttribute("aria-expanded", estaAbierto);
+        });
+    }
+
 });

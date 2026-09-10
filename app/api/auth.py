@@ -6,12 +6,15 @@ from jose import JWTError, jwt
 from pydantic import BaseModel
 from dotenv import load_dotenv
 
-
 router = APIRouter(tags=["Autenticación"])
 
-# Configuración de seguridad JWT
 load_dotenv()
+
+# Configuración de seguridad JWT y Credenciales
 SECRET_KEY = os.getenv("SECRET_KEY", "fallback-inseguro")
+ADMIN_USER = os.getenv("ADMIN_USER")
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD")
+
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
@@ -35,7 +38,14 @@ class CredencialesAdmin(BaseModel):
 
 @router.post("/api/login")
 def login_admin(credenciales: CredencialesAdmin):
-    if credenciales.usuario == "admin" and credenciales.password == "admin123":
+    # Validamos que las variables de entorno existan por seguridad
+    if not ADMIN_USER or not ADMIN_PASSWORD:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error de configuración del servidor: Faltan credenciales en el entorno."
+        )
+
+    if credenciales.usuario == ADMIN_USER and credenciales.password == ADMIN_PASSWORD:
         tiempo_expiracion = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
         expira_en = datetime.utcnow() + tiempo_expiracion
         

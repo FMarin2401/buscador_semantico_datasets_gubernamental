@@ -17,6 +17,16 @@ body {
     color: var(--text-dark);
 }
 
+.btn-menu-movil {
+    display: none;
+    background: none;
+    border: none;
+    font-size: 1.8rem;
+    color: var(--blue-dark);
+    cursor: pointer;
+    margin-left: 10px;
+}
+
 .sr-only {
     position: absolute;
     width: 1px;
@@ -1087,6 +1097,15 @@ ul.nav-links {
    7. DISEÑO RESPONSIVO (MÓVILES)
    */
 @media (max-width: 768px) {
+
+    .btn-menu-movil {
+        display: block;
+    }
+
+    .badge-transparencia {
+        display: none;
+    }
+
     .main-nav {
         padding: 15px 10px 0;
     }
@@ -1102,14 +1121,29 @@ ul.nav-links {
     }
 
     .nav-links {
-        display: flex;
-        gap: 20px;
-        font-size: 0.95rem;
-        overflow-x: auto;
-        white-space: nowrap;
-        padding-bottom: 12px;
+        display: none; /* Oculto por defecto */
+        flex-direction: column;
         width: 100%;
-        scrollbar-width: none;
+        padding: 0;
+        margin-top: 15px;
+        border-top: 1px solid #eaeaea;
+    }
+
+    /* Clase que inyectará JavaScript para mostrar el menú */
+    .nav-links.activo {
+        display: flex !important;
+        animation: fadeIn 0.2s ease;
+    }
+
+    .nav-links li {
+        width: 100%;
+        text-align: center;
+    }
+
+    .nav-links a {
+        display: block;
+        padding: 15px;
+        border-radius: 0;
     }
 
     .nav-links::-webkit-scrollbar {
@@ -1206,6 +1240,10 @@ ul.nav-links {
     9. EMPTY STATES
 */
 .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
     text-align: center;
     background: white;
     border: 2px dashed #eaeaea;
