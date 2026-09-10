@@ -43,7 +43,8 @@ for index, row in df_catalogo.iterrows():
         "dependencia": row["dependencia"],
         "categoria": row["categoria"],
         "descripcion": row["descripcion"],
-        "fecha_actualizacion": fecha_actual
+        "fecha_actualizacion": fecha_actual,
+        "archivo_original": row["archivo_original"]
     })
     print(f"Procesado: {row['titulo']} -> Categoría: {row['categoria']}")
 

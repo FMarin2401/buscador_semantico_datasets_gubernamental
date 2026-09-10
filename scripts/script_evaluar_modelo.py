@@ -130,11 +130,11 @@ def evaluar_ground_truth():
                 
                 encontrado = False
                 for res in resultados:
-                    # Comparamos si el ID del archivo o el nombre recomendado hace match con el target
-                    dataset_id = res.get("id", "")
-                    dataset_nombre = res.get("dataset_recomendado", "").lower()
+                    # Normalizamos ambos lados quitando guiones bajos y espacios para que coincidan seguro
+                    meta_archivo = res.get("archivo_original", "").replace("_", " ").replace(".csv", "").lower()
+                    target_limpio = target.replace("_", " ").replace(".csv", "").lower()
                     
-                    if target in dataset_id or target in dataset_nombre:
+                    if target_limpio in meta_archivo or meta_archivo in target_limpio:
                         encontrado = True
                         break
                 

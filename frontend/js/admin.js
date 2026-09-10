@@ -1,4 +1,23 @@
 // Verificar si existe el token JWT antes de dejar ver el panel
+function verificarSesionOirHistorial() {
+    const token = localStorage.getItem("authToken");
+    if (!token) {
+        // Redirección dura y inmediata limpiando el historial si es posible
+        window.location.replace("/login.html");
+        return;
+    }
+}
+
+verificarSesionOirHistorial();
+
+window.addEventListener("pageshow", (event) => {
+    // Si viene del caché (botón atrás), forzamos recarga completa del navegador
+    if (event.persisted) {
+        window.location.reload();
+    }
+});
+
+// Verificar si existe el token JWT antes de dejar ver el panel
 const token = localStorage.getItem("authToken");
 if (!token) {
     window.location.href = "/login.html";

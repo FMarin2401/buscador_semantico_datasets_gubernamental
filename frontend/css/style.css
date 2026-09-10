@@ -125,22 +125,6 @@ ul.nav-links {
     text-decoration: underline;
 }
 
-.btn-admin-footer {
-    display: inline-block;
-    background: rgba(255, 255, 255, 0.1);
-    color: white;
-    padding: 10px 20px;
-    border-radius: 8px;
-    text-decoration: none;
-    font-size: 0.9rem;
-    transition: background 0.2s;
-    border: 1px solid rgba(255,255,255,0.2);
-}
-
-.btn-admin-footer:hover {
-    background: rgba(255, 255, 255, 0.2);
-}
-
 .footer-bottom {
     max-width: 1200px;
     margin: 0 auto;
@@ -1157,6 +1141,36 @@ ul.nav-links {
         padding: 0 10px;
     }
 
+    .search-box, .hero-search {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        width: 100%;
+        max-width: 100%;
+        padding: 4px 4px 4px 12px; /* Espacio a la izquierda para la lupa */
+        box-sizing: border-box;
+    }
+
+    /* Reducimos un poco el texto de placeholder o ajustamos el input para que no sature */
+    .search-box input, .hero-search input {
+        flex: 1;
+        border: none;
+        outline: none;
+        font-size: 0.9rem;
+        padding: 8px 4px;
+        min-width: 0; /* Vital para que el flexbox no rompa el input en pantallas chicas */
+        background: transparent;
+    }
+
+    /* Hacemos el botón un poco más compacto para que quepa bien al lado */
+    .search-box button, .hero-search button {
+        padding: 10px 16px;
+        font-size: 0.9rem;
+        border-radius: 20px;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+
     .sort-wrapper {
         justify-content: space-between;
     }
@@ -1217,11 +1231,6 @@ ul.nav-links {
     .footer-logo {
         display: block;
         margin: 0 auto 15px;
-    }
-
-    .btn-admin-footer {
-        display: block;
-        text-align: center;
     }
 }
 
