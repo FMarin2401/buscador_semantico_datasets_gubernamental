@@ -2,6 +2,9 @@
  * 1. CONFIGURACIÓN Y ESTADO GLOBAL
  */
 let resultadosOriginales = [];
+let paginaActual = 1;
+const elementosPorPagina = 10;
+let listaEnMemoria = [];
 
 /**
  * 2. INICIALIZACIÓN (WINDOW.ONLOAD)
@@ -216,27 +219,43 @@ function actualizarContadores(lista) {
 }
 
 function renderizarTarjetas(listaItems) {
+    listaEnMemoria = listaItems;
+    paginaActual = 1;
+    mostrarPaginaActual();
+}
+
+function mostrarPaginaActual() {
     const contenedor = document.getElementById('contenedor-tarjetas');
     const textoResultados = document.getElementById('texto-resultados');
     const emptyState = document.getElementById('emptyState');
+    const paginacionContenedor = document.getElementById('paginacionContenedor');
     
     if (!contenedor || !textoResultados) return;
     
     contenedor.innerHTML = ''; 
     
-    if (listaItems.length === 0) {
+    if (listaEnMemoria.length === 0) {
         textoResultados.innerHTML = `<strong>0</strong> conjuntos encontrados`;
-        if (emptyState) emptyState.style.display = 'flex'; // Mostramos tu diseño oficial
+        if (emptyState) emptyState.style.display = 'flex';
+        if (paginacionContenedor) paginacionContenedor.style.display = 'none';
         return;
     }
 
-    if (emptyState) emptyState.style.display = 'none'; // Lo ocultamos si hay datos
+    if (emptyState) emptyState.style.display = 'none';
+    textoResultados.innerHTML = `<strong>${listaEnMemoria.length}</strong> conjuntos encontrados`;
 
-    textoResultados.innerHTML = `<strong>${listaItems.length}</strong> conjuntos encontrados`;
+    // Calcular límites de la paginación
+    const totalPaginas = Math.ceil(listaEnMemoria.length / elementosPorPagina);
+    if (paginaActual > totalPaginas) paginaActual = totalPaginas;
+    if (paginaActual < 1) paginaActual = 1;
+
+    const inicio = (paginaActual - 1) * elementosPorPagina;
+    const fin = inicio + elementosPorPagina;
+    const itemsPagina = listaEnMemoria.slice(inicio, fin);
     
     let htmlContent = '';
     
-    listaItems.forEach(item => {
+    itemsPagina.forEach(item => {
         const tituloSeguro = item.dataset_recomendado.replace(/'/g, "\\'");
         const descripcionSegura = item.descripcion || "Conjunto de datos oficial disponible para consulta y descarga municipal.";
         
@@ -276,7 +295,59 @@ function renderizarTarjetas(listaItems) {
     });
     
     contenedor.innerHTML = htmlContent;
+
+    if (paginacionContenedor) {
+        if (totalPaginas > 1) {
+            paginacionContenedor.style.display = 'flex';
+            
+            const btnAnterior = document.getElementById('btnPagAnterior');
+            const btnSiguiente = document.getElementById('btnPagSiguiente');
+            const contenedorNumeros = document.getElementById('numerosPaginacion');
+            
+            // Habilitar/Deshabilitar flechas
+            btnAnterior.disabled = paginaActual === 1;
+            btnSiguiente.disabled = paginaActual === totalPaginas;
+
+            // Limpiar y generar números de página
+            contenedorNumeros.innerHTML = '';
+            for (let i = 1; i <= totalPaginas; i++) {
+                const btnNum = document.createElement('button');
+                btnNum.type = 'button';
+                // Asignar clase 'active' si es la página actual
+                btnNum.className = `btn-num-pag ${i === paginaActual ? 'active' : ''}`;
+                btnNum.textContent = i;
+                
+                // Evento para saltar a la página específica
+                btnNum.addEventListener('click', () => {
+                    paginaActual = i;
+                    mostrarPaginaActual();
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                });
+                
+                contenedorNumeros.appendChild(btnNum);   
+            }
+        } else {
+            paginacionContenedor.style.display = 'none';
+        }
+    }
 }
+
+document.getElementById('btnPagAnterior')?.addEventListener('click', () => {
+    if (paginaActual > 1) {
+        paginaActual--;
+        mostrarPaginaActual();
+        window.scrollTo({ top: 0, behavior: 'smooth' }); // Sube suavemente al inicio
+    }
+});
+
+document.getElementById('btnPagSiguiente')?.addEventListener('click', () => {
+    const totalPaginas = Math.ceil(listaEnMemoria.length / elementosPorPagina);
+    if (paginaActual < totalPaginas) {
+        paginaActual++;
+        mostrarPaginaActual();
+        window.scrollTo({ top: 0, behavior: 'smooth' }); // Sube suavemente al inicio
+    }
+});
 
 function verFichaDetalle(titulo, dependencia, fecha, idDataset) {
     document.getElementById('modalTitulo').textContent = titulo;
