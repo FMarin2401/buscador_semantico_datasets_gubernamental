@@ -130,6 +130,47 @@
         </section>
     </main>
 </div>
+
+<!-- Modal de Edición de Dataset -->
+<div id="modalEditar" class="modal-overlay" style="display: none;">
+    <div class="modal-card">
+        <h3>Editar Metadatos del Dataset</h3>
+        <form id="formEditarDataset">
+            <input type="hidden" id="editDatasetId">
+            
+            <div class="filter-group">
+                <label for="editTitulo" class="admin-label">TÍTULO</label>
+                <input type="text" id="editTitulo" class="form-input" required>
+            </div>
+
+            <div class="filter-group">
+                <label for="editDescripcion" class="admin-label">DESCRIPCIÓN</label>
+                <textarea id="editDescripcion" class="form-input" rows="3" required></textarea>
+            </div>
+
+            <div class="filter-group">
+                <label for="editDependencia" class="admin-label">DEPENDENCIA</label>
+                <select id="editDependencia" class="form-input" required>
+                    <option value="Seguridad">Seguridad</option>
+                    <option value="Salud Pública">Salud Pública</option>
+                    <option value="Educación">Educación</option>
+                    <option value="Movilidad y Transporte">Movilidad y Transporte</option>
+                    <option value="Desarrollo Económico">Desarrollo Económico</option>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label for="editCategoria" class="admin-label">CATEGORÍA</label>
+                <input type="text" id="editCategoria" class="form-input" required>
+            </div>
+
+            <div class="modal-actions">
+                <button type="button" class="btn-secondary" id="cerrarModalEditar">Cancelar</button>
+                <button type="submit" class="btn-primary">Guardar Cambios</button>
+            </div>
+        </form>
+    </div>
+</div>
 {% endblock %}
 
 {% block scripts %}

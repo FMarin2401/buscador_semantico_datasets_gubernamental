@@ -9,6 +9,7 @@ import hashlib
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile, logger, status, Depends
 from fastapi.responses import FileResponse, Response
+from pydantic import BaseModel
 
 # Módulos internos del proyecto
 from app.database import coleccion, guardar_datasets, obtener_todos_datasets
@@ -17,6 +18,12 @@ from app.api.auth import verificar_token
 
 router = APIRouter(tags=["Gestión y Descarga de Datasets"])
 logger = logging.getLogger(__name__)
+
+class DatasetActualizar(BaseModel):
+    titulo: str
+    descripcion: str
+    dependencia: str
+    categoria: str
 
 @router.get("/api/admin/datasets")
 def listar_datasets_admin():
@@ -110,6 +117,57 @@ async def publicar_dataset(
         "id": id_unico,
         "archivo_guardado": archivo.filename
     }
+
+@router.put("/api/admin/datasets/{id_dataset}")
+def actualizar_dataset(
+    id_dataset: str, 
+    datos: DatasetActualizar,
+    usuario_autenticado: str = Depends(verificar_token)
+):
+    # Bitácora de auditoría
+    logger.info(f"[BITACORA AUDITORIA] El administrador '{usuario_autenticado}' actualizó los metadatos del dataset con ID: {id_dataset}")
+
+    try:
+        # Verificamos si el dataset existe en la colección antes de actualizar
+        item_actual = coleccion.get(ids=[id_dataset], include=["metadatas", "documents"])
+        if not item_actual or not item_actual.get("ids"):
+            raise HTTPException(status_code=404, detail="Dataset no encontrado en la base de datos.")
+
+        meta_vieja = item_actual["metadatas"][0] if item_actual["metadatas"] else {}
+        
+        hash_original = meta_vieja.get("hash_sha256", "")
+        fecha_actual = datetime.now().strftime("%Y-%m-%d")
+
+        # Nuevos metadatos
+        nuevo_metadata = {
+            "dependencia": datos.dependencia,
+            "categoria": datos.categoria,
+            "descripcion": datos.descripcion,
+            "fecha_actualizacion": fecha_actual,
+            "hash_sha256": hash_original
+        }
+
+        # Si cambió el título, regeneramos el embedding del documento para que la búsqueda semántica no pierda sintonía
+        texto_completo = f"{datos.titulo}. {datos.descripcion} Dependencia: {datos.dependencia}"
+        nuevo_vector = generar_embedding(texto_completo)
+
+        # Actualizamos en ChromaDB
+        coleccion.update(
+            ids=[id_dataset],
+            documents=[datos.titulo],
+            embeddings=[nuevo_vector],
+            metadatas=[nuevo_metadata]
+        )
+
+    except Exception as e:
+        if isinstance(e, HTTPException):
+            raise e
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Error al actualizar el dataset en la base vectorial: {str(e)}"
+        )
+    
+    return {"mensaje": "Dataset actualizado exitosamente", "id": id_dataset}
 
 @router.delete("/api/admin/datasets/{id_dataset}")
 def eliminar_dataset(

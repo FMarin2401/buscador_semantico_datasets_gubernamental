@@ -37,24 +37,44 @@ document.addEventListener('DOMContentLoaded', () => {
     const formSubir = document.getElementById('formSubirDataset');
     if (formSubir) formSubir.addEventListener('submit', manejarSubidaDataset);
 
-    // 3. Configurar acciones en la tabla de gestión (botón borrar)
+    // 3. Configurar acciones en la tabla de gestión (botón borrar o editar)
     const tablaCuerpo = document.getElementById('tablaCuerpoDatasets');
     if (tablaCuerpo) {
         tablaCuerpo.addEventListener('click', function(e) {
             if (e.target.classList.contains('btn-borrar-dataset')) {
                 const idDataset = e.target.getAttribute('data-id');
                 eliminarDataset(idDataset);
+            } else if (e.target.classList.contains('btn-editar-dataset')) {
+                const id = e.target.getAttribute('data-id');
+                const titulo = e.target.getAttribute('data-titulo');
+                const descripcion = e.target.getAttribute('data-descripcion');
+                const dependencia = e.target.getAttribute('data-dependencia');
+                const categoria = e.target.getAttribute('data-categoria');
+                abrirModalEdicion(id, titulo, descripcion, dependencia, categoria);
             }
         });
     }
 
-    // 4. Configurar botón de cerrar sesión (si agregaste uno en tu HTML con id="btnCerrarSesion")
+    // 4. Configurar eventos del Modal de Edición
+    const btnCerrarModal = document.getElementById('cerrarModalEditar');
+    if (btnCerrarModal) {
+        btnCerrarModal.addEventListener('click', () => {
+            document.getElementById('modalEditar').style.display = 'none';
+        });
+    }
+
+    const formEditar = document.getElementById('formEditarDataset');
+    if (formEditar) {
+        formEditar.addEventListener('submit', manejarEdicionDataset);
+    }
+
+    // 5. Configurar botón de cerrar sesión
     const btnCerrar = document.getElementById('btnCerrarSesion');
     if (btnCerrar) {
         btnCerrar.addEventListener('click', cerrarSesion);
     }
 
-    // 5. Cargar métricas del dashboard al iniciar
+    // 6. Cargar métricas del dashboard al iniciar
     renderizarDashboard();
 });
 
@@ -138,7 +158,7 @@ async function renderizarDashboard() {
                     }]
                 },
                 options: {
-                    indexAxis: 'y', // <--- Esto hace que las barras sean horizontales
+                    indexAxis: 'y',
                     responsive: true,
                     plugins: {
                         legend: { display: false }
@@ -150,10 +170,9 @@ async function renderizarDashboard() {
             });
         }
 
-        // 4. Renderizar Bitácora de Auditoría (Simulada con base en los últimos datasets o logs)
+        // 4. Renderizar Bitácora de Auditoría
         const listaAuditoria = document.getElementById('listaAuditoria');
         if (listaAuditoria) {
-            // Tomamos los últimos 4 datasets agregados para simular los eventos recientes de auditoría
             const ultimos = data.resultados.slice(-4).reverse();
             let auditHtml = '';
             
@@ -247,7 +266,13 @@ async function cargarCatalogoAdmin() {
                     <td><strong>${item.titulo}</strong></td>
                     <td>${item.dependencia}</td>
                     <td>${item.fecha}</td>
-                    <td class="text-center">
+                    <td class="text-center" style="display: flex; gap: 8px; justify-content: center;">
+                        <button class="btn-editar-dataset btn-secondary" 
+                            data-id="${item.id}" 
+                            data-titulo="${item.titulo}" 
+                            data-descripcion="${item.descripcion || ''}" 
+                            data-dependencia="${item.dependencia}" 
+                            data-categoria="${item.categoria}">Editar</button>
                         <button class="btn-borrar-dataset btn-danger" data-id="${item.id}">Borrar</button>
                     </td>
                 </tr>
@@ -256,6 +281,51 @@ async function cargarCatalogoAdmin() {
         });
     } catch (error) {
         tbody.innerHTML = '<tr><td colspan="4" class="text-center msg-danger">Error al conectar con la base de datos.</td></tr>';
+    }
+}
+
+// Abrir modal de edición con los datos actuales
+function abrirModalEdicion(id, titulo, descripcion, dependencia, categoria) {
+    document.getElementById('editDatasetId').value = id;
+    document.getElementById('editTitulo').value = titulo;
+    document.getElementById('editDescripcion').value = descripcion;
+    document.getElementById('editDependencia').value = dependencia;
+    document.getElementById('editCategoria').value = categoria;
+    
+    document.getElementById('modalEditar').style.display = 'flex';
+}
+
+// Enviar cambios de edición por PUT
+async function manejarEdicionDataset(evento) {
+    evento.preventDefault();
+    
+    const id = document.getElementById('editDatasetId').value;
+    const titulo = document.getElementById('editTitulo').value;
+    const descripcion = document.getElementById('editDescripcion').value;
+    const dependencia = document.getElementById('editDependencia').value;
+    const categoria = document.getElementById('editCategoria').value;
+
+    try {
+        const respuesta = await fetch(`${CONFIG.API_BASE_URL}/api/admin/datasets/${id}`, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            },
+            body: JSON.stringify({ titulo, descripcion, dependencia, categoria })
+        });
+
+        if (respuesta.ok) {
+            document.getElementById('modalEditar').style.display = 'none';
+            alert("¡Dataset actualizado exitosamente!");
+            cargarCatalogoAdmin();
+            renderizarDashboard();
+        } else {
+            const data = await respuesta.json();
+            alert(`Error al actualizar: ${data.detail || 'Desconocido'}`);
+        }
+    } catch (error) {
+        alert("Error de conexión con el servidor al intentar actualizar.");
     }
 }
 
@@ -274,6 +344,7 @@ async function eliminarDataset(idDataset) {
 
         if (respuesta.ok) {
             cargarCatalogoAdmin();
+            renderizarDashboard();
         } else {
             const data = await respuesta.json();
             alert(`Error: ${data.detail}`);

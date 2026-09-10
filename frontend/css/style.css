@@ -1076,6 +1076,27 @@ ul.nav-links {
     border: 1px solid #ddd;
 }
 
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.btn-secondary {
+    background: #e0e0e0;
+    color: #333;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.btn-secondary:hover {
+    background: #d0d0d0;
+}
+
 .modal-footer {
     margin-top: 25px;
     text-align: right;
