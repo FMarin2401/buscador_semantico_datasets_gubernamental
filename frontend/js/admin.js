@@ -97,47 +97,77 @@ async function renderizarDashboard() {
         
         if (!data.resultados) return;
 
-        // Actualizar indicador KPI de total publicados
+        // 1. Actualizar indicador KPI de total publicados
         const kpiTotal = document.getElementById('kpi-total');
         if (kpiTotal) {
             kpiTotal.textContent = data.resultados.length;
         }
 
-        // Agrupar datasets por dependencia para la gráfica
-        const conteo = {};
+        // 2. Calcular y actualizar KPI de dependencias únicas
+        const dependenciasUnicas = new Set(data.resultados.map(item => item.dependencia));
+        const kpiDep = document.getElementById('kpi-dependencias');
+        if (kpiDep) {
+            kpiDep.textContent = dependenciasUnicas.size;
+        }
+
+        // 3. Agrupar datasets por CATEGORÍA para el gráfico de barras horizontales
+        const conteoCategorias = {};
         data.resultados.forEach(item => {
-            conteo[item.dependencia] = (conteo[item.dependencia] || 0) + 1;
+            const cat = item.categoria || "General";
+            conteoCategorias[cat] = (conteoCategorias[cat] || 0) + 1;
         });
 
         // Validar si el elemento canvas existe antes de instanciar Chart.js
-        const canvasElement = document.getElementById('graficaDependencias');
-        if (!canvasElement) return;
+        const canvasElement = document.getElementById('graficaCategorias');
+        if (canvasElement) {
+            const ctx = canvasElement.getContext('2d');
+            
+            if (window.miGraficaBarras instanceof Chart) {
+                window.miGraficaBarras.destroy();
+            }
 
-        const ctx = canvasElement.getContext('2d');
-        
-        // Destruir gráfica previa si ya existía para evitar duplicados al cambiar de pestaña
-        if (window.miGraficaDona instanceof Chart) {
-            window.miGraficaDona.destroy();
-        }
-
-        window.miGraficaDona = new Chart(ctx, {
-            type: 'doughnut',
-            data: {
-                labels: Object.keys(conteo),
-                datasets: [{
-                    data: Object.values(conteo),
-                    backgroundColor: ['#004b87', '#005eb8', '#4b9cd3', '#81b2e2', '#e6f0fa']
-                }]
-            },
-            options: { 
-                responsive: true,
-                plugins: {
-                    legend: {
-                        position: 'bottom'
+            window.miGraficaBarras = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(conteoCategorias),
+                    datasets: [{
+                        label: 'Datasets por Categoría',
+                        data: Object.values(conteoCategorias),
+                        backgroundColor: '#004b87',
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    indexAxis: 'y', // <--- Esto hace que las barras sean horizontales
+                    responsive: true,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: { beginAtZero: true, ticks: { stepSize: 1 } }
                     }
                 }
-            }
-        });
+            });
+        }
+
+        // 4. Renderizar Bitácora de Auditoría (Simulada con base en los últimos datasets o logs)
+        const listaAuditoria = document.getElementById('listaAuditoria');
+        if (listaAuditoria) {
+            // Tomamos los últimos 4 datasets agregados para simular los eventos recientes de auditoría
+            const ultimos = data.resultados.slice(-4).reverse();
+            let auditHtml = '';
+            
+            ultimos.forEach(item => {
+                auditHtml += `
+                    <li>
+                        <span class="audit-action">Dataset registrado</span>
+                        <small class="audit-target">${item.titulo.substring(0, 25)}...</small>
+                    </li>
+                `;
+            });
+            listaAuditoria.innerHTML = auditHtml || '<li>Sin registros recientes</li>';
+        }
+
     } catch (error) {
         console.error("Error al cargar las métricas del dashboard:", error);
     }

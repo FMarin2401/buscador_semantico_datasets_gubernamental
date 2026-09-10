@@ -29,16 +29,44 @@
             <h2>Resumen Operativo</h2>
             <p>Estado actual del catálogo de datos abiertos del municipio.</p>
             
-            <div class="dashboard-kpis">
+            <div class="kpi-container-grid">
                 <div class="kpi-card">
-                    <h3 class="kpi-title">Total Publicados</h3>
-                    <p id="kpi-total" class="kpi-value">-</p>
+                    <span class="kpi-label">TOTAL PUBLICADOS</span>
+                    <span id="kpi-total" class="kpi-value">0</span>
+                </div>
+                <div class="kpi-card">
+                    <span class="kpi-label">DEPENDENCIAS</span>
+                    <span id="kpi-dependencias" class="kpi-value">0</span>
+                </div>
+                <div class="kpi-card">
+                    <span class="kpi-label">ESTADO DEL SISTEMA</span>
+                    <span class="kpi-status-online">🟢 Operativo</span>
                 </div>
             </div>
 
-            <div class="dashboard-chart-container">
-                <h3 class="dashboard-chart-title">Distribución por Secretaría</h3>
-                <canvas id="graficaDependencias"></canvas>
+            <div class="dashboard-grid">
+                <div class="card-grafica">
+                    <h3>Distribución por Categoría</h3>
+                    <canvas id="graficaCategorias"></canvas>
+                </div>
+                
+                <div class="card-derecha-admin">
+                    <div class="card-sistema-info">
+                        <h3>Salud de los Servicios</h3>
+                        <ul class="system-health-list">
+                            <li><span>Motor Semántico</span> <strong class="text-success">Activo</strong></li>
+                            <li><span>ChromaDB</span> <strong class="text-success">Conectada</strong></li>
+                            <li><span>JWT</span> <strong class="text-success">Blindada</strong></li>
+                        </ul>
+                    </div>
+                    
+                    <div class="card-auditoria-info">
+                        <h3>Últimas Acciones</h3>
+                        <ul id="listaAuditoria" class="audit-log-list">
+                            <li><small class="text-muted">Cargando bitácora...</small></li>
+                        </ul>
+                    </div>
+                </div>
             </div>
         </section>
 
@@ -107,4 +135,7 @@
 {% block scripts %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="/js/admin.js"></script>
+{% endblock %}
+
+{% block footer %}
 {% endblock %}
