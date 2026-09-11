@@ -2,7 +2,7 @@ import logging
 from fastapi import APIRouter
 
 # Módulos internos del proyecto
-from app.database import buscar_similares, coleccion
+from app.db_chroma import buscar_similares, coleccion
 from app.nlp_model import generar_embedding
 
 router = APIRouter(tags=["Búsqueda Semántica"])

@@ -35,10 +35,13 @@ Plataforma de búsqueda inteligente y gestión de datasets abiertos para el Muni
    Crear un archivo `.env` en la raíz del proyecto e inyectar la clave del modelo:
    ```text
    GEMINI_API_KEY=tu_api_key_aqui
+   SECRET_KEY=tu_llave_secreta_jwt
+   ADMIN_USER=admin_leon
+   ADMIN_PASSWORD=tu_contraseña_segura
    ```
 
 5. Iniciar el servidor local:
    ```bash
    uvicorn app.main:app 
    ```
-   http://127.0.0.1:8000
+  Accede a la plataforma en: http://127.0.0.1:8000

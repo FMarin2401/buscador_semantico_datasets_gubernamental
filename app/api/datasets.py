@@ -12,7 +12,7 @@ from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel
 
 # Módulos internos del proyecto
-from app.database import coleccion, guardar_datasets, obtener_todos_datasets
+from app.db_chroma import coleccion, guardar_datasets, obtener_todos_datasets
 from app.nlp_model import generar_embedding
 from app.api.auth import verificar_token
 

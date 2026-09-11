@@ -6,7 +6,7 @@ import uuid
 import shutil
 import pandas as pd
 from datetime import datetime
-from app.database import guardar_datasets
+from app.db_chroma import guardar_datasets
 from app.nlp_model import generar_embedding
 
 # Rutas 

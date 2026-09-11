@@ -10,6 +10,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from app.api import pages, search, datasets, auth
+from passlib.context import CryptContext
+from app.db_usuarios.conexion import engine, Base, SessionLocal
+from app.db_usuarios.modelos import UsuarioModel
 
 # Configuración de logging para consola y archivo para auditoria
 os.makedirs("logs", exist_ok=True)
@@ -46,7 +49,31 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Configuración de Passlib para cifrar la contraseña inicial
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+# Crear la tabla de SQLite automáticamente
+Base.metadata.create_all(bind=engine)
+
 # Movemos el monitor de estado
 @app.get("/api/status")
 def status_check():
     return {"mensaje": "Servidor en línea."}
+
+@app.on_event("startup")
+def inicializar_admin():
+    db = SessionLocal()
+    admin_existente = db.query(UsuarioModel).first()
+    if not admin_existente:
+        user_env = os.getenv("ADMIN_USER", "admin")
+        pass_env = os.getenv("ADMIN_PASSWORD", "secreto123")
+        
+        nuevo_admin = UsuarioModel(
+            username=user_env,
+            password_hash=pwd_context.hash(pass_env),
+            rol="admin"
+        )
+        db.add(nuevo_admin)
+        db.commit()
+        print("¡Administrador inicial registrado en SQLite desde el .env!")
+    db.close()
