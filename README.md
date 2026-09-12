@@ -1,18 +1,22 @@
-# Buscador Semántico De Datasets Gubernamental - Prototipo Municipio de León
+# Buscador Semántico de Datasets Gubernamentales - Municipio de León
 
-Plataforma de búsqueda inteligente y gestión de datasets abiertos para el Municipio de León, Guanajuato. Utiliza modelos de procesamiento de lenguaje natural (NLP) para ejecutar búsquedas semánticas, superando las limitaciones de las consultas tradicionales por coincidencias exactas.
+Plataforma de búsqueda inteligente, analítica y gestión de datos abiertos para el Municipio de León, Guanajuato. Utiliza modelos de procesamiento de lenguaje natural (NLP) y bases de datos vectoriales para ejecutar búsquedas semánticas densas, superando las limitaciones de la coincidencia léxica exacta ante lenguaje coloquial y modismos ciudadanos.
 
 ## Características Principales
-* **Búsqueda Semántica:** Integración de embeddings matemáticos para devolver conjuntos de datos basados en la intención y el contexto del ciudadano.
-* **Pipeline de Ingesta Automatizado:** Scripts para análisis masivo de CSVs, clasificación automática de dependencias mediante IA y generación de metadatos.
-* **Exportación Dinámica (API):** Conversión de datasets en tiempo real desde CSV hacia JSON, XML y GeoJSON.
-* **Arquitectura Vectorial:** Implementación de ChromaDB para almacenamiento de alta dimensión y consulta eficiente de similitud.
+* **Búsqueda Semántica Densa:** Transformación de consultas ciudadanas y metadatos en embeddings continuos para recuperar datasets según su contexto e intención real.
+* **Pipeline de Ingesta Inteligente:** Automatización con IA (Google Gemini) para la extracción de esquemas, categorización por secretarías y generación estandarizada de metadatos.
+* **Centro de Mando Administrativo:** Dashboard con métricas clave (KPIs), visualizaciones interactivas de distribución por dependencia y buzón ciudadano integrado.
+* **Control de Acceso Basado en Roles (RBAC):** Autenticación JWT con expiración estricta y gestión de funcionarios (`admin` y `editor`) con contraseñas cifradas en bcrypt.
+* **Auditoría e Integridad Referencial:** Registro inmutable de eventos administrativos con descarga de reportes en CSV, borrado en cascada y prevención de registros huérfanos.
+* **Exportación Dinámica Multiformato:** Conversión de datasets al vuelo desde CSV hacia JSON, XML y GeoJSON (detección automática de geometrías).
+* **Arquitectura Vectorial y Relacional:** Persistencia híbrida mediante ChromaDB para la indexación semántica y SQLite/SQLAlchemy para auditoría, métricas y usuarios.
 
 ## Stack Tecnológico
-* **Core & Backend:** Python, FastAPI, Pandas, LXML.
-* **Inteligencia Artificial:** Sentence Transformers, Google Generative AI (Modelos Flash).
-* **Almacenamiento:** ChromaDB (Base de datos vectorial).
-* **Frontend:** HTML5, CSS3, Vanilla JavaScript.
+* **Backend & API:** Python, FastAPI, Pandas, LXML.
+* **Inteligencia Artificial & NLP:** Sentence Transformers (`paraphrase-multilingual-MiniLM-L12-v2`), Google Generative AI (Gemini).
+* **Bases de Datos & Persistencia:** ChromaDB (Vectorial), SQLite con SQLAlchemy (Relacional).
+* **Seguridad & Autenticación:** OAuth2 / JWT (PyJWT), Passlib (Bcrypt).
+* **Frontend:** HTML5 semántico, CSS3 (Mobile-First, Flexbox/Grid), Vanilla JavaScript (Arquitectura desacoplada sin frameworks pesados), Chart.js.
 
 ## Instalación y Ejecución
 
@@ -45,3 +49,4 @@ Plataforma de búsqueda inteligente y gestión de datasets abiertos para el Muni
    uvicorn app.main:app 
    ```
   Accede a la plataforma en: http://127.0.0.1:8000
+  Documentación interactiva de la API (Swagger UI): http://127.0.0.1:8000/docs

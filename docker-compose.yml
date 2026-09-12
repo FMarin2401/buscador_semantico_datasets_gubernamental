@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  portal-datos-leon:
+    build: .
+    container_name: portal_datos_leon
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      # Persistir la base vectorial ChromaDB
+      - ./data/chroma_db:/app/data/chroma_db
+      # Persistir los archivos CSV originales
+      - ./data/raw:/app/data/raw
+      # Persistir la base de datos relacional (usuarios, bitácora, descargas)
+      - ./data/usuarios.db:/app/data/usuarios.db
+      # Persistir logs de auditoría física
+      - ./logs:/app/logs
