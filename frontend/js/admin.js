@@ -1,6 +1,28 @@
 // Definir el token global para todas las peticiones
 const token = localStorage.getItem("authToken");
 
+// Helper para mostrar notificaciones flotantes temporales
+function mostrarToast(mensaje, tipo = "info", duracion = 3500) {
+    let contenedor = document.getElementById("toastContainer");
+    if (!contenedor) {
+        contenedor = document.createElement("div");
+        contenedor.id = "toastContainer";
+        contenedor.className = "toast-container";
+        document.body.appendChild(contenedor);
+    }
+
+    const toast = document.createElement("div");
+    toast.className = `toast toast-${tipo}`;
+    toast.textContent = mensaje;
+
+    contenedor.appendChild(toast);
+
+    setTimeout(() => {
+        toast.classList.add("toast-salida");
+        setTimeout(() => toast.remove(), 300);
+    }, duracion);
+}
+
 // Interceptor global para capturar tokens expirados (HTTP 401)
 const fetchOriginal = window.fetch;
 window.fetch = async (...argumentos) => {
@@ -8,8 +30,10 @@ window.fetch = async (...argumentos) => {
     
     if (respuesta.status === 401) {
         localStorage.removeItem("authToken");
-        alert("Tu sesión ha expirado por seguridad. Por favor, inicia sesión nuevamente.");
-        window.location.replace("/login.html");
+        mostrarToast("Tu sesión ha expirado por seguridad.", "error");
+        setTimeout(() => {
+            window.location.replace("/login.html");
+        }, 1200);
     }
     
     return respuesta;
@@ -345,17 +369,20 @@ async function manejarSubidaDataset(evento) {
         if (respuesta.ok) {
             mensajeEstado.className = 'admin-mensaje msg-success';
             mensajeEstado.textContent = `¡Éxito! Dataset publicado (ID: ${data.id})`;
+            mostrarToast("¡Dataset publicado con éxito!", "success");
             document.getElementById('formSubirDataset').reset(); 
             poblarOpcionesDinamicas();
             renderizarDashboard();
         } else {
             mensajeEstado.className = 'admin-mensaje msg-danger';
             mensajeEstado.textContent = `Error: ${data.detail}`;
+            mostrarToast(data.detail || "Error al subir dataset.", "error");
         }
 
     } catch (error) {
         mensajeEstado.className = 'admin-mensaje msg-danger';
         mensajeEstado.textContent = "Error de conexión con el servidor.";
+        mostrarToast("Error de conexión con el servidor.", "error");
     }
 }
 
@@ -418,7 +445,6 @@ async function cargarCatalogoAdmin() {
         
         datasetsCatalogo = data.resultados || [];
         
-        // Mantener término de búsqueda si el input tiene contenido
         const inputBuscar = document.getElementById('inputBuscarAdmin');
         const termino = inputBuscar ? inputBuscar.value.toLowerCase().trim() : "";
         
@@ -436,6 +462,7 @@ async function cargarCatalogoAdmin() {
 
     } catch (error) {
         tbody.innerHTML = '<tr><td colspan="4" class="text-center msg-danger">Error al conectar con la base de datos.</td></tr>';
+        mostrarToast("Error al conectar con la base de datos.", "error");
     }
 }
 
@@ -535,6 +562,7 @@ async function cargarMensajesAdmin() {
 
     } catch (error) {
         tbody.innerHTML = '<tr><td colspan="5" class="text-center msg-danger">Error al conectar con la base de datos.</td></tr>';
+        mostrarToast("Error al cargar mensajes del buzón.", "error");
     }
 }
 
@@ -629,14 +657,15 @@ async function eliminarMensajeAdmin(idMensaje) {
         });
 
         if (respuesta.ok) {
+            mostrarToast("Mensaje eliminado del buzón.", "info");
             cargarMensajesAdmin();
             renderizarDashboard();
         } else {
             const data = await respuesta.json();
-            alert(`Error: ${data.detail || 'No se pudo eliminar el mensaje.'}`);
+            mostrarToast(data.detail || "No se pudo eliminar el mensaje.", "error");
         }
     } catch (error) {
-        alert("Error de conexión al intentar eliminar el mensaje.");
+        mostrarToast("Error de conexión al intentar eliminar el mensaje.", "error");
     }
 }
 
@@ -651,7 +680,7 @@ async function exportarBitacora() {
         });
 
         if (!respuesta.ok) {
-            alert("No se pudo generar el reporte de auditoría.");
+            mostrarToast("No se pudo generar el reporte de auditoría.", "error");
             return;
         }
 
@@ -665,8 +694,10 @@ async function exportarBitacora() {
         enlace.remove();
         window.URL.revokeObjectURL(urlDescarga);
 
+        mostrarToast("Descargando bitácora de auditoría...", "success");
+
     } catch (error) {
-        alert("Error de conexión al exportar la bitácora.");
+        mostrarToast("Error de conexión al exportar la bitácora.", "error");
     }
 }
 
@@ -702,6 +733,7 @@ async function cargarUsuariosAdmin() {
         });
     } catch (e) {
         tbody.innerHTML = '<tr><td colspan="3" class="text-center msg-danger">Error al cargar cuentas.</td></tr>';
+        mostrarToast("Error al cargar lista de usuarios.", "error");
     }
 }
 
@@ -727,16 +759,19 @@ async function manejarCrearUsuario(e) {
         if (resp.ok) {
             msg.className = "admin-mensaje msg-success";
             msg.textContent = "¡Funcionario registrado!";
+            mostrarToast("¡Funcionario registrado exitosamente!", "success");
             document.getElementById('formCrearUsuario').reset();
             cargarUsuariosAdmin();
             renderizarDashboard();
         } else {
             msg.className = "admin-mensaje msg-danger";
             msg.textContent = data.detail || "Error al crear cuenta.";
+            mostrarToast(data.detail || "Error al crear funcionario.", "error");
         }
     } catch (err) {
         msg.className = "admin-mensaje msg-danger";
         msg.textContent = "Error de red.";
+        mostrarToast("Error de conexión al registrar funcionario.", "error");
     }
 }
 
@@ -752,13 +787,14 @@ async function eliminarUsuarioAdmin(id) {
         const data = await resp.json();
 
         if (resp.ok) {
+            mostrarToast("Acceso de funcionario eliminado.", "info");
             cargarUsuariosAdmin();
             renderizarDashboard();
         } else {
-            alert(data.detail || "Error al eliminar.");
+            mostrarToast(data.detail || "Error al eliminar acceso.", "error");
         }
     } catch (e) {
-        alert("Error de conexión.");
+        mostrarToast("Error de conexión al dar de baja funcionario.", "error");
     }
 }
 
@@ -794,16 +830,16 @@ async function manejarEdicionDataset(evento) {
 
         if (respuesta.ok) {
             document.getElementById('modalEditar').style.display = 'none';
-            alert("¡Dataset actualizado exitosamente!");
+            mostrarToast("¡Dataset actualizado exitosamente!", "success");
             cargarCatalogoAdmin();
             poblarOpcionesDinamicas();
             renderizarDashboard();
         } else {
             const data = await respuesta.json();
-            alert(`Error al actualizar: ${data.detail || 'Desconocido'}`);
+            mostrarToast(data.detail || "Error al actualizar dataset.", "error");
         }
     } catch (error) {
-        alert("Error de conexión con el servidor al intentar actualizar.");
+        mostrarToast("Error de conexión al actualizar dataset.", "error");
     }
 }
 
@@ -818,15 +854,16 @@ async function eliminarDataset(idDataset) {
         });
 
         if (respuesta.ok) {
+            mostrarToast("Dataset eliminado permanentemente.", "info");
             cargarCatalogoAdmin();
             poblarOpcionesDinamicas();
             renderizarDashboard();
         } else {
             const data = await respuesta.json();
-            alert(`Error: ${data.detail}`);
+            mostrarToast(data.detail || "Error al eliminar dataset.", "error");
         }
     } catch (error) {
-        alert("Error de conexión con el servidor al intentar eliminar.");
+        mostrarToast("Error de conexión al intentar eliminar dataset.", "error");
     }
 }
 

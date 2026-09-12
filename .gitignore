@@ -12,6 +12,13 @@ data/raw/
 data/clean/
 data/chroma_db/
 
+# Bases de datos locales y archivos SQLite
+
+*.db
+*.sqlite3
+data/*.db
+data/usuarios.db
+
 # logs
 logs/auditoria.log
 
