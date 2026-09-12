@@ -1,8 +1,9 @@
 // Definir el token global para todas las peticiones
 const token = localStorage.getItem("authToken");
 
-// Variables de paginación para el catálogo administrativo
+// Variables de paginación y filtro para el catálogo administrativo
 let datasetsCatalogo = [];
+let datasetsFiltrados = [];
 let paginaActualAdmin = 1;
 const ITEMS_POR_PAGINA_ADMIN = 10;
 
@@ -23,7 +24,7 @@ window.addEventListener("pageshow", (event) => {
 });
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Poblar dependencias y categorías dinámicas en los selectores
+    // 1. Poblar dependencias y categorías dinámicas en los selectores
     poblarOpcionesDinamicas();
 
     // 2. Configurar botones del menú lateral
@@ -35,11 +36,25 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Configurar formulario de subida de datasets
+    // 3. Configurar formulario de subida de datasets
     const formSubir = document.getElementById('formSubirDataset');
     if (formSubir) formSubir.addEventListener('submit', manejarSubidaDataset);
 
-    // Configurar acciones en la tabla de gestión de datasets (borrar o editar)
+    // 4. Configurar filtro de búsqueda en tiempo real sobre el catálogo
+    const inputBuscar = document.getElementById('inputBuscarAdmin');
+    if (inputBuscar) {
+        inputBuscar.addEventListener('input', (e) => {
+            const termino = e.target.value.toLowerCase().trim();
+            datasetsFiltrados = datasetsCatalogo.filter(item => 
+                item.titulo.toLowerCase().includes(termino) || 
+                item.dependencia.toLowerCase().includes(termino)
+            );
+            paginaActualAdmin = 1;
+            renderizarTablaPaginada();
+        });
+    }
+
+    // 5. Configurar acciones en la tabla de gestión de datasets (borrar o editar)
     const tablaCuerpo = document.getElementById('tablaCuerpoDatasets');
     if (tablaCuerpo) {
         tablaCuerpo.addEventListener('click', function(e) {
@@ -57,7 +72,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Configurar acciones en la tabla de mensajes (borrar mensaje)
+    // 6. Configurar acciones en la tabla de mensajes (borrar mensaje)
     const tablaMensajes = document.getElementById('tablaCuerpoMensajes');
     if (tablaMensajes) {
         tablaMensajes.addEventListener('click', function(e) {
@@ -68,7 +83,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Configurar botones de paginación del catálogo
+    // 7. Configurar botones de paginación del catálogo
     const btnAnt = document.getElementById('btnAdminPagAnterior');
     const btnSig = document.getElementById('btnAdminPagSiguiente');
 
@@ -83,7 +98,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (btnSig) {
         btnSig.addEventListener('click', () => {
-            const totalPaginas = Math.ceil(datasetsCatalogo.length / ITEMS_POR_PAGINA_ADMIN);
+            const totalPaginas = Math.ceil(datasetsFiltrados.length / ITEMS_POR_PAGINA_ADMIN);
             if (paginaActualAdmin < totalPaginas) {
                 paginaActualAdmin++;
                 renderizarTablaPaginada();
@@ -91,7 +106,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Configurar botones de paginación del buzón ciudadano
+    // 8. Configurar botones de paginación del buzón ciudadano
     const btnAntMsg = document.getElementById('btnMensajesPagAnterior');
     const btnSigMsg = document.getElementById('btnMensajesPagSiguiente');
 
@@ -114,7 +129,13 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Configurar eventos del Modal de Edición
+    // 9. Configurar exportación de bitácora
+    const btnExportar = document.getElementById('btnExportarAuditoria');
+    if (btnExportar) {
+        btnExportar.addEventListener('click', exportarBitacora);
+    }
+
+    // 10. Configurar eventos del Modal de Edición
     const btnCerrarModal = document.getElementById('cerrarModalEditar');
     if (btnCerrarModal) {
         btnCerrarModal.addEventListener('click', () => {
@@ -127,19 +148,13 @@ document.addEventListener('DOMContentLoaded', () => {
         formEditar.addEventListener('submit', manejarEdicionDataset);
     }
 
-    // Configurar botón de cerrar sesión
+    // 11. Configurar botón de cerrar sesión
     const btnCerrar = document.getElementById('btnCerrarSesion');
     if (btnCerrar) {
         btnCerrar.addEventListener('click', cerrarSesion);
     }
 
-    // Configurar exportación de bitácora
-    const btnExportar = document.getElementById('btnExportarAuditoria');
-    if (btnExportar) {
-        btnExportar.addEventListener('click', exportarBitacora);
-    }
-
-    // Cargar métricas del dashboard al iniciar
+    // 12. Cargar métricas del dashboard al iniciar
     renderizarDashboard();
 });
 
@@ -339,7 +354,7 @@ async function poblarOpcionesDinamicas() {
         }
 
         if (selectEditDep) {
-            selectEditDep.innerHTML = '';
+            selectEditDep.innerHTML = '<option value="">Selecciona una dependencia...</option>';
             dependencias.forEach(dep => {
                 selectEditDep.innerHTML += `<option value="${dep}">${dep}</option>`;
             });
@@ -357,7 +372,7 @@ async function poblarOpcionesDinamicas() {
     }
 }
 
-// Cargar catálogo y activar paginación
+// Cargar catálogo y activar paginación con lista base
 async function cargarCatalogoAdmin() {
     const tbody = document.getElementById('tablaCuerpoDatasets');
     if (!tbody) return;
@@ -372,6 +387,20 @@ async function cargarCatalogoAdmin() {
         const data = await respuesta.json();
         
         datasetsCatalogo = data.resultados || [];
+        
+        // Mantener término de búsqueda si el input tiene contenido
+        const inputBuscar = document.getElementById('inputBuscarAdmin');
+        const termino = inputBuscar ? inputBuscar.value.toLowerCase().trim() : "";
+        
+        if (termino) {
+            datasetsFiltrados = datasetsCatalogo.filter(item => 
+                item.titulo.toLowerCase().includes(termino) || 
+                item.dependencia.toLowerCase().includes(termino)
+            );
+        } else {
+            datasetsFiltrados = [...datasetsCatalogo];
+        }
+
         paginaActualAdmin = 1;
         renderizarTablaPaginada();
 
@@ -387,18 +416,18 @@ function renderizarTablaPaginada() {
 
     tbody.innerHTML = '';
 
-    if (datasetsCatalogo.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" class="text-center">No hay datasets publicados.</td></tr>';
+    if (datasetsFiltrados.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center">No se encontraron datasets coincidentes.</td></tr>';
         if (contenedorPaginacion) contenedorPaginacion.style.display = 'none';
         return;
     }
 
-    const totalPaginas = Math.ceil(datasetsCatalogo.length / ITEMS_POR_PAGINA_ADMIN);
+    const totalPaginas = Math.ceil(datasetsFiltrados.length / ITEMS_POR_PAGINA_ADMIN);
     if (paginaActualAdmin > totalPaginas) paginaActualAdmin = totalPaginas;
 
     const inicio = (paginaActualAdmin - 1) * ITEMS_POR_PAGINA_ADMIN;
     const fin = inicio + ITEMS_POR_PAGINA_ADMIN;
-    const datosPagina = datasetsCatalogo.slice(inicio, fin);
+    const datosPagina = datasetsFiltrados.slice(inicio, fin);
 
     datosPagina.forEach(item => {
         const fila = `
@@ -571,13 +600,43 @@ async function eliminarMensajeAdmin(idMensaje) {
 
         if (respuesta.ok) {
             cargarMensajesAdmin();
-            renderizarDashboard(); // Actualiza la bitácora en tiempo real
+            renderizarDashboard();
         } else {
             const data = await respuesta.json();
             alert(`Error: ${data.detail || 'No se pudo eliminar el mensaje.'}`);
         }
     } catch (error) {
         alert("Error de conexión al intentar eliminar el mensaje.");
+    }
+}
+
+// Descargar reporte CSV de la bitácora administrativa
+async function exportarBitacora() {
+    try {
+        const respuesta = await fetch(`/api/admin/bitacora/exportar`, {
+            method: "GET",
+            headers: {
+                "Authorization": `Bearer ${token}`
+            }
+        });
+
+        if (!respuesta.ok) {
+            alert("No se pudo generar el reporte de auditoría.");
+            return;
+        }
+
+        const blob = await respuesta.blob();
+        const urlDescarga = window.URL.createObjectURL(blob);
+        const enlace = document.createElement('a');
+        enlace.href = urlDescarga;
+        enlace.download = `bitacora_auditoria_${new Date().toISOString().slice(0, 10)}.csv`;
+        document.body.appendChild(enlace);
+        enlace.click();
+        enlace.remove();
+        window.URL.revokeObjectURL(urlDescarga);
+
+    } catch (error) {
+        alert("Error de conexión al exportar la bitácora.");
     }
 }
 
@@ -646,36 +705,6 @@ async function eliminarDataset(idDataset) {
         }
     } catch (error) {
         alert("Error de conexión con el servidor al intentar eliminar.");
-    }
-}
-
-// Descargar reporte CSV de la bitácora administrativa
-async function exportarBitacora() {
-    try {
-        const respuesta = await fetch(`/api/admin/bitacora/exportar`, {
-            method: "GET",
-            headers: {
-                "Authorization": `Bearer ${token}`
-            }
-        });
-
-        if (!respuesta.ok) {
-            alert("No se pudo generar el reporte de auditoría.");
-            return;
-        }
-
-        const blob = await respuesta.blob();
-        const urlDescarga = window.URL.createObjectURL(blob);
-        const enlace = document.createElement('a');
-        enlace.href = urlDescarga;
-        enlace.download = `bitacora_auditoria_${new Date().toISOString().slice(0, 10)}.csv`;
-        document.body.appendChild(enlace);
-        enlace.click();
-        enlace.remove();
-        window.URL.revokeObjectURL(urlDescarga);
-
-    } catch (error) {
-        alert("Error de conexión al exportar la bitácora.");
     }
 }
 
