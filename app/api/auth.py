@@ -8,8 +8,8 @@ from dotenv import load_dotenv
 from sqlalchemy.orm import Session
 from passlib.context import CryptContext
 
-from app.db_usuarios.conexion import get_db
-from app.db_usuarios.modelos import UsuarioModel
+from app.db_users.connection import get_db
+from app.db_users.models import UsuarioModel
 
 router = APIRouter(tags=["Autenticación"])
 load_dotenv()

@@ -23,6 +23,7 @@
             <button type="button" class="admin-tab-btn active" data-target="tab-dashboard">Resumen</button>
             <button type="button" class="admin-tab-btn" data-target="tab-subir">Publicar Dataset</button>
             <button type="button" class="admin-tab-btn" data-target="tab-gestionar">Gestionar Catálogo</button>
+            <button type="button" class="admin-tab-btn" data-target="tab-mensajes">Buzón Ciudadano</button>
             <hr class="admin-divider">
             <a href="/" class="admin-tab-btn btn-admin">Ver Portal Público</a>
             <button type="button" class="admin-tab-btn btn-admin" id="btnCerrarSesion">Cerrar Sesión</button>
@@ -130,6 +131,24 @@
                     </tr>
                 </thead>
                 <tbody id="tablaCuerpoDatasets">
+                </tbody>
+            </table>
+        </section>
+        <section id="tab-mensajes" class="pestana-admin pestana-oculta">
+            <h2>Buzón Ciudadano</h2>
+            <p>Mensajes y reportes enviados a través del formulario de contacto.</p>
+            
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th scope="col">Remitente</th>
+                        <th scope="col">Correo</th>
+                        <th scope="col">Mensaje</th>
+                        <th scope="col">Fecha</th>
+                    </tr>
+                </thead>
+                <tbody id="tablaCuerpoMensajes">
+                    <tr><td colspan="4" class="text-center">Cargando mensajes...</td></tr>
                 </tbody>
             </table>
         </section>

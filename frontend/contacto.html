@@ -11,7 +11,7 @@
     </header>
 
     <div class="hero-card card-content-block">
-        <form onsubmit="event.preventDefault(); alert('Mensaje enviado con éxito. Nos pondremos en contacto pronto.');">
+        <form id="formContacto">
             <div class="filter-group">
                 <label for="nombreContacto" class="admin-label">NOMBRE COMPLETO</label>
                 <input type="text" id="nombreContacto" class="form-input" placeholder="Tu nombre" required>
@@ -24,10 +24,13 @@
                 <label for="mensajeContacto" class="admin-label">MENSAJE</label>
                 <textarea id="mensajeContacto" class="form-input" rows="5" placeholder="Escribe tu consulta o reporte..." required></textarea>
             </div>
-            <button type="submit" class="btn-primary btn-full">Enviar Mensaje</button>
+            <button type="submit" class="btn-primary btn-full" id="btnEnviarContacto">Enviar Mensaje</button>
+            <p id="msgContactoEstado" class="admin-mensaje" style="display: none; margin-top: 15px;"></p>
         </form>
     </div>
 </main>
 {% endblock %}
 
-{% block scripts %}{% endblock %}
+{% block scripts %}
+<script src="/js/contacto.js"></script>
+{% endblock %}

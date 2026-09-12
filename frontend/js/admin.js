@@ -91,6 +91,8 @@ function cambiarPestana(idPestana, botonClickeado) {
         cargarCatalogoAdmin();
     } else if (idPestana === 'tab-dashboard') {
         renderizarDashboard(); // Recargar métricas al volver al resumen
+    } else if (idPestana === 'tab-mensajes') {
+        cargarMensajesAdmin(); // Cargar mensajes ciudadanos al abrir la pestaña
     }
 }
 
@@ -265,6 +267,53 @@ async function cargarCatalogoAdmin() {
                             data-categoria="${item.categoria}">Editar</button>
                         <button class="btn-borrar-dataset btn-danger" data-id="${item.id}">Borrar</button>
                     </td>
+                </tr>
+            `;
+            tbody.innerHTML += fila;
+        });
+    } catch (error) {
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center msg-danger">Error al conectar con la base de datos.</td></tr>';
+    }
+}
+
+// Cargar tabla de mensajes ciudadanos para los administradores
+async function cargarMensajesAdmin() {
+    const tbody = document.getElementById('tablaCuerpoMensajes');
+    if (!tbody) return;
+
+    tbody.innerHTML = '<tr><td colspan="4" class="text-center">Cargando mensajes...</td></tr>';
+
+    try {
+        const respuesta = await fetch(`${CONFIG.API_BASE_URL}/api/admin/mensajes`, {
+            method: "GET",
+            headers: {
+                "Authorization": `Bearer ${token}`
+            }
+        });
+        const data = await respuesta.json();
+
+        tbody.innerHTML = '';
+
+        if (!data.mensajes || data.mensajes.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center">No hay mensajes registrados.</td></tr>';
+            return;
+        }
+
+        data.mensajes.forEach(item => {
+            const fechaFormateada = new Date(item.fecha_envio).toLocaleDateString('es-MX', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+
+            const fila = `
+                <tr>
+                    <td><strong>${item.nombre}</strong></td>
+                    <td><a href="mailto:${item.email}" style="color: var(--blue-primary, #004b87);">${item.email}</a></td>
+                    <td>${item.mensaje}</td>
+                    <td>${fechaFormateada}</td>
                 </tr>
             `;
             tbody.innerHTML += fila;

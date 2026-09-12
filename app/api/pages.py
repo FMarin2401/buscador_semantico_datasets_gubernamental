@@ -16,14 +16,6 @@ async def vista_datos(request: Request):
 async def vista_gobierno_abierto(request: Request):
     return templates.TemplateResponse(request, "gobierno_abierto.html")
 
-@router.get("/contacto.html")
-async def vista_contacto(request: Request):
-    return templates.TemplateResponse(request, "contacto.html")
-
-@router.get("/noticias.html")
-async def vista_noticias(request: Request):
-    return templates.TemplateResponse(request, "noticias.html")
-
 @router.get("/apis.html")
 async def vista_apis(request: Request):
     return templates.TemplateResponse(request, "apis.html")
@@ -31,6 +23,10 @@ async def vista_apis(request: Request):
 @router.get("/guia_usuario.html")
 async def vista_guia(request: Request):
     return templates.TemplateResponse(request, "guia_usuario.html")
+
+@router.get("/contacto.html")
+async def vista_contacto(request: Request):
+    return templates.TemplateResponse(request, "contacto.html")
 
 @router.get("/preguntas_frecuentes.html")
 async def vista_preguntas(request: Request):

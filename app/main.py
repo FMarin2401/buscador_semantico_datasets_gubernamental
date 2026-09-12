@@ -9,10 +9,10 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from app.api import pages, search, datasets, auth
+from app.api import manipulate_datasets, pages, search, auth, contact
 from passlib.context import CryptContext
-from app.db_usuarios.conexion import engine, Base, SessionLocal
-from app.db_usuarios.modelos import UsuarioModel
+from app.db_users.connection import engine, Base, SessionLocal
+from app.db_users.models import UsuarioModel
 
 # Configuración de logging para consola y archivo para auditoria
 os.makedirs("logs", exist_ok=True)
@@ -37,8 +37,9 @@ app.mount("/assets", StaticFiles(directory="frontend/assets"), name="assets")
 
 app.include_router(pages.router)  # Incluimos las rutas de páginas web desde app/api/pages.py
 app.include_router(search.router) # Incluimos las rutas de búsqueda semántica desde app/api/search.py
-app.include_router(datasets.router) # Incluimos las rutas de gestión de datasets desde app/api/datasets.py
+app.include_router(manipulate_datasets.router) # Incluimos las rutas de gestión de datasets desde app/api/datasets.py
 app.include_router(auth.router) # Incluimos las rutas de autenticación desde app/api/auth.py
+app.include_router(contact.router)
 
 # Configuración de CORS (solo para desarrollo, en producción se tiene que restringir los orígenes)
 app.add_middleware(
