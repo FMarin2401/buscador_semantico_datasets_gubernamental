@@ -18,3 +18,12 @@ class MensajeContactoModel(Base):
     email = Column(String, nullable=False)
     mensaje = Column(Text, nullable=False)
     fecha_envio = Column(DateTime, default=datetime.utcnow)
+
+class BitacoraAuditoriaModel(Base):
+    __tablename__ = "bitacora_auditoria"
+
+    id = Column(Integer, primary_key=True, index=True)
+    usuario = Column(String, nullable=False)          #
+    accion = Column(String, nullable=False)           
+    detalles = Column(String, nullable=False)         
+    fecha_hora = Column(DateTime, default=datetime.utcnow) 

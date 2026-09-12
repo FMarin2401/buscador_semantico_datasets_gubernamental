@@ -93,16 +93,19 @@
                             <textarea id="inputDescripcion" class="form-input" placeholder="Describe brevemente el contenido de la tabla..." rows="4" required></textarea>
                         </div>
 
+                        <!-- Selector de dependencias dinámico para subida -->
                         <div class="filter-group">
                             <label for="selectDependencia" class="admin-label">DEPENDENCIA PUBLICADORA</label>
                             <select id="selectDependencia" class="form-input" required>
-                                <option value="">Selecciona una secretaría...</option>
-                                <option value="Seguridad">Seguridad</option>
-                                <option value="Salud Pública">Salud Pública</option>
-                                <option value="Educación">Educación</option>
-                                <option value="Movilidad y Transporte">Movilidad y Transporte</option>
-                                <option value="Desarrollo Económico">Desarrollo Económico</option>
+                                <option value="">Cargando dependencias...</option>
                             </select>
+                        </div>
+
+                        <!-- Input de categoría con autocompletado para subida -->
+                        <div class="filter-group">
+                            <label for="inputCategoria" class="admin-label">CATEGORÍA</label>
+                            <input type="text" id="inputCategoria" class="form-input" list="listaCategoriasSugeridas" placeholder="Selecciona o escribe una categoría..." required>
+                            <datalist id="listaCategoriasSugeridas"></datalist>
                         </div>
 
                         <div class="filter-group">
@@ -133,6 +136,11 @@
                 <tbody id="tablaCuerpoDatasets">
                 </tbody>
             </table>
+            <nav id="paginacionAdmin" class="paginacion-container" aria-label="Paginación del catálogo" style="display: none; margin-top: 25px;">
+                <button type="button" id="btnAdminPagAnterior" class="btn-secundario-pag">Anterior</button>
+                <div id="numerosPaginacionAdmin" class="numeros-paginacion"></div>
+                <button type="button" id="btnAdminPagSiguiente" class="btn-secundario-pag">Siguiente</button>
+            </nav>
         </section>
         <section id="tab-mensajes" class="pestana-admin pestana-oculta">
             <h2>Buzón Ciudadano</h2>
@@ -145,12 +153,18 @@
                         <th scope="col">Correo</th>
                         <th scope="col">Mensaje</th>
                         <th scope="col">Fecha</th>
+                        <th scope="col" class="text-center">Acciones</th>
                     </tr>
                 </thead>
                 <tbody id="tablaCuerpoMensajes">
-                    <tr><td colspan="4" class="text-center">Cargando mensajes...</td></tr>
+                    <tr><td colspan="5" class="text-center">Cargando mensajes...</td></tr>
                 </tbody>
             </table>
+            <nav id="paginacionMensajes" class="paginacion-container" aria-label="Paginación de mensajes" style="display: none; margin-top: 25px;">
+                <button type="button" id="btnMensajesPagAnterior" class="btn-secundario-pag">Anterior</button>
+                <div id="numerosPaginacionMensajes" class="numeros-paginacion"></div>
+                <button type="button" id="btnMensajesPagSiguiente" class="btn-secundario-pag">Siguiente</button>
+            </nav>
         </section>
     </main>
 </div>
@@ -175,17 +189,13 @@
             <div class="filter-group">
                 <label for="editDependencia" class="admin-label">DEPENDENCIA</label>
                 <select id="editDependencia" class="form-input" required>
-                    <option value="Seguridad">Seguridad</option>
-                    <option value="Salud Pública">Salud Pública</option>
-                    <option value="Educación">Educación</option>
-                    <option value="Movilidad y Transporte">Movilidad y Transporte</option>
-                    <option value="Desarrollo Económico">Desarrollo Económico</option>
+                    <option value="">Cargando dependencias...</option>
                 </select>
             </div>
 
             <div class="filter-group">
                 <label for="editCategoria" class="admin-label">CATEGORÍA</label>
-                <input type="text" id="editCategoria" class="form-input" required>
+                <input type="text" id="editCategoria" class="form-input" list="listaCategoriasSugeridas" required>
             </div>
 
             <div class="modal-actions">
