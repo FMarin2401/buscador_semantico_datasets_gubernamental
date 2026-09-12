@@ -23,6 +23,7 @@ from app.db_users.models import BitacoraAuditoriaModel, DescargasDatasetModel
 
 router = APIRouter(tags=["Gestión y Descarga de Datasets"])
 logger = logging.getLogger(__name__)
+MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024  # 26,214,400 bytes
 
 class DatasetActualizar(BaseModel):
     titulo: str
@@ -88,6 +89,17 @@ async def publicar_dataset(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="El contenido del archivo no es un CSV válido."
         )
+
+    contenido_archivo = await archivo.read()
+
+    if len(contenido_archivo) > MAX_FILE_SIZE_BYTES:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail=f"El archivo excede el tamaño máximo permitido de {MAX_FILE_SIZE_BYTES // (1024 * 1024)} MB."
+        )
+
+    hash_calculado = hashlib.sha256(contenido_archivo).hexdigest()
+    await archivo.seek(0)
 
     contenido_archivo = await archivo.read()
     hash_calculado = hashlib.sha256(contenido_archivo).hexdigest()
@@ -209,6 +221,8 @@ def eliminar_dataset(
     ruta_csv = f"data/raw/{id_dataset}.csv"
     if os.path.exists(ruta_csv):
         os.remove(ruta_csv)
+
+    db.query(DescargasDatasetModel).filter(DescargasDatasetModel.id_dataset == id_dataset).delete()
     
     # Registro dual: archivo plano y tabla de SQLite
     logger.info(f"[BITACORA AUDITORIA] El administrador '{usuario_autenticado}' eliminó el dataset con ID: {id_dataset}")

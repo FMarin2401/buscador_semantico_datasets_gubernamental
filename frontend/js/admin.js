@@ -1,6 +1,20 @@
 // Definir el token global para todas las peticiones
 const token = localStorage.getItem("authToken");
 
+// Interceptor global para capturar tokens expirados (HTTP 401)
+const fetchOriginal = window.fetch;
+window.fetch = async (...argumentos) => {
+    const respuesta = await fetchOriginal(...argumentos);
+    
+    if (respuesta.status === 401) {
+        localStorage.removeItem("authToken");
+        alert("Tu sesión ha expirado por seguridad. Por favor, inicia sesión nuevamente.");
+        window.location.replace("/login.html");
+    }
+    
+    return respuesta;
+};
+
 // Variables de paginación y filtro para el catálogo administrativo
 let datasetsCatalogo = [];
 let datasetsFiltrados = [];
