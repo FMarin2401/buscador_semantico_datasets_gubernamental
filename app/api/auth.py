@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from passlib.context import CryptContext
 
 from app.db_users.connection import get_db
-from app.db_users.models import UsuarioModel
+from app.db_users.models import UsuarioModel, BitacoraAuditoriaModel
 
 router = APIRouter(tags=["Autenticación"])
 load_dotenv()
@@ -61,3 +61,87 @@ def login_admin(credenciales: CredencialesAdmin, db: Session = Depends(get_db)):
         "access_token": token_jwt,
         "token_type": "bearer"
     }
+
+class NuevoUsuarioSchema(BaseModel):
+    username: str
+    password: str
+    rol: str = "admin"
+
+@router.get("/api/admin/usuarios")
+def listar_usuarios(
+    usuario_autenticado: str = Depends(verificar_token),
+    db: Session = Depends(get_db)
+):
+    usuarios = db.query(UsuarioModel).all()
+    # Nunca retornar el hash del password
+    return {
+        "usuarios": [
+            {"id": u.id, "username": u.username, "rol": u.rol}
+            for u in usuarios
+        ]
+    }
+
+@router.post("/api/admin/usuarios", status_code=status.HTTP_201_CREATED)
+def crear_usuario(
+    datos: NuevoUsuarioSchema,
+    usuario_autenticado: str = Depends(verificar_token),
+    db: Session = Depends(get_db)
+):
+    # Validar no duplicados
+    existe = db.query(UsuarioModel).filter(UsuarioModel.username == datos.username.strip()).first()
+    if existe:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="El nombre de usuario ya existe en el sistema."
+        )
+
+    # Hashear contraseña con bcrypt
+    password_cifrado = pwd_context.hash(datos.password)
+
+    nuevo_admin = UsuarioModel(
+        username=datos.username.strip(),
+        password_hash=password_cifrado,
+        rol=datos.rol
+    )
+    db.add(nuevo_admin)
+
+    # Auditoría
+    log = BitacoraAuditoriaModel(
+        usuario=usuario_autenticado,
+        accion="Creación Usuario",
+        detalles=f"Alta de funcionario '{datos.username}' con rol '{datos.rol}'"
+    )
+    db.add(log)
+    db.commit()
+
+    return {"mensaje": "Usuario creado exitosamente"}
+
+@router.delete("/api/admin/usuarios/{id_usuario}")
+def eliminar_usuario(
+    id_usuario: int,
+    usuario_autenticado: str = Depends(verificar_token),
+    db: Session = Depends(get_db)
+):
+    usuario_a_borrar = db.query(UsuarioModel).filter(UsuarioModel.id == id_usuario).first()
+    if not usuario_a_borrar:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado.")
+
+    # Evitar auto-eliminación
+    if usuario_a_borrar.username == usuario_autenticado:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No puedes eliminar tu propia cuenta mientras estás en sesión."
+        )
+
+    nombre = usuario_a_borrar.username
+    db.delete(usuario_a_borrar)
+
+    log = BitacoraAuditoriaModel(
+        usuario=usuario_autenticado,
+        accion="Baja Usuario",
+        detalles=f"Eliminación de funcionario '{nombre}'"
+    )
+    db.add(log)
+    db.commit()
+
+    return {"mensaje": f"Usuario '{nombre}' eliminado"}

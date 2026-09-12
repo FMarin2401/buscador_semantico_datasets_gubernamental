@@ -135,7 +135,21 @@ document.addEventListener('DOMContentLoaded', () => {
         btnExportar.addEventListener('click', exportarBitacora);
     }
 
-    // 10. Configurar eventos del Modal de Edición
+    // 10. Configurar gestión de usuarios (formulario y tabla)
+    const formUser = document.getElementById('formCrearUsuario');
+    if (formUser) formUser.addEventListener('submit', manejarCrearUsuario);
+
+    const tablaUser = document.getElementById('tablaCuerpoUsuarios');
+    if (tablaUser) {
+        tablaUser.addEventListener('click', (e) => {
+            if (e.target.classList.contains('btn-borrar-usuario')) {
+                const idUsuario = e.target.getAttribute('data-id');
+                eliminarUsuarioAdmin(idUsuario);
+            }
+        });
+    }
+
+    // 11. Configurar eventos del Modal de Edición
     const btnCerrarModal = document.getElementById('cerrarModalEditar');
     if (btnCerrarModal) {
         btnCerrarModal.addEventListener('click', () => {
@@ -148,13 +162,13 @@ document.addEventListener('DOMContentLoaded', () => {
         formEditar.addEventListener('submit', manejarEdicionDataset);
     }
 
-    // 11. Configurar botón de cerrar sesión
+    // 12. Configurar botón de cerrar sesión
     const btnCerrar = document.getElementById('btnCerrarSesion');
     if (btnCerrar) {
         btnCerrar.addEventListener('click', cerrarSesion);
     }
 
-    // 12. Cargar métricas del dashboard al iniciar
+    // 13. Cargar métricas del dashboard al iniciar
     renderizarDashboard();
 });
 
@@ -183,6 +197,8 @@ function cambiarPestana(idPestana, botonClickeado) {
         renderizarDashboard();
     } else if (idPestana === 'tab-mensajes') {
         cargarMensajesAdmin();
+    } else if (idPestana === 'tab-usuarios') {
+        cargarUsuariosAdmin();
     }
 }
 
@@ -637,6 +653,98 @@ async function exportarBitacora() {
 
     } catch (error) {
         alert("Error de conexión al exportar la bitácora.");
+    }
+}
+
+// Cargar funcionarios activos en la tabla
+async function cargarUsuariosAdmin() {
+    const tbody = document.getElementById('tablaCuerpoUsuarios');
+    if (!tbody) return;
+
+    tbody.innerHTML = '<tr><td colspan="3" class="text-center">Cargando cuentas...</td></tr>';
+
+    try {
+        const resp = await fetch(`/api/admin/usuarios`, {
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+        const data = await resp.json();
+
+        tbody.innerHTML = '';
+        if (!data.usuarios || data.usuarios.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="3" class="text-center">Sin usuarios adicionales.</td></tr>';
+            return;
+        }
+
+        data.usuarios.forEach(u => {
+            tbody.innerHTML += `
+                <tr>
+                    <td><strong>${u.username}</strong></td>
+                    <td><span class="badge-pub">${u.rol.toUpperCase()}</span></td>
+                    <td class="text-center">
+                        <button class="btn-borrar-usuario btn-danger" data-id="${u.id}">Baja</button>
+                    </td>
+                </tr>
+            `;
+        });
+    } catch (e) {
+        tbody.innerHTML = '<tr><td colspan="3" class="text-center msg-danger">Error al cargar cuentas.</td></tr>';
+    }
+}
+
+// Enviar formulario de alta de nuevo funcionario
+async function manejarCrearUsuario(e) {
+    e.preventDefault();
+    const msg = document.getElementById('msgUsuarioEstado');
+    const username = document.getElementById('inputNuevoUsuario').value;
+    const password = document.getElementById('inputNuevoPassword').value;
+    const rol = document.getElementById('selectNuevoRol').value;
+
+    try {
+        const resp = await fetch(`/api/admin/usuarios`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            },
+            body: JSON.stringify({ username, password, rol })
+        });
+
+        const data = await resp.json();
+        if (resp.ok) {
+            msg.className = "admin-mensaje msg-success";
+            msg.textContent = "¡Funcionario registrado!";
+            document.getElementById('formCrearUsuario').reset();
+            cargarUsuariosAdmin();
+            renderizarDashboard();
+        } else {
+            msg.className = "admin-mensaje msg-danger";
+            msg.textContent = data.detail || "Error al crear cuenta.";
+        }
+    } catch (err) {
+        msg.className = "admin-mensaje msg-danger";
+        msg.textContent = "Error de red.";
+    }
+}
+
+// Eliminar acceso de funcionario
+async function eliminarUsuarioAdmin(id) {
+    if (!confirm("¿Seguro que deseas dar de baja este acceso?")) return;
+
+    try {
+        const resp = await fetch(`/api/admin/usuarios/${id}`, {
+            method: "DELETE",
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+        const data = await resp.json();
+
+        if (resp.ok) {
+            cargarUsuariosAdmin();
+            renderizarDashboard();
+        } else {
+            alert(data.detail || "Error al eliminar.");
+        }
+    } catch (e) {
+        alert("Error de conexión.");
     }
 }
 

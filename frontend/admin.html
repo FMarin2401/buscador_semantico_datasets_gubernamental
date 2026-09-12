@@ -24,6 +24,7 @@
             <button type="button" class="admin-tab-btn" data-target="tab-subir">Publicar Dataset</button>
             <button type="button" class="admin-tab-btn" data-target="tab-gestionar">Gestionar Catálogo</button>
             <button type="button" class="admin-tab-btn" data-target="tab-mensajes">Buzón Ciudadano</button>
+            <button type="button" class="admin-tab-btn" data-target="tab-usuarios">Equipo y Accesos</button>
             <hr class="admin-divider">
             <a href="/" class="admin-tab-btn btn-admin">Ver Portal Público</a>
             <button type="button" class="admin-tab-btn btn-admin" id="btnCerrarSesion">Cerrar Sesión</button>
@@ -175,10 +176,53 @@
                 <button type="button" id="btnMensajesPagSiguiente" class="btn-secundario-pag">Siguiente</button>
             </nav>
         </section>
+        <section id="tab-usuarios" class="pestana-admin pestana-oculta">
+            <h2>Gestión de Funcionarios</h2>
+            <p>Administra los accesos y credenciales para el panel de control municipal.</p>
+
+            <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 30px; margin-top: 25px;">
+                <div class="card-auditoria-info" style="height: fit-content;">
+                    <h3 style="margin-top: 0;">Nuevo Funcionario</h3>
+                    <form id="formCrearUsuario">
+                        <div class="filter-group">
+                            <label for="inputNuevoUsuario" class="admin-label">USUARIO</label>
+                            <input type="text" id="inputNuevoUsuario" class="form-input" placeholder="Ej. jperez" required>
+                        </div>
+                        <div class="filter-group">
+                            <label for="inputNuevoPassword" class="admin-label">CONTRASEÑA TEMPORAL</label>
+                            <input type="password" id="inputNuevoPassword" class="form-input" placeholder="Mínimo 6 caracteres" minlength="6" required>
+                        </div>
+                        <div class="filter-group">
+                            <label for="selectNuevoRol" class="admin-label">ROL</label>
+                            <select id="selectNuevoRol" class="form-input" required>
+                                <option value="admin">Administrador</option>
+                                <option value="editor">Editor</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn-primary btn-full">Dar de Alta</button>
+                        <p id="msgUsuarioEstado" class="admin-mensaje"></p>
+                    </form>
+                </div>
+
+                <div>
+                    <table class="admin-table" style="margin-top: 0;">
+                        <thead>
+                            <tr>
+                                <th scope="col">Usuario</th>
+                                <th scope="col">Rol</th>
+                                <th scope="col" class="text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaCuerpoUsuarios">
+                            <tr><td colspan="3" class="text-center">Cargando cuentas...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
     </main>
 </div>
 
-<!-- Modal de Edición de Dataset -->
 <div id="modalEditar" class="modal-overlay" style="display: none;">
     <div class="modal-card">
         <h3>Editar Metadatos del Dataset</h3>
