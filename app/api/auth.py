@@ -87,6 +87,13 @@ def crear_usuario(
     usuario_autenticado: str = Depends(verificar_token),
     db: Session = Depends(get_db)
 ):
+    # Validar que quien ejecuta la acción sea realmente ADMIN
+    solicitante = db.query(UsuarioModel).filter(UsuarioModel.username == usuario_autenticado).first()
+    if not solicitante or solicitante.rol != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Acceso denegado: solo administradores pueden gestionar cuentas."
+        )
     # Validar no duplicados
     existe = db.query(UsuarioModel).filter(UsuarioModel.username == datos.username.strip()).first()
     if existe:
@@ -122,11 +129,18 @@ def eliminar_usuario(
     usuario_autenticado: str = Depends(verificar_token),
     db: Session = Depends(get_db)
 ):
+    # Validar rol de administrador
+    solicitante = db.query(UsuarioModel).filter(UsuarioModel.username == usuario_autenticado).first()
+    if not solicitante or solicitante.rol != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Acceso denegado: solo administradores pueden eliminar cuentas."
+        )
+
     usuario_a_borrar = db.query(UsuarioModel).filter(UsuarioModel.id == id_usuario).first()
     if not usuario_a_borrar:
         raise HTTPException(status_code=404, detail="Usuario no encontrado.")
 
-    # Evitar auto-eliminación
     if usuario_a_borrar.username == usuario_autenticado:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
