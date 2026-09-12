@@ -23,7 +23,7 @@ window.addEventListener("pageshow", (event) => {
 });
 
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Poblar dependencias y categorías dinámicas en los selectores
+    // Poblar dependencias y categorías dinámicas en los selectores
     poblarOpcionesDinamicas();
 
     // 2. Configurar botones del menú lateral
@@ -35,11 +35,11 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // 3. Configurar formulario de subida de datasets
+    // Configurar formulario de subida de datasets
     const formSubir = document.getElementById('formSubirDataset');
     if (formSubir) formSubir.addEventListener('submit', manejarSubidaDataset);
 
-    // 4. Configurar acciones en la tabla de gestión de datasets (borrar o editar)
+    // Configurar acciones en la tabla de gestión de datasets (borrar o editar)
     const tablaCuerpo = document.getElementById('tablaCuerpoDatasets');
     if (tablaCuerpo) {
         tablaCuerpo.addEventListener('click', function(e) {
@@ -57,7 +57,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 5. Configurar acciones en la tabla de mensajes (borrar mensaje)
+    // Configurar acciones en la tabla de mensajes (borrar mensaje)
     const tablaMensajes = document.getElementById('tablaCuerpoMensajes');
     if (tablaMensajes) {
         tablaMensajes.addEventListener('click', function(e) {
@@ -68,7 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 6. Configurar botones de paginación del catálogo
+    // Configurar botones de paginación del catálogo
     const btnAnt = document.getElementById('btnAdminPagAnterior');
     const btnSig = document.getElementById('btnAdminPagSiguiente');
 
@@ -91,7 +91,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 7. Configurar botones de paginación del buzón ciudadano
+    // Configurar botones de paginación del buzón ciudadano
     const btnAntMsg = document.getElementById('btnMensajesPagAnterior');
     const btnSigMsg = document.getElementById('btnMensajesPagSiguiente');
 
@@ -114,7 +114,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 8. Configurar eventos del Modal de Edición
+    // Configurar eventos del Modal de Edición
     const btnCerrarModal = document.getElementById('cerrarModalEditar');
     if (btnCerrarModal) {
         btnCerrarModal.addEventListener('click', () => {
@@ -127,13 +127,19 @@ document.addEventListener('DOMContentLoaded', () => {
         formEditar.addEventListener('submit', manejarEdicionDataset);
     }
 
-    // 9. Configurar botón de cerrar sesión
+    // Configurar botón de cerrar sesión
     const btnCerrar = document.getElementById('btnCerrarSesion');
     if (btnCerrar) {
         btnCerrar.addEventListener('click', cerrarSesion);
     }
 
-    // 10. Cargar métricas del dashboard al iniciar
+    // Configurar exportación de bitácora
+    const btnExportar = document.getElementById('btnExportarAuditoria');
+    if (btnExportar) {
+        btnExportar.addEventListener('click', exportarBitacora);
+    }
+
+    // Cargar métricas del dashboard al iniciar
     renderizarDashboard();
 });
 
@@ -640,6 +646,36 @@ async function eliminarDataset(idDataset) {
         }
     } catch (error) {
         alert("Error de conexión con el servidor al intentar eliminar.");
+    }
+}
+
+// Descargar reporte CSV de la bitácora administrativa
+async function exportarBitacora() {
+    try {
+        const respuesta = await fetch(`/api/admin/bitacora/exportar`, {
+            method: "GET",
+            headers: {
+                "Authorization": `Bearer ${token}`
+            }
+        });
+
+        if (!respuesta.ok) {
+            alert("No se pudo generar el reporte de auditoría.");
+            return;
+        }
+
+        const blob = await respuesta.blob();
+        const urlDescarga = window.URL.createObjectURL(blob);
+        const enlace = document.createElement('a');
+        enlace.href = urlDescarga;
+        enlace.download = `bitacora_auditoria_${new Date().toISOString().slice(0, 10)}.csv`;
+        document.body.appendChild(enlace);
+        enlace.click();
+        enlace.remove();
+        window.URL.revokeObjectURL(urlDescarga);
+
+    } catch (error) {
+        alert("Error de conexión al exportar la bitácora.");
     }
 }
 

@@ -6,6 +6,8 @@ from datetime import datetime
 import pandas as pd
 import logging
 import hashlib
+import io
+import csv
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile, status, Depends
 from fastapi.responses import FileResponse, Response
@@ -273,3 +275,38 @@ def descargar_dataset(id_dataset: str, formato: str = "csv", db: Session = Depen
                         headers={"Content-Disposition": f"attachment; filename={id_dataset}.geojson"})
     
     raise HTTPException(status_code=400, detail="Formato no soportado")
+
+@router.get("/api/admin/bitacora/exportar")
+def exportar_bitacora_csv(
+    usuario_autenticado: str = Depends(verificar_token),
+    db: Session = Depends(get_db)
+):
+    """Genera y descarga un reporte CSV con el historial completo de auditoría."""
+    registros = db.query(BitacoraAuditoriaModel).order_by(BitacoraAuditoriaModel.fecha_hora.desc()).all()
+
+    buffer = io.StringIO()
+    writer = csv.writer(buffer)
+    
+    # Encabezados del reporte
+    writer.writerow(["ID", "Usuario", "Accion", "Detalles", "Fecha_Hora_UTC"])
+
+    for log in registros:
+        writer.writerow([
+            log.id,
+            log.usuario,
+            log.accion,
+            log.detalles,
+            log.fecha_hora.strftime("%Y-%m-%d %H:%M:%S") if log.fecha_hora else ""
+        ])
+
+    csv_data = buffer.getvalue()
+    buffer.close()
+
+    fecha_hoy = datetime.now().strftime("%Y%m%d_%H%M")
+    nombre_archivo = f"bitacora_auditoria_{fecha_hoy}.csv"
+
+    return Response(
+        content=csv_data,
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={nombre_archivo}"}
+    )
