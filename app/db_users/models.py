@@ -27,3 +27,9 @@ class BitacoraAuditoriaModel(Base):
     accion = Column(String, nullable=False)           
     detalles = Column(String, nullable=False)         
     fecha_hora = Column(DateTime, default=datetime.utcnow) 
+
+class DescargasDatasetModel(Base):
+    __tablename__ = "descargas_datasets"
+
+    id_dataset = Column(String, primary_key=True, index=True) # UUID del dataset
+    total_descargas = Column(Integer, default=0, nullable=False)

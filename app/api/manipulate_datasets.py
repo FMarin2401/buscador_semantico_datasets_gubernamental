@@ -17,7 +17,7 @@ from app.db_chroma import coleccion, guardar_datasets, obtener_todos_datasets
 from app.nlp_model import generar_embedding
 from app.api.auth import verificar_token
 from app.db_users.connection import get_db
-from app.db_users.models import BitacoraAuditoriaModel
+from app.db_users.models import BitacoraAuditoriaModel, DescargasDatasetModel
 
 router = APIRouter(tags=["Gestión y Descarga de Datasets"])
 logger = logging.getLogger(__name__)
@@ -215,12 +215,19 @@ def eliminar_dataset(
     return {"mensaje": "Dataset eliminado permanentemente"}
 
 @router.get("/api/descargar/{id_dataset}")
-def descargar_dataset(id_dataset: str, formato: str = "csv"):
+def descargar_dataset(id_dataset: str, formato: str = "csv", db: Session = Depends(get_db)):
     ruta_csv = f"data/raw/{id_dataset}.csv"
-    
     if not os.path.exists(ruta_csv):
         raise HTTPException(status_code=404, detail="Dataset no encontrado")
-        
+
+    registro = db.query(DescargasDatasetModel).filter(DescargasDatasetModel.id_dataset == id_dataset).first()
+    if not registro:
+        registro = DescargasDatasetModel(id_dataset=id_dataset, total_descargas=1)
+        db.add(registro)
+    else:
+        registro.total_descargas += 1
+    db.commit()
+      
     if formato == "csv":
         return FileResponse(path=ruta_csv, filename=f"{id_dataset}.csv", media_type="text/csv")
         

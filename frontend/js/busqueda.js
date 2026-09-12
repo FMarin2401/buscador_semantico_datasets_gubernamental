@@ -272,7 +272,7 @@ function mostrarPaginaActual() {
                     <footer class="card-meta">
                         <span>Categoría: ${item.categoria || "General"}</span>
                         <span>Actualizado: ${item.fecha_actualizacion}</span>
-                        <span>0 descargas</span>
+                        <span>${item.descargas !== undefined ? item.descargas : 0} descargas</span>
                     </footer>
                 </div>
                 <div class="card-actions">
