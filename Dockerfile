@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.12-slim
 
 # Evitar que Python escriba archivos .pyc y forzar salida de logs inmediata en consola
 ENV PYTHONDONTWRITEBYTECODE=1
