@@ -1,12 +1,4 @@
-/**
- * 1. CONFIGURACIÓN Y ESTADO GLOBAL
- */
-let resultadosOriginales = [];
-let paginaActual = 1;
-const elementosPorPagina = 10;
-let listaEnMemoria = [];
-
-
+//0. UTILIDADES
 function escaparHTML(texto) {
     if (texto === null || texto === undefined) return "";
     const div = document.createElement("div");
@@ -14,13 +6,64 @@ function escaparHTML(texto) {
     return div.innerHTML;
 }
 
-/**
- * 2. INICIALIZACIÓN (WINDOW.ONLOAD)
- */
+// 1. CONFIGURACIÓN Y ESTADO GLOBAL
+
+let resultadosOriginales = [];
+let paginaActual = 1;
+const elementosPorPagina = 10;
+let listaEnMemoria = [];
+
+// Sincroniza el estado actual con la barra de direcciones sin recargar
+function sincronizarURL() {
+    const params = new URLSearchParams(window.location.search);
+
+    // 1. Paginación
+    if (paginaActual > 1) {
+        params.set('p', paginaActual);
+    } else {
+        params.delete('p');
+    }
+
+    // 2. Ordenamiento
+    const selectOrdenar = document.getElementById('selectOrdenar');
+    if (selectOrdenar && selectOrdenar.value) {
+        params.set('orden', selectOrdenar.value);
+    } else {
+        params.delete('orden');
+    }
+
+    // 3. Categorías activas
+    const checkboxesActivos = document.querySelectorAll('.filtro-cat:checked');
+    const cats = Array.from(checkboxesActivos).map(cb => cb.value);
+    if (cats.length > 0) {
+        params.set('cat', cats.join(','));
+    } else {
+        params.delete('cat');
+    }
+
+    const nuevaURL = `${window.location.pathname}${params.toString() ? '?' + params.toString() : ''}`;
+    window.history.replaceState(null, '', nuevaURL);
+}
+
+//2. INICIALIZACIÓN (WINDOW.ONLOAD)
+
 window.onload = async function() {
     const parametros = new URLSearchParams(window.location.search);
     const busqueda = parametros.get('q');
-    
+    const ordenUrl = parametros.get('orden');
+    const pagUrl = parseInt(parametros.get('p'), 10);
+
+    // Restaurar select de orden si viene en la URL
+    const selectOrdenar = document.getElementById('selectOrdenar');
+    if (selectOrdenar && ordenUrl) {
+        selectOrdenar.value = ordenUrl;
+    }
+
+    // Restaurar página si es válida
+    if (!isNaN(pagUrl) && pagUrl > 1) {
+        paginaActual = pagUrl;
+    }
+
     try {
         const respCat = await fetch(`/api/catalogos`);
         const dataCat = await respCat.json();
@@ -41,9 +84,12 @@ window.onload = async function() {
         });
     }
 
-    const selectOrdenar = document.getElementById('selectOrdenar');
     if (selectOrdenar) {
-        selectOrdenar.addEventListener('change', aplicarOrdenamiento);
+        selectOrdenar.addEventListener('change', () => {
+            paginaActual = 1;
+            aplicarOrdenamiento();
+            sincronizarURL();
+        });
     }
 
     const btnLimpiar = document.getElementById('btnLimpiar');
@@ -86,9 +132,7 @@ window.onload = async function() {
     }
 };
 
-/**
- * 3. PETICIONES A LA API
- */
+//3. PETICIONES A LA API
 
 async function ejecutarBusquedaAPI(busq) {
     const contenedor = document.getElementById('contenedor-tarjetas');
@@ -96,20 +140,17 @@ async function ejecutarBusquedaAPI(busq) {
     const paginacionContenedor = document.getElementById('paginacionContenedor');
     const emptyState = document.getElementById('emptyState');
 
-    // 1. Ocultar estados previos y paginación
     if (emptyState) emptyState.style.display = 'none';
     if (paginacionContenedor) paginacionContenedor.style.display = 'none';
 
-    // 2. Feedback visual inmediato en el texto de conteo
     if (textoResultados) {
         textoResultados.innerHTML = `<span>Buscando datos sobre <strong>"${escaparHTML(busq)}"</strong>...</span>`;
     }
 
-    // 3. Renderizar tarjeta de carga / skeleton temporal
     if (contenedor) {
         contenedor.innerHTML = `
             <article class="card-resultado-v2" style="text-align: center; padding: 2.5rem 1.5rem; justify-content: center; align-items: center;">
-                <div style="font-size: 2rem; margin-bottom: 0.5rem; animation: pulse 1.5s infinite;">⏳</div>
+                <div style="font-size: 2rem; margin-bottom: 0.5rem;">⏳</div>
                 <h3 style="margin-bottom: 0.25rem;">Analizando consulta con IA semántica...</h3>
                 <p style="color: #666; font-size: 0.9rem; margin: 0;">Comparando embeddings vectoriales contra el catálogo municipal.</p>
             </article>
@@ -122,7 +163,7 @@ async function ejecutarBusquedaAPI(busq) {
         
         resultadosOriginales = data.resultados || [];
         actualizarContadores(resultadosOriginales);
-        renderizarTarjetas(resultadosOriginales);
+        restaurarFiltrosDesdeURL();
     } catch (error) {
         if (contenedor) {
             contenedor.innerHTML = '<p style="color:red; text-align:center; padding: 2rem;">Error de conexión con la API de búsqueda semántica.</p>';
@@ -140,7 +181,7 @@ async function cargarCatalogoCompleto() {
         
         resultadosOriginales = data.resultados || [];
         actualizarContadores(resultadosOriginales);
-        renderizarTarjetas(resultadosOriginales);
+        restaurarFiltrosDesdeURL();
     } catch (error) {
         const contenedor = document.getElementById('contenedor-tarjetas');
         if (contenedor) {
@@ -149,9 +190,7 @@ async function cargarCatalogoCompleto() {
     }
 }
 
-/**
- * 4. MANEJO DE BÚSQUEDA Y FILTROS
- */
+//4. MANEJO DE BÚSQUEDA Y FILTROS
 function ejecutarBusquedaDesdeInput() {
     const inputSmall = document.getElementById('searchInputResultados');
     if (!inputSmall) return;
@@ -164,60 +203,74 @@ function ejecutarBusquedaDesdeInput() {
     }
 }
 
+function restaurarFiltrosDesdeURL() {
+    const params = new URLSearchParams(window.location.search);
+    const catParam = params.get('cat');
+
+    if (catParam) {
+        const cats = catParam.split(',').map(c => decodeURIComponent(c));
+        document.querySelectorAll('.filtro-cat').forEach(cb => {
+            if (cats.includes(cb.value)) {
+                cb.checked = true;
+            }
+        });
+    }
+
+    aplicarFiltrosLocales(false);
+}
+
 function limpiarFiltros(evento) {
     if (evento) evento.preventDefault(); 
     document.querySelectorAll('.filtro-cat').forEach(checkbox => {
         checkbox.checked = false;
     });
-    renderizarTarjetas(resultadosOriginales);
-}
-
-function aplicarFiltrosLocales() {
-    const checkboxesActivos = document.querySelectorAll('.filtro-cat:checked');
-    const categoriasSeleccionadas = Array.from(checkboxesActivos).map(cb => cb.value);
-
-    if (categoriasSeleccionadas.length === 0) {
-        renderizarTarjetas(resultadosOriginales);
-        return;
-    }
-
-    const resultadosFiltrados = resultadosOriginales.filter(item => {
-        const catItem = item.categoria || "General";
-        return categoriasSeleccionadas.includes(catItem);
-    });
-
-    renderizarTarjetas(resultadosFiltrados);
-}
-
-function aplicarOrdenamiento() {
     const selectOrdenar = document.getElementById('selectOrdenar');
-    if (!selectOrdenar) return;
+    if (selectOrdenar) selectOrdenar.value = '';
 
-    const criterio = selectOrdenar.value;
-    let listaActual = [...resultadosOriginales];
-    
+    paginaActual = 1;
+    aplicarFiltrosLocales(true);
+}
+
+function aplicarFiltrosLocales(actualizarUrl = true) {
     const checkboxesActivos = document.querySelectorAll('.filtro-cat:checked');
     const categoriasSeleccionadas = Array.from(checkboxesActivos).map(cb => cb.value);
-    
+
+    let datosProcesados = [...resultadosOriginales];
+
     if (categoriasSeleccionadas.length > 0) {
-        listaActual = listaActual.filter(item => {
+        datosProcesados = datosProcesados.filter(item => {
             const catItem = item.categoria || "General";
             return categoriasSeleccionadas.includes(catItem);
         });
     }
 
+    // Respetar ordenamiento activo
+    const selectOrdenar = document.getElementById('selectOrdenar');
+    const criterio = selectOrdenar ? selectOrdenar.value : '';
+
     if (criterio === 'alfabetico') {
-        listaActual.sort((a, b) => a.dataset_recomendado.localeCompare(b.dataset_recomendado));
+        datosProcesados.sort((a, b) => (a.dataset_recomendado || "").localeCompare(b.dataset_recomendado || ""));
     } else if (criterio === 'recientes') {
-        listaActual.sort((a, b) => new Date(b.fecha_actualizacion) - new Date(a.fecha_actualizacion));
+        datosProcesados.sort((a, b) => new Date(b.fecha_actualizacion) - new Date(a.fecha_actualizacion));
     }
 
-    renderizarTarjetas(listaActual);
+    listaEnMemoria = datosProcesados;
+
+    const totalPaginas = Math.ceil(listaEnMemoria.length / elementosPorPagina) || 1;
+    if (paginaActual > totalPaginas) paginaActual = 1;
+
+    mostrarPaginaActual();
+
+    if (actualizarUrl) {
+        sincronizarURL();
+    }
 }
 
-/**
- * 5. RENDERIZADO Y UI
- */
+function aplicarOrdenamiento() {
+    aplicarFiltrosLocales(true);
+}
+
+//5. RENDERIZADO Y UI
 function renderizarFiltrosDependencias(lista) {
     const contenedorFiltros = document.getElementById('contenedor-filtros-dependencias');
     if (!contenedorFiltros) return;
@@ -236,8 +289,8 @@ function renderizarFiltrosDependencias(lista) {
         const isChecked = seleccionadasPrevias.includes(cat) ? 'checked' : '';
         htmlFiltros += `
             <label class="filter-item">
-                <input type="checkbox" class="filtro-cat" value="${cat}" ${isChecked}> 
-                <span title="${cat}">${cat}</span> 
+                <input type="checkbox" class="filtro-cat" value="${escaparHTML(cat)}" ${isChecked}> 
+                <span title="${escaparHTML(cat)}">${escaparHTML(cat)}</span> 
                 <span>${conteosCat[cat]}</span>
             </label>
         `;
@@ -246,7 +299,10 @@ function renderizarFiltrosDependencias(lista) {
     contenedorFiltros.innerHTML = htmlFiltros;
 
     document.querySelectorAll('.filtro-cat').forEach(checkbox => {
-        checkbox.addEventListener('change', aplicarFiltrosLocales);
+        checkbox.addEventListener('change', () => {
+            paginaActual = 1;
+            aplicarFiltrosLocales(true);
+        });
     });
 }
 
@@ -256,7 +312,6 @@ function actualizarContadores(lista) {
 
 function renderizarTarjetas(listaItems) {
     listaEnMemoria = listaItems;
-    paginaActual = 1;
     mostrarPaginaActual();
 }
 
@@ -280,7 +335,6 @@ function mostrarPaginaActual() {
     if (emptyState) emptyState.style.display = 'none';
     textoResultados.innerHTML = `<strong>${listaEnMemoria.length}</strong> conjuntos encontrados`;
 
-    // Calcular límites de la paginación
     const totalPaginas = Math.ceil(listaEnMemoria.length / elementosPorPagina);
     if (paginaActual > totalPaginas) paginaActual = totalPaginas;
     if (paginaActual < 1) paginaActual = 1;
@@ -344,23 +398,20 @@ function mostrarPaginaActual() {
             const btnSiguiente = document.getElementById('btnPagSiguiente');
             const contenedorNumeros = document.getElementById('numerosPaginacion');
             
-            // Habilitar/Deshabilitar flechas
             btnAnterior.disabled = paginaActual === 1;
             btnSiguiente.disabled = paginaActual === totalPaginas;
 
-            // Limpiar y generar números de página
             contenedorNumeros.innerHTML = '';
             for (let i = 1; i <= totalPaginas; i++) {
                 const btnNum = document.createElement('button');
                 btnNum.type = 'button';
-                // Asignar clase 'active' si es la página actual
                 btnNum.className = `btn-num-pag ${i === paginaActual ? 'active' : ''}`;
                 btnNum.textContent = i;
                 
-                // Evento para saltar a la página específica
                 btnNum.addEventListener('click', () => {
                     paginaActual = i;
                     mostrarPaginaActual();
+                    sincronizarURL();
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                 });
                 
@@ -376,7 +427,8 @@ document.getElementById('btnPagAnterior')?.addEventListener('click', () => {
     if (paginaActual > 1) {
         paginaActual--;
         mostrarPaginaActual();
-        window.scrollTo({ top: 0, behavior: 'smooth' }); // Sube suavemente al inicio
+        sincronizarURL();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 });
 
@@ -385,7 +437,8 @@ document.getElementById('btnPagSiguiente')?.addEventListener('click', () => {
     if (paginaActual < totalPaginas) {
         paginaActual++;
         mostrarPaginaActual();
-        window.scrollTo({ top: 0, behavior: 'smooth' }); // Sube suavemente al inicio
+        sincronizarURL();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 });
 
@@ -394,12 +447,13 @@ function verFichaDetalle(titulo, dependencia, fecha, idDataset) {
     document.getElementById('modalDependencia').textContent = dependencia;
     document.getElementById('modalFecha').textContent = fecha;
     
+    const idSeguro = encodeURIComponent(idDataset);
     const contenedorDescargas = document.getElementById('modalDownloadLinks');
     contenedorDescargas.innerHTML = `
-        <a href="/api/descargar/${idDataset}?formato=csv" class="modal-badge-fmt" style="text-decoration:none; color: var(--blue-dark); transition: 0.2s;">CSV</a>
-        <a href="/api/descargar/${idDataset}?formato=json" class="modal-badge-fmt" style="text-decoration:none; color: var(--blue-dark); transition: 0.2s;">JSON</a>
-        <a href="/api/descargar/${idDataset}?formato=xml" class="modal-badge-fmt" style="text-decoration:none; color: var(--blue-dark); transition: 0.2s;">XML</a>
-        <a href="/api/descargar/${idDataset}?formato=geojson" class="modal-badge-fmt" style="text-decoration:none; color: var(--blue-dark); transition: 0.2s;">GeoJSON</a>
+        <a href="/api/descargar/${idSeguro}?formato=csv" class="modal-badge-fmt" style="text-decoration:none; color: var(--blue-dark); transition: 0.2s;">CSV</a>
+        <a href="/api/descargar/${idSeguro}?formato=json" class="modal-badge-fmt" style="text-decoration:none; color: var(--blue-dark); transition: 0.2s;">JSON</a>
+        <a href="/api/descargar/${idSeguro}?formato=xml" class="modal-badge-fmt" style="text-decoration:none; color: var(--blue-dark); transition: 0.2s;">XML</a>
+        <a href="/api/descargar/${idSeguro}?formato=geojson" class="modal-badge-fmt" style="text-decoration:none; color: var(--blue-dark); transition: 0.2s;">GeoJSON</a>
     `;
     
     document.getElementById('modalFicha').style.display = 'flex';
