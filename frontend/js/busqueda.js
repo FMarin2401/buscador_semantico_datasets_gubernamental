@@ -6,6 +6,14 @@ let paginaActual = 1;
 const elementosPorPagina = 10;
 let listaEnMemoria = [];
 
+
+function escaparHTML(texto) {
+    if (texto === null || texto === undefined) return "";
+    const div = document.createElement("div");
+    div.textContent = String(texto);
+    return div.innerHTML;
+}
+
 /**
  * 2. INICIALIZACIÓN (WINDOW.ONLOAD)
  */
@@ -256,37 +264,41 @@ function mostrarPaginaActual() {
     let htmlContent = '';
     
     itemsPagina.forEach(item => {
-        const tituloSeguro = item.dataset_recomendado.replace(/'/g, "\\'");
-        const descripcionSegura = item.descripcion || "Conjunto de datos oficial disponible para consulta y descarga municipal.";
+        const titulo = item.dataset_recomendado || "";
+        const descripcion = item.descripcion || "Conjunto de datos oficial disponible para consulta y descarga municipal.";
+        const dependencia = item.dependencia || "";
+        const categoria = item.categoria || "General";
+        const fecha = item.fecha_actualizacion || "";
+        const idSeguro = encodeURIComponent(item.id);
         
         htmlContent += `
             <article class="card-resultado-v2">
                 <div class="card-icon" aria-hidden="true">📁</div>
                 <div class="card-body">
                     <header class="badges-container">
-                        <span class="badge-dep">${item.dependencia.toUpperCase()}</span>
+                        <span class="badge-dep">${escaparHTML(dependencia.toUpperCase())}</span>
                         <span class="badge-pub">DOMINIO PÚBLICO</span>
                     </header>
-                    <h3>${item.dataset_recomendado}</h3>
-                    <p class="card-desc">${descripcionSegura}</p>
+                    <h3>${escaparHTML(titulo)}</h3>
+                    <p class="card-desc">${escaparHTML(descripcion)}</p>
                     <footer class="card-meta">
-                        <span>Categoría: ${item.categoria || "General"}</span>
-                        <span>Actualizado: ${item.fecha_actualizacion}</span>
-                        <span>${item.descargas !== undefined ? item.descargas : 0} descargas</span>
+                        <span>Categoría: ${escaparHTML(categoria)}</span>
+                        <span>Actualizado: ${escaparHTML(fecha)}</span>
+                        <span>${Number(item.descargas) || 0} descargas</span>
                     </footer>
                 </div>
                 <div class="card-actions">
                     <div class="format-badges" aria-label="Formatos de descarga disponibles">
-                        <a href="/api/descargar/${item.id}?formato=csv"><span>CSV</span></a>
-                        <a href="/api/descargar/${item.id}?formato=json"><span>JSON</span></a>
-                        <a href="/api/descargar/${item.id}?formato=xml"><span>XML</span></a>
-                        <a href="/api/descargar/${item.id}?formato=geojson"><span>GeoJSON</span></a>
+                        <a href="/api/descargar/${idSeguro}?formato=csv"><span>CSV</span></a>
+                        <a href="/api/descargar/${idSeguro}?formato=json"><span>JSON</span></a>
+                        <a href="/api/descargar/${idSeguro}?formato=xml"><span>XML</span></a>
+                        <a href="/api/descargar/${idSeguro}?formato=geojson"><span>GeoJSON</span></a>
                     </div>
                     <button type="button" class="btn-ficha" 
-                        data-titulo="${tituloSeguro}" 
-                        data-dependencia="${item.dependencia}" 
-                        data-fecha="${item.fecha_actualizacion}" 
-                        data-id="${item.id}">
+                        data-titulo="${escaparHTML(titulo)}" 
+                        data-dependencia="${escaparHTML(dependencia)}" 
+                        data-fecha="${escaparHTML(fecha)}" 
+                        data-id="${idSeguro}">
                         Ver ficha
                     </button>
                 </div>

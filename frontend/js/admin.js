@@ -1,6 +1,13 @@
 // Definir el token global para todas las peticiones
 const token = localStorage.getItem("authToken");
 
+function escaparHTML(texto) {
+    if (texto === null || texto === undefined) return "";
+    const div = document.createElement("div");
+    div.textContent = String(texto);
+    return div.innerHTML;
+}
+
 // Helper para mostrar notificaciones flotantes temporales
 function mostrarToast(mensaje, tipo = "info", duracion = 3500) {
     let contenedor = document.getElementById("toastContainer");
@@ -315,8 +322,8 @@ async function renderizarDashboard() {
                         });
                         auditHtml += `
                             <li>
-                                <span class="audit-action"><strong>[${log.usuario}]</strong> ${log.accion}</span>
-                                <small class="audit-target">${log.detalles} · ${hora}</small>
+                                <span class="audit-action"><strong>[${escaparHTML(log.usuario)}]</strong> ${escaparHTML(log.accion)}</span>
+                                <small class="audit-target">${escaparHTML(log.detalles)} · ${hora}</small>
                             </li>
                         `;
                     });
@@ -487,19 +494,20 @@ function renderizarTablaPaginada() {
     const datosPagina = datasetsFiltrados.slice(inicio, fin);
 
     datosPagina.forEach(item => {
+        const idSeguro = encodeURIComponent(item.id);
         const fila = `
             <tr>
-                <td><strong>${item.titulo}</strong></td>
-                <td>${item.dependencia}</td>
-                <td>${item.fecha}</td>
+                <td><strong>${escaparHTML(item.titulo)}</strong></td>
+                <td>${escaparHTML(item.dependencia)}</td>
+                <td>${escaparHTML(item.fecha)}</td>
                 <td class="text-center" style="display: flex; gap: 8px; justify-content: center;">
                     <button class="btn-editar-dataset btn-secondary" 
-                        data-id="${item.id}" 
-                        data-titulo="${item.titulo}" 
-                        data-descripcion="${item.descripcion || ''}" 
-                        data-dependencia="${item.dependencia}" 
-                        data-categoria="${item.categoria}">Editar</button>
-                    <button class="btn-borrar-dataset btn-danger" data-id="${item.id}">Borrar</button>
+                        data-id="${idSeguro}" 
+                        data-titulo="${escaparHTML(item.titulo)}" 
+                        data-descripcion="${escaparHTML(item.descripcion || '')}" 
+                        data-dependencia="${escaparHTML(item.dependencia)}" 
+                        data-categoria="${escaparHTML(item.categoria || '')}">Editar</button>
+                    <button class="btn-borrar-dataset btn-danger" data-id="${idSeguro}">Borrar</button>
                 </td>
             </tr>
         `;
@@ -594,15 +602,17 @@ function renderizarTablaMensajesPaginada() {
             hour: '2-digit',
             minute: '2-digit'
         });
-
+        
+        const emailSeguro = encodeURI(item.email || '');
+        const idSeguro = encodeURIComponent(item.id);
         const fila = `
             <tr>
-                <td><strong>${item.nombre}</strong></td>
-                <td><a href="mailto:${item.email}" style="color: var(--blue-primary, #004b87);">${item.email}</a></td>
-                <td>${item.mensaje}</td>
-                <td>${fechaFormateada}</td>
+                <td><strong>${escaparHTML(item.nombre)}</strong></td>
+                <td><a href="mailto:${emailSeguro}" style="color: var(--blue-primary, #004b87);">${escaparHTML(item.email)}</a></td>
+                <td>${escaparHTML(item.mensaje)}</td>
+                <td>${escaparHTML(fechaFormateada)}</td>
                 <td class="text-center">
-                    <button class="btn-borrar-mensaje btn-danger" data-id="${item.id}">Borrar</button>
+                    <button class="btn-borrar-mensaje btn-danger" data-id="${idSeguro}">Borrar</button>
                 </td>
             </tr>
         `;
@@ -721,12 +731,13 @@ async function cargarUsuariosAdmin() {
         }
 
         data.usuarios.forEach(u => {
+            const idSeguro = encodeURIComponent(u.id);
             tbody.innerHTML += `
                 <tr>
-                    <td><strong>${u.username}</strong></td>
-                    <td><span class="badge-pub">${u.rol.toUpperCase()}</span></td>
+                    <td><strong>${escaparHTML(u.username)}</strong></td>
+                    <td><span class="badge-pub">${escaparHTML(u.rol ? u.rol.toUpperCase() : '')}</span></td>
                     <td class="text-center">
-                        <button class="btn-borrar-usuario btn-danger" data-id="${u.id}">Baja</button>
+                        <button class="btn-borrar-usuario btn-danger" data-id="${idSeguro}">Baja</button>
                     </td>
                 </tr>
             `;
