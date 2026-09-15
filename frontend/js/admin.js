@@ -1,6 +1,9 @@
 // Definir el token global para todas las peticiones
-const token = localStorage.getItem("authToken");
+function obtenerToken() {
+    return localStorage.getItem("authToken");
+}
 
+// Funcion para evitar XSS
 function escaparHTML(texto) {
     if (texto === null || texto === undefined) return "";
     const div = document.createElement("div");
@@ -252,7 +255,7 @@ async function renderizarDashboard() {
     try {
         const respuesta = await fetch(`/api/admin/datasets`, {
             method: "GET",
-            headers: { "Authorization": `Bearer ${token}` }
+            headers: { "Authorization": `Bearer ${obtenerToken()}` }
         });
         const data = await respuesta.json();
         
@@ -309,7 +312,7 @@ async function renderizarDashboard() {
             try {
                 const respLog = await fetch(`/api/admin/bitacora`, {
                     method: "GET",
-                    headers: { "Authorization": `Bearer ${token}` }
+                    headers: { "Authorization": `Bearer ${obtenerToken()}` }
                 });
                 const dataLog = await respLog.json();
 
@@ -367,7 +370,7 @@ async function manejarSubidaDataset(evento) {
     try {
         const respuesta = await fetch(`/api/admin/subir`, {
             method: "POST",
-            headers: { "Authorization": `Bearer ${token}` },
+            headers: { "Authorization": `Bearer ${obtenerToken()}` },
             body: formData 
         });
 
@@ -398,7 +401,7 @@ async function poblarOpcionesDinamicas() {
     try {
         const respuesta = await fetch(`/api/admin/datasets`, {
             method: "GET",
-            headers: { "Authorization": `Bearer ${token}` }
+            headers: { "Authorization": `Bearer ${obtenerToken()}` }
         });
         const data = await respuesta.json();
         if (!data.resultados) return;
@@ -446,7 +449,7 @@ async function cargarCatalogoAdmin() {
     try {
         const respuesta = await fetch(`/api/admin/datasets`, {
             method: "GET",
-            headers: { "Authorization": `Bearer ${token}` }
+            headers: { "Authorization": `Bearer ${obtenerToken()}` }
         });
         const data = await respuesta.json();
         
@@ -560,7 +563,7 @@ async function cargarMensajesAdmin() {
     try {
         const respuesta = await fetch(`/api/admin/mensajes`, {
             method: "GET",
-            headers: { "Authorization": `Bearer ${token}` }
+            headers: { "Authorization": `Bearer ${obtenerToken()}` }
         });
         const data = await respuesta.json();
 
@@ -663,7 +666,7 @@ async function eliminarMensajeAdmin(idMensaje) {
     try {
         const respuesta = await fetch(`/api/admin/mensajes/${idMensaje}`, {
             method: "DELETE",
-            headers: { "Authorization": `Bearer ${token}` }
+            headers: { "Authorization": `Bearer ${obtenerToken()}` }
         });
 
         if (respuesta.ok) {
@@ -685,7 +688,7 @@ async function exportarBitacora() {
         const respuesta = await fetch(`/api/admin/bitacora/exportar`, {
             method: "GET",
             headers: {
-                "Authorization": `Bearer ${token}`
+                "Authorization": `Bearer ${obtenerToken()}`
             }
         });
 
@@ -720,7 +723,7 @@ async function cargarUsuariosAdmin() {
 
     try {
         const resp = await fetch(`/api/admin/usuarios`, {
-            headers: { "Authorization": `Bearer ${token}` }
+            headers: { "Authorization": `Bearer ${obtenerToken()}` }
         });
         const data = await resp.json();
 
@@ -761,7 +764,7 @@ async function manejarCrearUsuario(e) {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                "Authorization": `Bearer ${token}`
+                "Authorization": `Bearer ${obtenerToken()}`
             },
             body: JSON.stringify({ username, password, rol })
         });
@@ -793,7 +796,7 @@ async function eliminarUsuarioAdmin(id) {
     try {
         const resp = await fetch(`/api/admin/usuarios/${id}`, {
             method: "DELETE",
-            headers: { "Authorization": `Bearer ${token}` }
+            headers: { "Authorization": `Bearer ${obtenerToken()}` }
         });
         const data = await resp.json();
 
@@ -834,7 +837,7 @@ async function manejarEdicionDataset(evento) {
             method: "PUT",
             headers: {
                 "Content-Type": "application/json",
-                "Authorization": `Bearer ${token}`
+                "Authorization": `Bearer ${obtenerToken()}`
             },
             body: JSON.stringify({ titulo, descripcion, dependencia, categoria })
         });
@@ -861,7 +864,7 @@ async function eliminarDataset(idDataset) {
     try {
         const respuesta = await fetch(`/api/admin/datasets/${idDataset}`, {
             method: "DELETE",
-            headers: { "Authorization": `Bearer ${token}` }
+            headers: { "Authorization": `Bearer ${obtenerToken()}` }
         });
 
         if (respuesta.ok) {
