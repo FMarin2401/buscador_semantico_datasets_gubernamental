@@ -43,8 +43,13 @@
         </aside>
 
         <section class="main-content" aria-label="Resultados de búsqueda">
-            <div class="resultados-header">
-                <span id="texto-resultados"><strong>0</strong> conjuntos encontrados</span>
+            <div class="resultados-header" style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;">
+                <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+                    <span id="texto-resultados"><strong>0</strong> conjuntos encontrados</span>
+                    <a href="/explorar_datos.html" id="btnRestablecerBusqueda" class="btn-restablecer" style="display: none; font-size: 0.82rem; color: #b91c1c; text-decoration: none; background: #fee2e2; padding: 0.25rem 0.65rem; border-radius: 9999px; font-weight: 500; border: 1px solid #fca5a5;">
+                        ✕ Ver catálogo completo
+                    </a>
+                </div>
                 <a href="#" class="link-explorar-cat" id="btnExplorarCat">Explorar por categoría</a>
             </div>
             <div id="contenedor-tarjetas"></div>

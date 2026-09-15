@@ -97,6 +97,14 @@ window.onload = async function() {
         btnLimpiar.addEventListener('click', limpiarFiltros);
     }
 
+    const btnLimpiarEmpty = document.getElementById('btnLimpiarEmpty');
+    if (btnLimpiarEmpty) {
+        btnLimpiarEmpty.addEventListener('click', () => {
+            // Limpia la búsqueda y recarga el catálogo completo desde cero
+                 window.location.href = '/explorar_datos.html';
+        });
+    }
+
     const btnExplorarCat = document.getElementById('btnExplorarCat');
     if (btnExplorarCat) {
         btnExplorarCat.addEventListener('click', alternarSidebarFiltros);
@@ -145,6 +153,11 @@ async function ejecutarBusquedaAPI(busq) {
 
     if (textoResultados) {
         textoResultados.innerHTML = `<span>Buscando datos sobre <strong>"${escaparHTML(busq)}"</strong>...</span>`;
+    }
+
+    const btnRestablecer = document.getElementById('btnRestablecerBusqueda');
+    if (btnRestablecer) {
+        btnRestablecer.style.display = 'inline-flex';
     }
 
     if (contenedor) {
@@ -333,7 +346,16 @@ function mostrarPaginaActual() {
     }
 
     if (emptyState) emptyState.style.display = 'none';
+    
+    const params = new URLSearchParams(window.location.search);
+    const hayBusquedaActiva = params.has('q') && params.get('q').trim() !== '';
+    
     textoResultados.innerHTML = `<strong>${listaEnMemoria.length}</strong> conjuntos encontrados`;
+    
+    const btnRestablecer = document.getElementById('btnRestablecerBusqueda');
+    if (btnRestablecer) {
+        btnRestablecer.style.display = hayBusquedaActiva ? 'inline-flex' : 'none';
+    }
 
     const totalPaginas = Math.ceil(listaEnMemoria.length / elementosPorPagina);
     if (paginaActual > totalPaginas) paginaActual = totalPaginas;
