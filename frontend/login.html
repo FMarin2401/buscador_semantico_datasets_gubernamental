@@ -18,7 +18,15 @@
             </div>
             <div class="filter-group">
                 <label for="inputPassword" class="admin-label">CONTRASEÑA</label>
-                <input type="password" id="inputPassword" class="form-input" placeholder="••••••••" required>
+                <div style="position: relative; display: flex; align-items: center;">
+                    <input type="password" id="inputPassword" class="form-input" placeholder="••••••••" required style="padding-right: 2.75rem; width: 100%;">
+                    <button type="button" id="btnTogglePassword" aria-label="Mostrar contraseña" style="position: absolute; right: 0.75rem; background: none; border: none; cursor: pointer; padding: 0.25rem; display: flex; align-items: center; justify-content: center; color: #64748b;">
+                        <svg id="iconoPassword" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                        </svg>
+                    </button>
+                </div>
             </div>
             <button type="submit" class="btn-primary btn-full">Ingresar al Sistema</button>
             <p id="mensajeErrorLogin" class="admin-mensaje" style="color: red;"></p>
