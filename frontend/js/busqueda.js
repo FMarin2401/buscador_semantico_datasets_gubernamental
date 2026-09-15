@@ -89,7 +89,33 @@ window.onload = async function() {
 /**
  * 3. PETICIONES A LA API
  */
+
 async function ejecutarBusquedaAPI(busq) {
+    const contenedor = document.getElementById('contenedor-tarjetas');
+    const textoResultados = document.getElementById('texto-resultados');
+    const paginacionContenedor = document.getElementById('paginacionContenedor');
+    const emptyState = document.getElementById('emptyState');
+
+    // 1. Ocultar estados previos y paginación
+    if (emptyState) emptyState.style.display = 'none';
+    if (paginacionContenedor) paginacionContenedor.style.display = 'none';
+
+    // 2. Feedback visual inmediato en el texto de conteo
+    if (textoResultados) {
+        textoResultados.innerHTML = `<span>Buscando datos sobre <strong>"${escaparHTML(busq)}"</strong>...</span>`;
+    }
+
+    // 3. Renderizar tarjeta de carga / skeleton temporal
+    if (contenedor) {
+        contenedor.innerHTML = `
+            <article class="card-resultado-v2" style="text-align: center; padding: 2.5rem 1.5rem; justify-content: center; align-items: center;">
+                <div style="font-size: 2rem; margin-bottom: 0.5rem; animation: pulse 1.5s infinite;">⏳</div>
+                <h3 style="margin-bottom: 0.25rem;">Analizando consulta con IA semántica...</h3>
+                <p style="color: #666; font-size: 0.9rem; margin: 0;">Comparando embeddings vectoriales contra el catálogo municipal.</p>
+            </article>
+        `;
+    }
+
     try {
         const respuesta = await fetch(`/api/buscar?prompt=${encodeURIComponent(busq)}`);
         const data = await respuesta.json();
@@ -98,9 +124,11 @@ async function ejecutarBusquedaAPI(busq) {
         actualizarContadores(resultadosOriginales);
         renderizarTarjetas(resultadosOriginales);
     } catch (error) {
-        const contenedor = document.getElementById('contenedor-tarjetas');
         if (contenedor) {
-            contenedor.innerHTML = '<p style="color:red;">Error de conexión con la API.</p>';
+            contenedor.innerHTML = '<p style="color:red; text-align:center; padding: 2rem;">Error de conexión con la API de búsqueda semántica.</p>';
+        }
+        if (textoResultados) {
+            textoResultados.innerHTML = '<strong>Error en la consulta</strong>';
         }
     }
 }

@@ -13,6 +13,8 @@ from app.api import manipulate_datasets, pages, search, auth, contact
 from passlib.context import CryptContext
 from app.db_users.connection import engine, Base, SessionLocal
 from app.db_users.models import UsuarioModel
+from app.nlp_model import generar_embedding
+from app.db_chroma import coleccion
 
 # Configuración de logging para consola y archivo para auditoria
 os.makedirs("logs", exist_ok=True)
@@ -78,3 +80,12 @@ def inicializar_admin():
         db.commit()
         print("¡Administrador inicial registrado en SQLite desde el .env!")
     db.close()
+
+    # --- WARM-UP ---
+    try:
+        vector_test = generar_embedding("warm up test municipal")
+        coleccion.query(query_embeddings=[vector_test], n_results=1)
+        print("[WARM-UP] Modelo semántico y ChromaDB precargados exitosamente en RAM.")
+    except Exception as e:
+        print(f"[WARM-UP] Aviso durante precarga del modelo: {e}")
+
