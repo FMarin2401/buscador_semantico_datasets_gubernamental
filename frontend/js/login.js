@@ -11,7 +11,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const password = document.getElementById("inputPassword").value;
 
             try {
-                const respuesta = await fetch(`${CONFIG.API_BASE_URL}/api/login`, {
+                const respuesta = await fetch(`/api/login`, {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json"

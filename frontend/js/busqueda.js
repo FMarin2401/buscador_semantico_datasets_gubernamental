@@ -14,7 +14,7 @@ window.onload = async function() {
     const busqueda = parametros.get('q');
     
     try {
-        const respCat = await fetch(`${CONFIG.API_BASE_URL}/api/catalogos`);
+        const respCat = await fetch(`/api/catalogos`);
         const dataCat = await respCat.json();
         const total = dataCat.resultados ? dataCat.resultados.length : 0;
         const inputSmall = document.getElementById('searchInputResultados');
@@ -83,7 +83,7 @@ window.onload = async function() {
  */
 async function ejecutarBusquedaAPI(busq) {
     try {
-        const respuesta = await fetch(`${CONFIG.API_BASE_URL}/api/buscar?prompt=${encodeURIComponent(busq)}`);
+        const respuesta = await fetch(`/api/buscar?prompt=${encodeURIComponent(busq)}`);
         const data = await respuesta.json();
         
         resultadosOriginales = data.resultados || [];
@@ -99,7 +99,7 @@ async function ejecutarBusquedaAPI(busq) {
 
 async function cargarCatalogoCompleto() {
     try {
-        const respuesta = await fetch(`${CONFIG.API_BASE_URL}/api/catalogos`);
+        const respuesta = await fetch(`/api/catalogos`);
         const data = await respuesta.json();
         
         resultadosOriginales = data.resultados || [];
@@ -122,9 +122,9 @@ function ejecutarBusquedaDesdeInput() {
     
     const texto = inputSmall.value.trim();
     if (texto === "") {
-        window.location.href = "explorar_datos.html";
+        window.location.href = "/explorar_datos.html";
     } else {
-        window.location.href = `explorar_datos.html?q=${encodeURIComponent(texto)}`;
+        window.location.href = `/explorar_datos.html?q=${encodeURIComponent(texto)}`;
     }
 }
 
@@ -277,10 +277,10 @@ function mostrarPaginaActual() {
                 </div>
                 <div class="card-actions">
                     <div class="format-badges" aria-label="Formatos de descarga disponibles">
-                        <a href="${CONFIG.API_BASE_URL}/api/descargar/${item.id}?formato=csv"><span>CSV</span></a>
-                        <a href="${CONFIG.API_BASE_URL}/api/descargar/${item.id}?formato=json"><span>JSON</span></a>
-                        <a href="${CONFIG.API_BASE_URL}/api/descargar/${item.id}?formato=xml"><span>XML</span></a>
-                        <a href="${CONFIG.API_BASE_URL}/api/descargar/${item.id}?formato=geojson"><span>GeoJSON</span></a>
+                        <a href="/api/descargar/${item.id}?formato=csv"><span>CSV</span></a>
+                        <a href="/api/descargar/${item.id}?formato=json"><span>JSON</span></a>
+                        <a href="/api/descargar/${item.id}?formato=xml"><span>XML</span></a>
+                        <a href="/api/descargar/${item.id}?formato=geojson"><span>GeoJSON</span></a>
                     </div>
                     <button type="button" class="btn-ficha" 
                         data-titulo="${tituloSeguro}" 
@@ -356,10 +356,10 @@ function verFichaDetalle(titulo, dependencia, fecha, idDataset) {
     
     const contenedorDescargas = document.getElementById('modalDownloadLinks');
     contenedorDescargas.innerHTML = `
-        <a href="${CONFIG.API_BASE_URL}/api/descargar/${idDataset}?formato=csv" class="modal-badge-fmt" style="text-decoration:none; color: var(--blue-dark); transition: 0.2s;">CSV</a>
-        <a href="${CONFIG.API_BASE_URL}/api/descargar/${idDataset}?formato=json" class="modal-badge-fmt" style="text-decoration:none; color: var(--blue-dark); transition: 0.2s;">JSON</a>
-        <a href="${CONFIG.API_BASE_URL}/api/descargar/${idDataset}?formato=xml" class="modal-badge-fmt" style="text-decoration:none; color: var(--blue-dark); transition: 0.2s;">XML</a>
-        <a href="${CONFIG.API_BASE_URL}/api/descargar/${idDataset}?formato=geojson" class="modal-badge-fmt" style="text-decoration:none; color: var(--blue-dark); transition: 0.2s;">GeoJSON</a>
+        <a href="/api/descargar/${idDataset}?formato=csv" class="modal-badge-fmt" style="text-decoration:none; color: var(--blue-dark); transition: 0.2s;">CSV</a>
+        <a href="/api/descargar/${idDataset}?formato=json" class="modal-badge-fmt" style="text-decoration:none; color: var(--blue-dark); transition: 0.2s;">JSON</a>
+        <a href="/api/descargar/${idDataset}?formato=xml" class="modal-badge-fmt" style="text-decoration:none; color: var(--blue-dark); transition: 0.2s;">XML</a>
+        <a href="/api/descargar/${idDataset}?formato=geojson" class="modal-badge-fmt" style="text-decoration:none; color: var(--blue-dark); transition: 0.2s;">GeoJSON</a>
     `;
     
     document.getElementById('modalFicha').style.display = 'flex';

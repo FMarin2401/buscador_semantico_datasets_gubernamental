@@ -300,7 +300,7 @@ async function renderizarDashboard() {
         const listaAuditoria = document.getElementById('listaAuditoria');
         if (listaAuditoria) {
             try {
-                const respLog = await fetch(`${CONFIG.API_BASE_URL}/api/admin/bitacora`, {
+                const respLog = await fetch(`/api/admin/bitacora`, {
                     method: "GET",
                     headers: { "Authorization": `Bearer ${token}` }
                 });
@@ -550,7 +550,7 @@ async function cargarMensajesAdmin() {
     tbody.innerHTML = '<tr><td colspan="5" class="text-center">Cargando mensajes...</td></tr>';
 
     try {
-        const respuesta = await fetch(`${CONFIG.API_BASE_URL}/api/admin/mensajes`, {
+        const respuesta = await fetch(`/api/admin/mensajes`, {
             method: "GET",
             headers: { "Authorization": `Bearer ${token}` }
         });
@@ -651,7 +651,7 @@ async function eliminarMensajeAdmin(idMensaje) {
     if (!confirmacion) return;
 
     try {
-        const respuesta = await fetch(`${CONFIG.API_BASE_URL}/api/admin/mensajes/${idMensaje}`, {
+        const respuesta = await fetch(`/api/admin/mensajes/${idMensaje}`, {
             method: "DELETE",
             headers: { "Authorization": `Bearer ${token}` }
         });

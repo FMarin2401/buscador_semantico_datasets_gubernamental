@@ -19,7 +19,7 @@ document.addEventListener("DOMContentLoaded", () => {
         };
 
         try {
-            const resp = await fetch(`${CONFIG.API_BASE_URL}/api/contacto`, {
+            const resp = await fetch(`/api/contacto`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
