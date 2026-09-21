@@ -1,8 +1,9 @@
 import logging
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 
 # Módulos internos del proyecto
+from app.limiter import limiter 
 from app.db_chroma import buscar_similares, coleccion
 from app.nlp_model import generar_embedding
 from app.db_users.models import DescargasDatasetModel
@@ -47,8 +48,9 @@ def obtener_todo_el_catalogo(db: Session = Depends(get_db)):
             
     return {"resultados": catalogos_completos}
 
-@router.get("/api/buscar") 
-def buscar_dataset(prompt: str, db: Session = Depends(get_db)):
+@router.get("/api/buscar")
+@limiter.limit("15/minute")
+def buscar_dataset(request: Request, prompt: str, db: Session = Depends(get_db)):
     vector_prompt = generar_embedding(prompt) 
     
     n_meta = 10

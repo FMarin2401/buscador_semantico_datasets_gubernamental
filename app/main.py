@@ -8,6 +8,8 @@ import logging
 from fastapi import FastAPI 
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 
 from app.api import manipulate_datasets, pages, search, auth, contact
 from passlib.context import CryptContext
@@ -15,6 +17,7 @@ from app.db_users.connection import engine, Base, SessionLocal
 from app.db_users.models import UsuarioModel
 from app.nlp_model import generar_embedding
 from app.db_chroma import coleccion
+from app.limiter import limiter
 
 # Configuración de logging para consola y archivo para auditoria
 os.makedirs("logs", exist_ok=True)
@@ -31,6 +34,9 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="API Buscador Semántico Gubernamental") # Crea un servidor FastAPI con el nombre de la API
+
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 app.mount("/data", StaticFiles(directory="data/raw"), name="data") # Converte la carpeta data/raw en un servidor de archivos estaticos para descarga
 app.mount("/css", StaticFiles(directory="frontend/css"), name="css")

@@ -1,6 +1,6 @@
 import os
 from datetime import datetime, timedelta
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError, jwt
 from pydantic import BaseModel
@@ -10,6 +10,7 @@ from passlib.context import CryptContext
 
 from app.db_users.connection import get_db
 from app.db_users.models import UsuarioModel, BitacoraAuditoriaModel
+from app.limiter import limiter 
 
 router = APIRouter(tags=["Autenticación"])
 load_dotenv()
@@ -37,7 +38,8 @@ class CredencialesAdmin(BaseModel):
     password: str
 
 @router.post("/api/login")
-def login_admin(credenciales: CredencialesAdmin, db: Session = Depends(get_db)):
+@limiter.limit("5/minute")
+def login_admin(request: Request, credenciales: CredencialesAdmin, db: Session = Depends(get_db)):
     # Buscamos al usuario en SQLite
     usuario_db = db.query(UsuarioModel).filter(UsuarioModel.username == credenciales.usuario).first()
     
