@@ -6,8 +6,8 @@ from sqlalchemy.orm import Session
 from app.limiter import limiter 
 from app.db_chroma import buscar_similares, coleccion
 from app.nlp_model import generar_embedding
-from app.db_users.models import DescargasDatasetModel
-from app.db_users.connection import get_db
+from app.db_core.models import DescargasDatasetModel
+from app.db_core.connection import get_db
 
 router = APIRouter(tags=["Búsqueda Semántica"])
 logger = logging.getLogger(__name__)

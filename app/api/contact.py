@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, status, HTTPException
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, EmailStr
-from app.db_users.connection import get_db
-from app.db_users.models import MensajeContactoModel, BitacoraAuditoriaModel
+from app.db_core.connection import get_db
+from app.db_core.models import MensajeContactoModel, BitacoraAuditoriaModel
 from app.api.auth import verificar_token
 
 router = APIRouter(tags=["Contacto"])

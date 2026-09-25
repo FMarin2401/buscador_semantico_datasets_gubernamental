@@ -18,8 +18,8 @@ from sqlalchemy.orm import Session
 from app.db_chroma import coleccion, guardar_datasets, obtener_todos_datasets
 from app.nlp_model import generar_embedding
 from app.api.auth import verificar_token
-from app.db_users.connection import get_db
-from app.db_users.models import BitacoraAuditoriaModel, DescargasDatasetModel
+from app.db_core.connection import get_db
+from app.db_core.models import BitacoraAuditoriaModel, DescargasDatasetModel
 
 router = APIRouter(tags=["Gestión y Descarga de Datasets"])
 logger = logging.getLogger(__name__)
@@ -99,11 +99,6 @@ async def publicar_dataset(
         )
 
     hash_calculado = hashlib.sha256(contenido_archivo).hexdigest()
-    await archivo.seek(0)
-
-    contenido_archivo = await archivo.read()
-    hash_calculado = hashlib.sha256(contenido_archivo).hexdigest()
-
     await archivo.seek(0)
 
     datos_existentes = obtener_todos_datasets()

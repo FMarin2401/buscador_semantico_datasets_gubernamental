@@ -3,8 +3,9 @@
 # Librerías estándar de Python
 import os
 import logging
+from contextlib import asynccontextmanager
 
-# Librerías de terceros 
+# Librerías de terceros
 from fastapi import FastAPI, Response, status, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -15,9 +16,9 @@ from sqlalchemy import text
 from passlib.context import CryptContext
 
 # Módulos internos de la aplicación
-from app.api import manipulate_datasets, pages, search, auth, contact
-from app.db_users.connection import engine, Base, SessionLocal, get_db
-from app.db_users.models import UsuarioModel
+from app.api import manipulate_datasets, pages, search, auth, contact, usuarios
+from app.db_core.connection import engine, Base, SessionLocal, get_db
+from app.db_core.models import UsuarioModel
 from app.nlp_model import generar_embedding
 from app.db_chroma import coleccion
 from app.limiter import limiter
@@ -36,12 +37,56 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="API Buscador Semántico Gubernamental")
-
 # --- CONTROL GLOBAL DE ESTADO (HEALTH PROBES) ---
 app_state = {
     "warmup_ready": False
 }
+
+# Configuración de Passlib para cifrar la contraseña inicial
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+# --- CICLO DE VIDA (STARTUP) ---
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Crear la tabla automáticamente
+    Base.metadata.create_all(bind=engine)
+
+    db = SessionLocal()
+    try:
+        admin_existente = db.query(UsuarioModel).first()
+        if not admin_existente:
+            user_env = os.getenv("ADMIN_USER")
+            pass_env = os.getenv("ADMIN_PASSWORD")
+            if not user_env or not pass_env:
+                raise RuntimeError("ADMIN_USER y ADMIN_PASSWORD deben estar configuradas en el .env")
+
+            nuevo_admin = UsuarioModel(
+                username=user_env,
+                password_hash=pwd_context.hash(pass_env),
+                rol="admin"
+            )
+            db.add(nuevo_admin)
+            db.commit()
+            print("¡Administrador inicial registrado desde el .env!")
+    finally:
+        db.close()
+
+    # --- WARM-UP ---
+    try:
+        vector_test = generar_embedding("warm up test municipal")
+        coleccion.query(query_embeddings=[vector_test], n_results=1)
+        app_state["warmup_ready"] = True
+        print("[WARM-UP] Modelo semántico y ChromaDB precargados exitosamente en RAM.")
+    except Exception as e:
+        app_state["warmup_ready"] = False
+        print(f"[WARM-UP] Aviso durante precarga del modelo: {e}")
+
+    yield  # --- la app queda corriendo aquí ---
+
+    # (nada que limpiar al apagar por ahora)
+
+
+app = FastAPI(title="API Buscador Semántico Gubernamental", lifespan=lifespan)
 
 # --- RATE LIMITING ---
 app.state.limiter = limiter
@@ -58,22 +103,19 @@ app.include_router(pages.router)
 app.include_router(search.router)
 app.include_router(manipulate_datasets.router)
 app.include_router(auth.router)
+app.include_router(usuarios.router)
 app.include_router(contact.router)
 
 # Configuración de CORS
+origenes_permitidos = os.getenv("ALLOWED_ORIGINS", "http://localhost:8000").split(",")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origenes_permitidos,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Configuración de Passlib para cifrar la contraseña inicial
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-# Crear la tabla de SQLite automáticamente
-Base.metadata.create_all(bind=engine)
 
 
 # --- ENDPOINTS DE MONITOREO Y HEALTH CHECKS ---
@@ -92,19 +134,17 @@ def liveness_check():
 def readiness_check(response: Response, db: Session = Depends(get_db)):
     """
     Readiness Probe: Comprueba que el warm-up haya concluido,
-    que ChromaDB esté en RAM y que SQLite responda consultas.
+    que ChromaDB esté en RAM y que la base relacional responda consultas.
     """
     errores = []
 
-    # 1. Validar que el warm-up del modelo terminó
     if not app_state["warmup_ready"]:
         errores.append("Warm-up del modelo semántico o ChromaDB en progreso.")
 
-    # 2. Validar conexión a SQLite
     try:
         db.execute(text("SELECT 1"))
     except Exception as e:
-        errores.append(f"SQLite no disponible: {str(e)}")
+        errores.append(f"Base de datos no disponible: {str(e)}")
 
     if errores:
         response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
@@ -118,40 +158,7 @@ def readiness_check(response: Response, db: Session = Depends(get_db)):
         "status": "ready",
         "ready": True,
         "components": {
-            "sqlite": "ok",
+            "db_relacional": "ok",
             "nlp_chromadb": "ok"
         }
     }
-
-
-# --- CICLO DE VIDA (STARTUP) ---
-
-@app.on_event("startup")
-def inicializar_admin():
-    db = SessionLocal()
-    try:
-        admin_existente = db.query(UsuarioModel).first()
-        if not admin_existente:
-            user_env = os.getenv("ADMIN_USER", "admin")
-            pass_env = os.getenv("ADMIN_PASSWORD", "secreto123")
-            
-            nuevo_admin = UsuarioModel(
-                username=user_env,
-                password_hash=pwd_context.hash(pass_env),
-                rol="admin"
-            )
-            db.add(nuevo_admin)
-            db.commit()
-            print("¡Administrador inicial registrado en SQLite desde el .env!")
-    finally:
-        db.close()
-
-    # --- WARM-UP ---
-    try:
-        vector_test = generar_embedding("warm up test municipal")
-        coleccion.query(query_embeddings=[vector_test], n_results=1)
-        app_state["warmup_ready"] = True
-        print("[WARM-UP] Modelo semántico y ChromaDB precargados exitosamente en RAM.")
-    except Exception as e:
-        app_state["warmup_ready"] = False
-        print(f"[WARM-UP] Aviso durante precarga del modelo: {e}")
