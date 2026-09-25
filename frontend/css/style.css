@@ -1412,7 +1412,9 @@ ul.nav-links {
     .dashboard-grid {
         grid-template-columns: 1fr;
     }
+}
 
+@keyframes toastEntrada {
     from {
         opacity: 0;
         transform: translateY(20px);
