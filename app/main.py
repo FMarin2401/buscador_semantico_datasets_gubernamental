@@ -16,7 +16,7 @@ from sqlalchemy import text
 from passlib.context import CryptContext
 
 # Módulos internos de la aplicación
-from app.api import manipulate_datasets, pages, search, auth, contact, usuarios
+from app.api import manipulate_datasets, pages, search, auth, contact, users
 from app.db_core.connection import engine, Base, SessionLocal, get_db
 from app.db_core.models import UsuarioModel
 from app.nlp_model import generar_embedding
@@ -103,7 +103,7 @@ app.include_router(pages.router)
 app.include_router(search.router)
 app.include_router(manipulate_datasets.router)
 app.include_router(auth.router)
-app.include_router(usuarios.router)
+app.include_router(users.router)
 app.include_router(contact.router)
 
 # Configuración de CORS
