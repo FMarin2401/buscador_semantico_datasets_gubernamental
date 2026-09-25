@@ -520,6 +520,15 @@ ul.nav-links {
     text-decoration: none;
     font-size: 0.9rem;
     font-weight: bold;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    font-family: inherit;
+}
+
+.link-limpiar:hover {
+    text-decoration: underline;
 }
 
 .toggle-busqueda {
@@ -577,10 +586,24 @@ ul.nav-links {
     color: var(--text-muted);
 }
 
-.resultados-header a {
+.resultados-header a,
+.resultados-header .link-explorar-cat {
     color: var(--blue-primary);
     font-weight: bold;
     text-decoration: none;
+}
+
+.link-explorar-cat {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.95rem; 
+}
+
+.link-explorar-cat:hover {
+    text-decoration: underline;
 }
 
 /* Tarjetas de Resultados */
