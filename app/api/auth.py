@@ -1,7 +1,6 @@
 import os
 from datetime import datetime, timedelta
-from fastapi import APIRouter, Depends, HTTPException, status, Request
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi import APIRouter, Depends, HTTPException, status, Request, Response
 from jose import JWTError, jwt
 from pydantic import BaseModel
 from dotenv import load_dotenv
@@ -23,10 +22,12 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-security = HTTPBearer()
 
-def verificar_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
-    token = credentials.credentials
+# Modificamos la verificación para que lea la cookie HTTP-only en lugar del header Bearer
+def verificar_token(request: Request, db: Session = Depends(get_db)):
+    token = request.cookies.get("access_token")
+    if not token:
+        raise HTTPException(status_code=401, detail="No se encontró la sesión activa")
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         usuario: str = payload.get("sub")
@@ -51,7 +52,7 @@ class CredencialesAdmin(BaseModel):
 
 @router.post("/api/login")
 @limiter.limit("5/minute")
-def login_admin(request: Request, credenciales: CredencialesAdmin, db: Session = Depends(get_db)):
+def login_admin(request: Request, response: Response, credenciales: CredencialesAdmin, db: Session = Depends(get_db)):
     usuario_db = db.query(UsuarioModel).filter(UsuarioModel.username == credenciales.usuario).first()
 
     if not usuario_db or not pwd_context.verify(credenciales.password, usuario_db.password_hash):
@@ -71,7 +72,20 @@ def login_admin(request: Request, credenciales: CredencialesAdmin, db: Session =
 
     token_jwt = jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
 
-    return {
-        "access_token": token_jwt,
-        "token_type": "bearer"
-    }
+    # Inyectamos el JWT de forma segura en una Cookie HTTP-only
+    response.set_cookie(
+        key="access_token",
+        value=token_jwt,
+        httponly=True,   # Evita que JavaScript (XSS) pueda leer la cookie
+        secure=True,     # Obliga a que viaje solo por HTTPS (en producción en Azure)
+        samesite="lax",  # Protección contra ataques CSRF
+        max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60
+    )
+
+    return {"mensaje": "Autenticación exitosa"}
+
+# Endpoint para cerrar sesión destruyendo la cookie
+@router.post("/api/logout")
+def logout(response: Response):
+    response.delete_cookie(key="access_token")
+    return {"mensaje": "Sesión cerrada exitosamente"}       

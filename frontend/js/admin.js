@@ -1,19 +1,22 @@
-// Definir el token global para todas las peticiones
-function obtenerToken() {
-    return localStorage.getItem("authToken");
-}
+let rolUsuarioActual = null;
+let ES_ADMIN = false;
 
-function obtenerRol() {
+// Consultar el perfil y rol del usuario autenticado actual desde el servidor
+async function obtenerRolServidor() {
     try {
-        const payload = obtenerToken().split(".")[1];
-        const json = atob(payload.replace(/-/g, "+").replace(/_/g, "/"));
-        return JSON.parse(json).rol || null;
-    } catch {
-        return null;
+        const respuesta = await fetch("/api/auth/me", {
+            method: "GET",
+            credentials: "include"
+        });
+        if (respuesta.ok) {
+            const data = await respuesta.json();
+            rolUsuarioActual = data.rol;
+            ES_ADMIN = rolUsuarioActual === "admin";
+        }
+    } catch (e) {
+        console.error("No se pudo obtener el rol del usuario", e);
     }
 }
-
-const ES_ADMIN = obtenerRol() === "admin";
 
 // Funcion para evitar XSS en contenido de texto
 function escaparHTML(texto) {
@@ -23,19 +26,14 @@ function escaparHTML(texto) {
     return div.innerHTML;
 }
 
-// Para valores dentro de atributos HTML (data-*, value, title): además de lo que
-// escapa escaparHTML, neutraliza las comillas para evitar romper el atributo.
 function escaparAtributo(texto) {
     return escaparHTML(texto).replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
 
-// El backend guarda fechas en UTC sin zona ("2026-09-28T15:30:00"); JS las
-// interpretaría como hora local. Esto fuerza a tratarlas como UTC.
 function fechaUTC(iso) {
     return new Date(/(Z|[+-]\d\d:?\d\d)$/.test(iso) ? iso : iso + "Z");
 }
 
-// Helper para mostrar notificaciones flotantes temporales
 function mostrarToast(mensaje, tipo = "info", duracion = 3500) {
     let contenedor = document.getElementById("toastContainer");
     if (!contenedor) {
@@ -57,13 +55,15 @@ function mostrarToast(mensaje, tipo = "info", duracion = 3500) {
     }, duracion);
 }
 
-// Interceptor global para capturar tokens expirados (HTTP 401)
+// Interceptor global para capturar sesiones expiradas (HTTP 401)
 const fetchOriginal = window.fetch;
-window.fetch = async (...argumentos) => {
-    const respuesta = await fetchOriginal(...argumentos);
+window.fetch = async (url, opciones = {}) => {
+    // Forzar el envío de cookies HttpOnly en todas las peticiones fetch de la app
+    opciones.credentials = "include";
+    
+    const respuesta = await fetchOriginal(url, opciones);
     
     if (respuesta.status === 401) {
-        localStorage.removeItem("authToken");
         mostrarToast("Tu sesión ha expirado por seguridad.", "error");
         setTimeout(() => {
             window.location.replace("/login.html");
@@ -73,39 +73,32 @@ window.fetch = async (...argumentos) => {
     return respuesta;
 };
 
-// Variables de paginación y filtro para el catálogo administrativo
 let datasetsCatalogo = [];
 let datasetsFiltrados = [];
 let paginaActualAdmin = 1;
 const ITEMS_POR_PAGINA_ADMIN = 10;
 
-// Variables de paginación para el buzón ciudadano
 let mensajesBuzon = [];
 let paginaActualMensajes = 1;
 const ITEMS_POR_PAGINA_MENSAJES = 10;
 
-// Controlar el historial (Back/Forward Cache) y revelar el panel
-window.addEventListener("pageshow", (event) => {
-    const tokenActual = localStorage.getItem("authToken");
-    if (!tokenActual) {
-        window.location.replace("/login.html");
-    } else {
-        const panel = document.querySelector('.admin-layout');
-        if (panel) panel.style.display = 'flex';
-    }
+window.addEventListener("pageshow", async (event) => {
+    await obtenerRolServidor();
+    const panel = document.querySelector('.admin-layout');
+    if (panel) panel.style.display = 'flex';
 });
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    await obtenerRolServidor();
+
     if (!ES_ADMIN) {
         document.querySelector('[data-target="tab-usuarios"]')?.remove();
         document.getElementById('tab-usuarios')?.remove();
         document.getElementById('listaAuditoria')?.closest('.card-auditoria-info')?.remove();
     }
 
-    // 1. Poblar dependencias y categorías dinámicas en los selectores
     poblarOpcionesDinamicas();
 
-    // 2. Configurar botones del menú lateral
     const botonesMenu = document.querySelectorAll('button.admin-tab-btn');
     botonesMenu.forEach(boton => {
         boton.addEventListener('click', function() {
@@ -114,11 +107,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // 3. Configurar formulario de subida de datasets
     const formSubir = document.getElementById('formSubirDataset');
     if (formSubir) formSubir.addEventListener('submit', manejarSubidaDataset);
 
-    // 4. Configurar filtro de búsqueda en tiempo real sobre el catálogo
     const inputBuscar = document.getElementById('inputBuscarAdmin');
     if (inputBuscar) {
         inputBuscar.addEventListener('input', (e) => {
@@ -132,7 +123,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 5. Configurar acciones en la tabla de gestión de datasets (borrar o editar)
     const tablaCuerpo = document.getElementById('tablaCuerpoDatasets');
     if (tablaCuerpo) {
         tablaCuerpo.addEventListener('click', function(e) {
@@ -150,7 +140,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 6. Configurar acciones en la tabla de mensajes (borrar mensaje)
     const tablaMensajes = document.getElementById('tablaCuerpoMensajes');
     if (tablaMensajes) {
         tablaMensajes.addEventListener('click', function(e) {
@@ -161,7 +150,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 7. Configurar botones de paginación del catálogo
     const btnAnt = document.getElementById('btnAdminPagAnterior');
     const btnSig = document.getElementById('btnAdminPagSiguiente');
 
@@ -184,7 +172,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 8. Configurar botones de paginación del buzón ciudadano
     const btnAntMsg = document.getElementById('btnMensajesPagAnterior');
     const btnSigMsg = document.getElementById('btnMensajesPagSiguiente');
 
@@ -207,13 +194,11 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 9. Configurar exportación de bitácora
     const btnExportar = document.getElementById('btnExportarAuditoria');
     if (btnExportar) {
         btnExportar.addEventListener('click', exportarBitacora);
     }
 
-    // 10. Configurar gestión de usuarios (formulario y tabla)
     const formUser = document.getElementById('formCrearUsuario');
     if (formUser) formUser.addEventListener('submit', manejarCrearUsuario);
 
@@ -227,7 +212,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 11. Configurar eventos del Modal de Edición
     const btnCerrarModal = document.getElementById('cerrarModalEditar');
     if (btnCerrarModal) {
         btnCerrarModal.addEventListener('click', () => {
@@ -240,32 +224,23 @@ document.addEventListener('DOMContentLoaded', () => {
         formEditar.addEventListener('submit', manejarEdicionDataset);
     }
 
-    // 12. Configurar botón de cerrar sesión
     const btnCerrar = document.getElementById('btnCerrarSesion');
     if (btnCerrar) {
         btnCerrar.addEventListener('click', cerrarSesion);
     }
 
-    // 13. Cargar métricas del dashboard al iniciar
     renderizarDashboard();
 });
 
-// Control de pestañas del Centro de Mando
 function cambiarPestana(idPestana, botonClickeado) {
     const vistas = document.querySelectorAll('.pestana-admin');
-    vistas.forEach(vista => {
-        vista.classList.add('pestana-oculta');
-    });
+    vistas.forEach(vista => vista.classList.add('pestana-oculta'));
 
     const botones = document.querySelectorAll('.admin-tab-btn');
-    botones.forEach(btn => {
-        btn.classList.remove('active');
-    });
+    botones.forEach(btn => btn.classList.remove('active'));
 
     const vistaSeleccionada = document.getElementById(idPestana);
-    if (vistaSeleccionada) {
-        vistaSeleccionada.classList.remove('pestana-oculta');
-    }
+    if (vistaSeleccionada) vistaSeleccionada.classList.remove('pestana-oculta');
     
     botonClickeado.classList.add('active');
 
@@ -280,13 +255,9 @@ function cambiarPestana(idPestana, botonClickeado) {
     }
 }
 
-// Renderizar métricas, gráfica de Chart.js y bitácora real en el Dashboard
 async function renderizarDashboard() {
     try {
-        const respuesta = await fetch(`/api/admin/datasets`, {
-            method: "GET",
-            headers: { "Authorization": `Bearer ${obtenerToken()}` }
-        });
+        const respuesta = await fetch(`/api/admin/datasets`);
         const data = await respuesta.json();
         
         if (data.resultados) {
@@ -325,33 +296,24 @@ async function renderizarDashboard() {
                     options: {
                         indexAxis: 'y',
                         responsive: true,
-                        plugins: {
-                            legend: { display: false }
-                        },
-                        scales: {
-                            x: { beginAtZero: true, ticks: { stepSize: 1 } }
-                        }
+                        plugins: { legend: { display: false } },
+                        scales: { x: { beginAtZero: true, ticks: { stepSize: 1 } } }
                     }
                 });
             }
         }
 
-        // Bitácora persistente desde la base de datos relacional
         const listaAuditoria = document.getElementById('listaAuditoria');
         if (listaAuditoria) {
             try {
-                const respLog = await fetch(`/api/admin/bitacora`, {
-                    method: "GET",
-                    headers: { "Authorization": `Bearer ${obtenerToken()}` }
-                });
+                const respLog = await fetch(`/api/admin/bitacora`);
                 const dataLog = await respLog.json();
 
                 let auditHtml = '';
                 if (dataLog.registros && dataLog.registros.length > 0) {
                     dataLog.registros.slice(0, 5).forEach(log => {
                         const hora = fechaUTC(log.fecha_hora).toLocaleTimeString('es-MX', { 
-                            hour: '2-digit', 
-                            minute: '2-digit' 
+                            hour: '2-digit', minute: '2-digit' 
                         });
                         auditHtml += `
                             <li>
@@ -368,13 +330,11 @@ async function renderizarDashboard() {
                 listaAuditoria.innerHTML = '<li><small class="text-danger">Error al cargar bitácora</small></li>';
             }
         }
-
     } catch (error) {
         console.error("Error al cargar las métricas del dashboard:", error);
     }
 }
 
-// Ingesta de nuevos datasets
 async function manejarSubidaDataset(evento) {
     evento.preventDefault(); 
     
@@ -400,7 +360,6 @@ async function manejarSubidaDataset(evento) {
     try {
         const respuesta = await fetch(`/api/admin/subir`, {
             method: "POST",
-            headers: { "Authorization": `Bearer ${obtenerToken()}` },
             body: formData 
         });
 
@@ -418,7 +377,6 @@ async function manejarSubidaDataset(evento) {
             mensajeEstado.textContent = `Error: ${data.detail}`;
             mostrarToast(data.detail || "Error al subir dataset.", "error");
         }
-
     } catch (error) {
         mensajeEstado.className = 'admin-mensaje msg-danger';
         mensajeEstado.textContent = "Error de conexión con el servidor.";
@@ -426,13 +384,9 @@ async function manejarSubidaDataset(evento) {
     }
 }
 
-// Llenar selectores dinámicos
 async function poblarOpcionesDinamicas() {
     try {
-        const respuesta = await fetch(`/api/admin/datasets`, {
-            method: "GET",
-            headers: { "Authorization": `Bearer ${obtenerToken()}` }
-        });
+        const respuesta = await fetch(`/api/admin/datasets`);
         const data = await respuesta.json();
         if (!data.resultados) return;
 
@@ -463,13 +417,11 @@ async function poblarOpcionesDinamicas() {
                 datalistCat.innerHTML += `<option value="${escaparAtributo(cat)}">`;
             });
         }
-
     } catch (error) {
         console.error("Error al poblar dependencias y categorías:", error);
     }
 }
 
-// Cargar catálogo y activar paginación con lista base
 async function cargarCatalogoAdmin() {
     const tbody = document.getElementById('tablaCuerpoDatasets');
     if (!tbody) return;
@@ -477,10 +429,7 @@ async function cargarCatalogoAdmin() {
     tbody.innerHTML = '<tr><td colspan="4" class="text-center">Cargando catálogo...</td></tr>';
     
     try {
-        const respuesta = await fetch(`/api/admin/datasets`, {
-            method: "GET",
-            headers: { "Authorization": `Bearer ${obtenerToken()}` }
-        });
+        const respuesta = await fetch(`/api/admin/datasets`);
         const data = await respuesta.json();
         
         datasetsCatalogo = data.resultados || [];
@@ -499,7 +448,6 @@ async function cargarCatalogoAdmin() {
 
         paginaActualAdmin = 1;
         renderizarTablaPaginada();
-
     } catch (error) {
         tbody.innerHTML = '<tr><td colspan="4" class="text-center msg-danger">Error al conectar con la base de datos.</td></tr>';
         mostrarToast("Error al conectar con la base de datos.", "error");
@@ -583,7 +531,6 @@ function actualizarControlesPaginacionAdmin(totalPaginas) {
     }
 }
 
-// Cargar Buzón Ciudadano y activar paginación
 async function cargarMensajesAdmin() {
     const tbody = document.getElementById('tablaCuerpoMensajes');
     if (!tbody) return;
@@ -591,16 +538,12 @@ async function cargarMensajesAdmin() {
     tbody.innerHTML = '<tr><td colspan="5" class="text-center">Cargando mensajes...</td></tr>';
 
     try {
-        const respuesta = await fetch(`/api/admin/mensajes`, {
-            method: "GET",
-            headers: { "Authorization": `Bearer ${obtenerToken()}` }
-        });
+        const respuesta = await fetch(`/api/admin/mensajes`);
         const data = await respuesta.json();
 
         mensajesBuzon = data.mensajes || [];
         paginaActualMensajes = 1;
         renderizarTablaMensajesPaginada();
-
     } catch (error) {
         tbody.innerHTML = '<tr><td colspan="5" class="text-center msg-danger">Error al conectar con la base de datos.</td></tr>';
         mostrarToast("Error al cargar mensajes del buzón.", "error");
@@ -629,11 +572,7 @@ function renderizarTablaMensajesPaginada() {
 
     datosPagina.forEach(item => {
         const fechaFormateada = fechaUTC(item.fecha_envio).toLocaleDateString('es-MX', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
+            year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
         });
         
         const emailSeguro = encodeURI(item.email || '');
@@ -688,16 +627,12 @@ function actualizarControlesPaginacionMensajes(totalPaginas) {
     }
 }
 
-// Eliminar mensaje ciudadano
 async function eliminarMensajeAdmin(idMensaje) {
-    const confirmacion = confirm("¿Deseas eliminar este mensaje ciudadano? Esta acción no se puede deshacer.");
+    const confirmacion = confirm("¿Deseas eliminar este mensaje ciudadano?");
     if (!confirmacion) return;
 
     try {
-        const respuesta = await fetch(`/api/admin/mensajes/${idMensaje}`, {
-            method: "DELETE",
-            headers: { "Authorization": `Bearer ${obtenerToken()}` }
-        });
+        const respuesta = await fetch(`/api/admin/mensajes/${idMensaje}`, { method: "DELETE" });
 
         if (respuesta.ok) {
             mostrarToast("Mensaje eliminado del buzón.", "info");
@@ -712,15 +647,9 @@ async function eliminarMensajeAdmin(idMensaje) {
     }
 }
 
-// Descargar reporte CSV de la bitácora administrativa
 async function exportarBitacora() {
     try {
-        const respuesta = await fetch(`/api/admin/bitacora/exportar`, {
-            method: "GET",
-            headers: {
-                "Authorization": `Bearer ${obtenerToken()}`
-            }
-        });
+        const respuesta = await fetch(`/api/admin/bitacora/exportar`);
 
         if (!respuesta.ok) {
             mostrarToast("No se pudo generar el reporte de auditoría.", "error");
@@ -738,13 +667,11 @@ async function exportarBitacora() {
         window.URL.revokeObjectURL(urlDescarga);
 
         mostrarToast("Descargando bitácora de auditoría...", "success");
-
     } catch (error) {
         mostrarToast("Error de conexión al exportar la bitácora.", "error");
     }
 }
 
-// Cargar funcionarios activos en la tabla
 async function cargarUsuariosAdmin() {
     const tbody = document.getElementById('tablaCuerpoUsuarios');
     if (!tbody) return;
@@ -752,9 +679,7 @@ async function cargarUsuariosAdmin() {
     tbody.innerHTML = '<tr><td colspan="3" class="text-center">Cargando cuentas...</td></tr>';
 
     try {
-        const resp = await fetch(`/api/admin/usuarios`, {
-            headers: { "Authorization": `Bearer ${obtenerToken()}` }
-        });
+        const resp = await fetch(`/api/admin/usuarios`);
         const data = await resp.json();
 
         tbody.innerHTML = '';
@@ -781,7 +706,6 @@ async function cargarUsuariosAdmin() {
     }
 }
 
-// Enviar formulario de alta de nuevo funcionario
 async function manejarCrearUsuario(e) {
     e.preventDefault();
     const msg = document.getElementById('msgUsuarioEstado');
@@ -792,10 +716,7 @@ async function manejarCrearUsuario(e) {
     try {
         const resp = await fetch(`/api/admin/usuarios`, {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${obtenerToken()}`
-            },
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ username, password, rol })
         });
 
@@ -819,15 +740,11 @@ async function manejarCrearUsuario(e) {
     }
 }
 
-// Eliminar acceso de funcionario
 async function eliminarUsuarioAdmin(id) {
     if (!confirm("¿Seguro que deseas dar de baja este acceso?")) return;
 
     try {
-        const resp = await fetch(`/api/admin/usuarios/${id}`, {
-            method: "DELETE",
-            headers: { "Authorization": `Bearer ${obtenerToken()}` }
-        });
+        const resp = await fetch(`/api/admin/usuarios/${id}`, { method: "DELETE" });
         const data = await resp.json();
 
         if (resp.ok) {
@@ -842,7 +759,6 @@ async function eliminarUsuarioAdmin(id) {
     }
 }
 
-// Modal de edición de datasets
 function abrirModalEdicion(id, titulo, descripcion, dependencia, categoria) {
     document.getElementById('editDatasetId').value = id;
     document.getElementById('editTitulo').value = titulo;
@@ -865,10 +781,7 @@ async function manejarEdicionDataset(evento) {
     try {
         const respuesta = await fetch(`/api/admin/datasets/${id}`, {
             method: "PUT",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${obtenerToken()}`
-            },
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ titulo, descripcion, dependencia, categoria })
         });
 
@@ -888,14 +801,11 @@ async function manejarEdicionDataset(evento) {
 }
 
 async function eliminarDataset(idDataset) {
-    const confirmacion = confirm("¿Estás seguro de que deseas eliminar este dataset de forma permanente? Esta acción no se puede deshacer.");
+    const confirmacion = confirm("¿Estás seguro de que deseas eliminar este dataset de forma permanente?");
     if (!confirmacion) return;
 
     try {
-        const respuesta = await fetch(`/api/admin/datasets/${idDataset}`, {
-            method: "DELETE",
-            headers: { "Authorization": `Bearer ${obtenerToken()}` }
-        });
+        const respuesta = await fetch(`/api/admin/datasets/${idDataset}`, { method: "DELETE" });
 
         if (respuesta.ok) {
             mostrarToast("Dataset eliminado permanentemente.", "info");
@@ -911,7 +821,12 @@ async function eliminarDataset(idDataset) {
     }
 }
 
-function cerrarSesion() {
-    localStorage.removeItem("authToken");
+// Cierre de sesión consumiendo el endpoint del backend para destruir la cookie
+async function cerrarSesion() {
+    try {
+        await fetch("/api/logout", { method: "POST" });
+    } catch (e) {
+        console.error("Error al notificar cierre de sesión", e);
+    }
     window.location.href = "/login.html";
 }

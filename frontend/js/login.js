@@ -41,7 +41,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 const respuesta = await fetch(`/api/login`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ usuario, password })
+                    body: JSON.stringify({ usuario, password }),
+                    credentials: "include" // Esencial para que el navegador acepte guardar la cookie HTTP-only
                 });
 
                 if (respuesta.status === 429) {
@@ -54,8 +55,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     throw new Error("Error del servidor. Inténtalo más tarde.");
                 }
 
-                const data = await respuesta.json();
-                localStorage.setItem("authToken", data.access_token);
+                // Redirigir al panel; la cookie viaja segura de forma automática
                 window.location.href = "/admin.html";
 
             } catch (error) {
