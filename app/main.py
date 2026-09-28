@@ -6,7 +6,7 @@ import logging
 from contextlib import asynccontextmanager
 
 # Librerías de terceros
-from fastapi import FastAPI, Response, status, Depends
+from fastapi import FastAPI, Response, status, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from slowapi import _rate_limit_exceeded_handler
@@ -117,6 +117,29 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# --- MIDDLEWARE DE SEGURIDAD HTTP ---
+@app.middleware("http")
+async def agregar_cabeceras_seguridad(request: Request, call_next):
+    response = await call_next(request)
+    
+    # Cabeceras de protección contra ataques comunes
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    
+    # Content-Security-Policy (CSP)
+    csp = (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; " 
+        "style-src 'self' 'unsafe-inline'; "
+        "img-src 'self' data:; "
+        "font-src 'self'; "
+        "connect-src 'self';"
+    )
+    response.headers["Content-Security-Policy"] = csp
+    
+    return response
 
 # --- ENDPOINTS DE MONITOREO Y HEALTH CHECKS ---
 
