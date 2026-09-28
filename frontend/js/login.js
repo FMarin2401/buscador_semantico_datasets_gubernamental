@@ -44,8 +44,14 @@ document.addEventListener("DOMContentLoaded", () => {
                     body: JSON.stringify({ usuario, password })
                 });
 
-                if (!respuesta.ok) {
+                if (respuesta.status === 429) {
+                    throw new Error("Demasiados intentos. Espera un minuto e inténtalo de nuevo.");
+                }
+                if (respuesta.status === 401) {
                     throw new Error("Usuario o contraseña incorrectos.");
+                }
+                if (!respuesta.ok) {
+                    throw new Error("Error del servidor. Inténtalo más tarde.");
                 }
 
                 const data = await respuesta.json();
@@ -53,7 +59,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 window.location.href = "/admin.html";
 
             } catch (error) {
-                mensajeError.textContent = error.message;
+                mensajeError.textContent = error instanceof TypeError
+                    ? "Error de conexión con el servidor."
+                    : error.message;
             }
         });
     }

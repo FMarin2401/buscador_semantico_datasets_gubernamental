@@ -1,21 +1,23 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
+from typing import Literal
 
 from app.db_core.connection import get_db
 from app.db_core.models import UsuarioModel, BitacoraAuditoriaModel
-from app.api.auth import verificar_token, pwd_context
+from app.api.auth import requiere_admin, pwd_context
 
 router = APIRouter(tags=["Administración de Usuarios"])
 
 class NuevoUsuarioSchema(BaseModel):
-    username: str
-    password: str
-    rol: str = "admin"
+    username: str = Field(min_length=3, max_length=50)
+    password: str = Field(min_length=6, max_length=72)
+    rol: Literal["admin", "editor"] = "editor"
+
 
 @router.get("/api/admin/usuarios")
 def listar_usuarios(
-    usuario_autenticado: str = Depends(verificar_token),
+    usuario_autenticado: str = Depends(requiere_admin),
     db: Session = Depends(get_db)
 ):
     usuarios = db.query(UsuarioModel).all()
@@ -29,16 +31,9 @@ def listar_usuarios(
 @router.post("/api/admin/usuarios", status_code=status.HTTP_201_CREATED)
 def crear_usuario(
     datos: NuevoUsuarioSchema,
-    usuario_autenticado: str = Depends(verificar_token),
+    usuario_autenticado: str = Depends(requiere_admin),
     db: Session = Depends(get_db)
 ):
-    solicitante = db.query(UsuarioModel).filter(UsuarioModel.username == usuario_autenticado).first()
-    if not solicitante or solicitante.rol != "admin":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Acceso denegado: solo administradores pueden gestionar cuentas."
-        )
-
     existe = db.query(UsuarioModel).filter(UsuarioModel.username == datos.username.strip()).first()
     if existe:
         raise HTTPException(
@@ -68,16 +63,9 @@ def crear_usuario(
 @router.delete("/api/admin/usuarios/{id_usuario}")
 def eliminar_usuario(
     id_usuario: int,
-    usuario_autenticado: str = Depends(verificar_token),
+    usuario_autenticado: str = Depends(requiere_admin),
     db: Session = Depends(get_db)
 ):
-    solicitante = db.query(UsuarioModel).filter(UsuarioModel.username == usuario_autenticado).first()
-    if not solicitante or solicitante.rol != "admin":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Acceso denegado: solo administradores pueden eliminar cuentas."
-        )
-
     usuario_a_borrar = db.query(UsuarioModel).filter(UsuarioModel.id == id_usuario).first()
     if not usuario_a_borrar:
         raise HTTPException(status_code=404, detail="Usuario no encontrado.")

@@ -17,7 +17,7 @@ from sqlalchemy.orm import Session
 # Módulos internos del proyecto
 from app.db_chroma import coleccion, guardar_datasets, obtener_todos_datasets
 from app.nlp_model import generar_embedding
-from app.api.auth import verificar_token
+from app.api.auth import verificar_token, requiere_admin
 from app.db_core.connection import get_db
 from app.db_core.models import BitacoraAuditoriaModel, DescargasDatasetModel
 
@@ -42,7 +42,7 @@ def registrar_evento_auditoria(db: Session, usuario: str, accion: str, detalles:
     db.commit()
 
 @router.get("/api/admin/datasets")
-def listar_datasets_admin():
+def listar_datasets_admin(usuario_autenticado: str = Depends(verificar_token)):
     datos = obtener_todos_datasets()
     resultados = []
     
@@ -52,6 +52,7 @@ def listar_datasets_admin():
             resultados.append({
                 "id": datos["ids"][i],
                 "titulo": datos["documents"][i],
+                "descripcion": meta.get("descripcion", ""),
                 "dependencia": meta.get("dependencia", "No registrada"),
                 "categoria": meta.get("categoria", "No registrada"),
                 "fecha": meta.get("fecha_actualizacion", "N/A")
@@ -61,7 +62,7 @@ def listar_datasets_admin():
 
 @router.get("/api/admin/bitacora")
 def obtener_bitacora(
-    usuario_autenticado: str = Depends(verificar_token),
+    usuario_autenticado: str = Depends(requiere_admin),
     db: Session = Depends(get_db)
 ):
     """Devuelve los últimos 15 eventos registrados para el panel de auditoría."""
@@ -140,7 +141,7 @@ async def publicar_dataset(
     )
     
     # Registro dual: archivo plano y tabla de SQLite
-    logger.info(f"[BITACORA AUDITORIA] El administrador '{usuario_autenticado}' subió el dataset '{titulo}' con ID: {id_unico}.")
+    logger.info(f"[BITACORA AUDITORIA] El usuario '{usuario_autenticado}' subió el dataset '{titulo}' con ID: {id_unico}.")
     registrar_evento_auditoria(db, usuario_autenticado, "Publicación", f"{titulo} ({dependencia})")
 
     return {
@@ -183,7 +184,7 @@ def actualizar_dataset(
             metadatas=[nuevo_metadata]
         )
 
-        logger.info(f"[BITACORA AUDITORIA] El administrador '{usuario_autenticado}' actualizó los metadatos del dataset con ID: {id_dataset}")
+        logger.info(f"[BITACORA AUDITORIA] El usuario '{usuario_autenticado}' actualizó los metadatos del dataset con ID: {id_dataset}")
         registrar_evento_auditoria(db, usuario_autenticado, "Actualización", f"{datos.titulo} (ID: {id_dataset[:8]}...)")
 
     except Exception as e:
@@ -199,7 +200,7 @@ def actualizar_dataset(
 @router.delete("/api/admin/datasets/{id_dataset}")
 def eliminar_dataset(
     id_dataset: str, 
-    usuario_autenticado: str = Depends(verificar_token),
+    usuario_autenticado: str = Depends(requiere_admin),
     db: Session = Depends(get_db)
 ):
     try:
@@ -220,7 +221,7 @@ def eliminar_dataset(
     db.query(DescargasDatasetModel).filter(DescargasDatasetModel.id_dataset == id_dataset).delete()
     
     # Registro dual: archivo plano y tabla de SQLite
-    logger.info(f"[BITACORA AUDITORIA] El administrador '{usuario_autenticado}' eliminó el dataset con ID: {id_dataset}")
+    logger.info(f"[BITACORA AUDITORIA] El usuario '{usuario_autenticado}' eliminó el dataset con ID: {id_dataset}")
     registrar_evento_auditoria(db, usuario_autenticado, "Eliminación", f"{nombre_dataset} (ID: {id_dataset[:8]}...)")
 
     return {"mensaje": "Dataset eliminado permanentemente"}
@@ -287,7 +288,7 @@ def descargar_dataset(id_dataset: str, formato: str = "csv", db: Session = Depen
 
 @router.get("/api/admin/bitacora/exportar")
 def exportar_bitacora_csv(
-    usuario_autenticado: str = Depends(verificar_token),
+    usuario_autenticado: str = Depends(requiere_admin),
     db: Session = Depends(get_db)
 ):
     """Genera y descarga un reporte CSV con el historial completo de auditoría."""

@@ -36,6 +36,15 @@ def verificar_token(credentials: HTTPAuthorizationCredentials = Depends(security
         raise HTTPException(status_code=401, detail="Token expirado o inválido")
     return usuario
 
+def requiere_admin(usuario: str = Depends(verificar_token), db: Session = Depends(get_db)):
+    u = db.query(UsuarioModel).filter(UsuarioModel.username == usuario).first()
+    if not u or u.rol != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Acceso denegado: se requiere rol de administrador."
+        )
+    return usuario
+
 class CredencialesAdmin(BaseModel):
     usuario: str
     password: str
@@ -56,6 +65,7 @@ def login_admin(request: Request, credenciales: CredencialesAdmin, db: Session =
 
     payload = {
         "sub": usuario_db.username,
+        "rol": usuario_db.rol,
         "exp": expira_en
     }
 

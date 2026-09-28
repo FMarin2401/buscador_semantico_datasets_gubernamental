@@ -56,6 +56,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 msg.className = 'admin-mensaje msg-success';
                 msg.textContent = '¡Mensaje recibido con éxito! El equipo de transparencia lo revisará pronto.';
                 form.reset();
+            } else if (resp.status === 429) {
+                msg.className = 'admin-mensaje msg-danger';
+                msg.textContent = 'Demasiados mensajes seguidos. Espera un minuto e inténtalo de nuevo.';
             } else {
                 const err = await resp.json();
                 msg.className = 'admin-mensaje msg-danger';

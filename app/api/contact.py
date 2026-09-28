@@ -1,20 +1,22 @@
-from fastapi import APIRouter, Depends, status, HTTPException
+from fastapi import APIRouter, Depends, status, HTTPException, Request
 from sqlalchemy.orm import Session
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from app.db_core.connection import get_db
 from app.db_core.models import MensajeContactoModel, BitacoraAuditoriaModel
-from app.api.auth import verificar_token
+from app.api.auth import verificar_token, requiere_admin
+from app.limiter import limiter
 
 router = APIRouter(tags=["Contacto"])
 
 class MensajeSchema(BaseModel):
-    nombre: str
+    nombre: str = Field(min_length=3, max_length=100)
     email: EmailStr
-    mensaje: str
+    mensaje: str = Field(min_length=10, max_length=2000)
 
 # Endpoint público para recibir mensajes
 @router.post("/api/contacto", status_code=status.HTTP_201_CREATED)
-def enviar_mensaje(datos: MensajeSchema, db: Session = Depends(get_db)):
+@limiter.limit("5/minute")
+def enviar_mensaje(request: Request, datos: MensajeSchema, db: Session = Depends(get_db)):
     nuevo_mensaje = MensajeContactoModel(
         nombre=datos.nombre,
         email=datos.email,
@@ -36,7 +38,7 @@ def listar_mensajes(
 @router.delete("/api/admin/mensajes/{id_mensaje}")
 def eliminar_mensaje(
     id_mensaje: int,
-    usuario_autenticado: str = Depends(verificar_token),
+    usuario_autenticado: str = Depends(requiere_admin),
     db: Session = Depends(get_db)
 ):
     mensaje = db.query(MensajeContactoModel).filter(MensajeContactoModel.id == id_mensaje).first()

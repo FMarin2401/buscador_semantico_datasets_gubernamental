@@ -3,12 +3,36 @@ function obtenerToken() {
     return localStorage.getItem("authToken");
 }
 
-// Funcion para evitar XSS
+function obtenerRol() {
+    try {
+        const payload = obtenerToken().split(".")[1];
+        const json = atob(payload.replace(/-/g, "+").replace(/_/g, "/"));
+        return JSON.parse(json).rol || null;
+    } catch {
+        return null;
+    }
+}
+
+const ES_ADMIN = obtenerRol() === "admin";
+
+// Funcion para evitar XSS en contenido de texto
 function escaparHTML(texto) {
     if (texto === null || texto === undefined) return "";
     const div = document.createElement("div");
     div.textContent = String(texto);
     return div.innerHTML;
+}
+
+// Para valores dentro de atributos HTML (data-*, value, title): además de lo que
+// escapa escaparHTML, neutraliza las comillas para evitar romper el atributo.
+function escaparAtributo(texto) {
+    return escaparHTML(texto).replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
+// El backend guarda fechas en UTC sin zona ("2026-09-28T15:30:00"); JS las
+// interpretaría como hora local. Esto fuerza a tratarlas como UTC.
+function fechaUTC(iso) {
+    return new Date(/(Z|[+-]\d\d:?\d\d)$/.test(iso) ? iso : iso + "Z");
 }
 
 // Helper para mostrar notificaciones flotantes temporales
@@ -72,6 +96,12 @@ window.addEventListener("pageshow", (event) => {
 });
 
 document.addEventListener('DOMContentLoaded', () => {
+    if (!ES_ADMIN) {
+        document.querySelector('[data-target="tab-usuarios"]')?.remove();
+        document.getElementById('tab-usuarios')?.remove();
+        document.getElementById('listaAuditoria')?.closest('.card-auditoria-info')?.remove();
+    }
+
     // 1. Poblar dependencias y categorías dinámicas en los selectores
     poblarOpcionesDinamicas();
 
@@ -306,7 +336,7 @@ async function renderizarDashboard() {
             }
         }
 
-        // Bitácora persistente desde SQLite
+        // Bitácora persistente desde la base de datos relacional
         const listaAuditoria = document.getElementById('listaAuditoria');
         if (listaAuditoria) {
             try {
@@ -319,7 +349,7 @@ async function renderizarDashboard() {
                 let auditHtml = '';
                 if (dataLog.registros && dataLog.registros.length > 0) {
                     dataLog.registros.slice(0, 5).forEach(log => {
-                        const hora = new Date(log.fecha_hora).toLocaleTimeString('es-MX', { 
+                        const hora = fechaUTC(log.fecha_hora).toLocaleTimeString('es-MX', { 
                             hour: '2-digit', 
                             minute: '2-digit' 
                         });
@@ -416,21 +446,21 @@ async function poblarOpcionesDinamicas() {
         if (selectDep) {
             selectDep.innerHTML = '<option value="">Selecciona una dependencia...</option>';
             dependencias.forEach(dep => {
-                selectDep.innerHTML += `<option value="${dep}">${dep}</option>`;
+                selectDep.innerHTML += `<option value="${escaparAtributo(dep)}">${escaparHTML(dep)}</option>`;
             });
         }
 
         if (selectEditDep) {
             selectEditDep.innerHTML = '<option value="">Selecciona una dependencia...</option>';
             dependencias.forEach(dep => {
-                selectEditDep.innerHTML += `<option value="${dep}">${dep}</option>`;
+                selectEditDep.innerHTML += `<option value="${escaparAtributo(dep)}">${escaparHTML(dep)}</option>`;
             });
         }
 
         if (datalistCat) {
             datalistCat.innerHTML = '';
             categorias.forEach(cat => {
-                datalistCat.innerHTML += `<option value="${cat}">`;
+                datalistCat.innerHTML += `<option value="${escaparAtributo(cat)}">`;
             });
         }
 
@@ -506,11 +536,11 @@ function renderizarTablaPaginada() {
                 <td class="text-center" style="display: flex; gap: 8px; justify-content: center;">
                     <button class="btn-editar-dataset btn-secondary" 
                         data-id="${idSeguro}" 
-                        data-titulo="${escaparHTML(item.titulo)}" 
-                        data-descripcion="${escaparHTML(item.descripcion || '')}" 
-                        data-dependencia="${escaparHTML(item.dependencia)}" 
-                        data-categoria="${escaparHTML(item.categoria || '')}">Editar</button>
-                    <button class="btn-borrar-dataset btn-danger" data-id="${idSeguro}">Borrar</button>
+                        data-titulo="${escaparAtributo(item.titulo)}" 
+                        data-descripcion="${escaparAtributo(item.descripcion || '')}" 
+                        data-dependencia="${escaparAtributo(item.dependencia)}" 
+                        data-categoria="${escaparAtributo(item.categoria || '')}">Editar</button>
+                    ${ES_ADMIN ? `<button class="btn-borrar-dataset btn-danger" data-id="${idSeguro}">Borrar</button>` : ''}
                 </td>
             </tr>
         `;
@@ -598,7 +628,7 @@ function renderizarTablaMensajesPaginada() {
     const datosPagina = mensajesBuzon.slice(inicio, fin);
 
     datosPagina.forEach(item => {
-        const fechaFormateada = new Date(item.fecha_envio).toLocaleDateString('es-MX', {
+        const fechaFormateada = fechaUTC(item.fecha_envio).toLocaleDateString('es-MX', {
             year: 'numeric',
             month: 'short',
             day: 'numeric',
@@ -615,7 +645,7 @@ function renderizarTablaMensajesPaginada() {
                 <td>${escaparHTML(item.mensaje)}</td>
                 <td>${escaparHTML(fechaFormateada)}</td>
                 <td class="text-center">
-                    <button class="btn-borrar-mensaje btn-danger" data-id="${idSeguro}">Borrar</button>
+                    ${ES_ADMIN ? `<button class="btn-borrar-mensaje btn-danger" data-id="${idSeguro}">Borrar</button>` : ''}
                 </td>
             </tr>
         `;

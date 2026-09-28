@@ -6,6 +6,12 @@ function escaparHTML(texto) {
     return div.innerHTML;
 }
 
+// Para valores dentro de atributos HTML (data-*, value, title): además de lo que
+// escapa escaparHTML, neutraliza las comillas para evitar romper el atributo.
+function escaparAtributo(texto) {
+    return escaparHTML(texto).replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
 // 1. CONFIGURACIÓN Y ESTADO GLOBAL
 
 let resultadosOriginales = [];
@@ -32,14 +38,11 @@ function sincronizarURL() {
         params.delete('orden');
     }
 
-    // 3. Categorías activas
+    // 3. Categorías activas (un parámetro 'cat' por categoría, así soporta comas y símbolos)
     const checkboxesActivos = document.querySelectorAll('.filtro-cat:checked');
     const cats = Array.from(checkboxesActivos).map(cb => cb.value);
-    if (cats.length > 0) {
-        params.set('cat', cats.join(','));
-    } else {
-        params.delete('cat');
-    }
+    params.delete('cat');
+    cats.forEach(c => params.append('cat', c));
 
     const nuevaURL = `${window.location.pathname}${params.toString() ? '?' + params.toString() : ''}`;
     window.history.replaceState(null, '', nuevaURL);
@@ -101,7 +104,7 @@ window.onload = async function() {
     if (btnLimpiarEmpty) {
         btnLimpiarEmpty.addEventListener('click', () => {
             // Limpia la búsqueda y recarga el catálogo completo desde cero
-                 window.location.href = '/explorar_datos.html';
+            window.location.href = '/explorar_datos.html';
         });
     }
 
@@ -172,8 +175,20 @@ async function ejecutarBusquedaAPI(busq) {
 
     try {
         const respuesta = await fetch(`/api/buscar?prompt=${encodeURIComponent(busq)}`);
+
+        // Límite de peticiones alcanzado (slowapi): no confundirlo con "sin resultados"
+        if (respuesta.status === 429) {
+            if (contenedor) {
+                contenedor.innerHTML = '<p style="text-align:center; padding: 2rem;">Demasiadas búsquedas seguidas. Espera un minuto e inténtalo de nuevo.</p>';
+            }
+            if (textoResultados) {
+                textoResultados.innerHTML = '<strong>Límite de búsquedas alcanzado</strong>';
+            }
+            return;
+        }
+
         const data = await respuesta.json();
-        
+
         resultadosOriginales = data.resultados || [];
         actualizarContadores(resultadosOriginales);
         restaurarFiltrosDesdeURL();
@@ -191,7 +206,7 @@ async function cargarCatalogoCompleto() {
     try {
         const respuesta = await fetch(`/api/catalogos`);
         const data = await respuesta.json();
-        
+
         resultadosOriginales = data.resultados || [];
         actualizarContadores(resultadosOriginales);
         restaurarFiltrosDesdeURL();
@@ -207,7 +222,7 @@ async function cargarCatalogoCompleto() {
 function ejecutarBusquedaDesdeInput() {
     const inputSmall = document.getElementById('searchInputResultados');
     if (!inputSmall) return;
-    
+
     const texto = inputSmall.value.trim();
     if (texto === "") {
         window.location.href = "/explorar_datos.html";
@@ -218,10 +233,10 @@ function ejecutarBusquedaDesdeInput() {
 
 function restaurarFiltrosDesdeURL() {
     const params = new URLSearchParams(window.location.search);
-    const catParam = params.get('cat');
+    // getAll ya devuelve los valores decodificados: no hace falta decodeURIComponent
+    const cats = params.getAll('cat');
 
-    if (catParam) {
-        const cats = catParam.split(',').map(c => decodeURIComponent(c));
+    if (cats.length > 0) {
         document.querySelectorAll('.filtro-cat').forEach(cb => {
             if (cats.includes(cb.value)) {
                 cb.checked = true;
@@ -233,12 +248,12 @@ function restaurarFiltrosDesdeURL() {
 }
 
 function limpiarFiltros(evento) {
-    if (evento) evento.preventDefault(); 
+    if (evento) evento.preventDefault();
     document.querySelectorAll('.filtro-cat').forEach(checkbox => {
         checkbox.checked = false;
     });
     const selectOrdenar = document.getElementById('selectOrdenar');
-    if (selectOrdenar) selectOrdenar.value = '';
+    if (selectOrdenar) selectOrdenar.value = 'coincidencia';
 
     paginaActual = 1;
     aplicarFiltrosLocales(true);
@@ -302,8 +317,8 @@ function renderizarFiltrosDependencias(lista) {
         const isChecked = seleccionadasPrevias.includes(cat) ? 'checked' : '';
         htmlFiltros += `
             <label class="filter-item">
-                <input type="checkbox" class="filtro-cat" value="${escaparHTML(cat)}" ${isChecked}> 
-                <span title="${escaparHTML(cat)}">${escaparHTML(cat)}</span> 
+                <input type="checkbox" class="filtro-cat" value="${escaparAtributo(cat)}" ${isChecked}> 
+                <span title="${escaparAtributo(cat)}">${escaparHTML(cat)}</span> 
                 <span>${conteosCat[cat]}</span>
             </label>
         `;
@@ -333,11 +348,11 @@ function mostrarPaginaActual() {
     const textoResultados = document.getElementById('texto-resultados');
     const emptyState = document.getElementById('emptyState');
     const paginacionContenedor = document.getElementById('paginacionContenedor');
-    
+
     if (!contenedor || !textoResultados) return;
-    
-    contenedor.innerHTML = ''; 
-    
+
+    contenedor.innerHTML = '';
+
     if (listaEnMemoria.length === 0) {
         textoResultados.innerHTML = `<strong>0</strong> conjuntos encontrados`;
         if (emptyState) emptyState.style.display = 'flex';
@@ -346,12 +361,12 @@ function mostrarPaginaActual() {
     }
 
     if (emptyState) emptyState.style.display = 'none';
-    
+
     const params = new URLSearchParams(window.location.search);
     const hayBusquedaActiva = params.has('q') && params.get('q').trim() !== '';
-    
+
     textoResultados.innerHTML = `<strong>${listaEnMemoria.length}</strong> conjuntos encontrados`;
-    
+
     const btnRestablecer = document.getElementById('btnRestablecerBusqueda');
     if (btnRestablecer) {
         btnRestablecer.style.display = hayBusquedaActiva ? 'inline-flex' : 'none';
@@ -364,9 +379,9 @@ function mostrarPaginaActual() {
     const inicio = (paginaActual - 1) * elementosPorPagina;
     const fin = inicio + elementosPorPagina;
     const itemsPagina = listaEnMemoria.slice(inicio, fin);
-    
+
     let htmlContent = '';
-    
+
     itemsPagina.forEach(item => {
         const titulo = item.dataset_recomendado || "";
         const descripcion = item.descripcion || "Conjunto de datos oficial disponible para consulta y descarga municipal.";
@@ -374,7 +389,7 @@ function mostrarPaginaActual() {
         const categoria = item.categoria || "General";
         const fecha = item.fecha_actualizacion || "";
         const idSeguro = encodeURIComponent(item.id);
-        
+
         htmlContent += `
             <article class="card-resultado-v2">
                 <div class="card-icon" aria-hidden="true">📁</div>
@@ -399,9 +414,9 @@ function mostrarPaginaActual() {
                         <a href="/api/descargar/${idSeguro}?formato=geojson"><span>GeoJSON</span></a>
                     </div>
                     <button type="button" class="btn-ficha" 
-                        data-titulo="${escaparHTML(titulo)}" 
-                        data-dependencia="${escaparHTML(dependencia)}" 
-                        data-fecha="${escaparHTML(fecha)}" 
+                        data-titulo="${escaparAtributo(titulo)}" 
+                        data-dependencia="${escaparAtributo(dependencia)}" 
+                        data-fecha="${escaparAtributo(fecha)}" 
                         data-id="${idSeguro}">
                         Ver ficha
                     </button>
@@ -409,17 +424,17 @@ function mostrarPaginaActual() {
             </article>
         `;
     });
-    
+
     contenedor.innerHTML = htmlContent;
 
     if (paginacionContenedor) {
         if (totalPaginas > 1) {
             paginacionContenedor.style.display = 'flex';
-            
+
             const btnAnterior = document.getElementById('btnPagAnterior');
             const btnSiguiente = document.getElementById('btnPagSiguiente');
             const contenedorNumeros = document.getElementById('numerosPaginacion');
-            
+
             btnAnterior.disabled = paginaActual === 1;
             btnSiguiente.disabled = paginaActual === totalPaginas;
 
@@ -429,15 +444,15 @@ function mostrarPaginaActual() {
                 btnNum.type = 'button';
                 btnNum.className = `btn-num-pag ${i === paginaActual ? 'active' : ''}`;
                 btnNum.textContent = i;
-                
+
                 btnNum.addEventListener('click', () => {
                     paginaActual = i;
                     mostrarPaginaActual();
                     sincronizarURL();
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                 });
-                
-                contenedorNumeros.appendChild(btnNum);   
+
+                contenedorNumeros.appendChild(btnNum);
             }
         } else {
             paginacionContenedor.style.display = 'none';
@@ -468,7 +483,7 @@ function verFichaDetalle(titulo, dependencia, fecha, idDataset) {
     document.getElementById('modalTitulo').textContent = titulo;
     document.getElementById('modalDependencia').textContent = dependencia;
     document.getElementById('modalFecha').textContent = fecha;
-    
+
     const idSeguro = encodeURIComponent(idDataset);
     const contenedorDescargas = document.getElementById('modalDownloadLinks');
     contenedorDescargas.innerHTML = `
@@ -477,7 +492,7 @@ function verFichaDetalle(titulo, dependencia, fecha, idDataset) {
         <a href="/api/descargar/${idSeguro}?formato=xml" class="modal-badge-fmt" style="text-decoration:none; color: var(--blue-dark); transition: 0.2s;">XML</a>
         <a href="/api/descargar/${idSeguro}?formato=geojson" class="modal-badge-fmt" style="text-decoration:none; color: var(--blue-dark); transition: 0.2s;">GeoJSON</a>
     `;
-    
+
     document.getElementById('modalFicha').style.display = 'flex';
 }
 
