@@ -3,11 +3,6 @@
 {% block title %}Panel de Administración - Portal León{% endblock %}
 
 {% block top_banner %}
-<script>
-    if (!localStorage.getItem("authToken")) {
-        window.location.replace("/login.html");
-    }
-</script>
 <aside class="top-banner" role="alert">PORTAL INTERNO · ACCESO EXCLUSIVO PARA FUNCIONARIOS</aside>
 {% endblock %}
 

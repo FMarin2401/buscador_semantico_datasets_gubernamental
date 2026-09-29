@@ -77,7 +77,7 @@ def login_admin(request: Request, response: Response, credenciales: Credenciales
         key="access_token",
         value=token_jwt,
         httponly=True,   # Evita que JavaScript (XSS) pueda leer la cookie
-        secure=True,     # Obliga a que viaje solo por HTTPS (en producción en Azure)
+        secure=True,     # Obliga a que viaje solo por HTTPS (en producción colocar True)
         samesite="lax",  # Protección contra ataques CSRF
         max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60
     )
