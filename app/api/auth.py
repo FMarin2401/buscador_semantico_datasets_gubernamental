@@ -89,3 +89,14 @@ def login_admin(request: Request, response: Response, credenciales: Credenciales
 def logout(response: Response):
     response.delete_cookie(key="access_token")
     return {"mensaje": "Sesión cerrada exitosamente"}       
+
+@router.get("/api/auth/me")
+def obtener_usuario_actual(usuario: str = Depends(verificar_token), db: Session = Depends(get_db)):
+    """Devuelve el rol y nombre del usuario autenticado leyendo la cookie HTTP-only."""
+    u = db.query(UsuarioModel).filter(UsuarioModel.username == usuario).first()
+    if not u:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    return {
+        "username": u.username,
+        "rol": u.rol
+    }
