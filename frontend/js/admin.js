@@ -12,9 +12,12 @@ async function obtenerRolServidor() {
             const data = await respuesta.json();
             rolUsuarioActual = data.rol;
             ES_ADMIN = rolUsuarioActual === "admin";
+            return true;
         }
+        return false;
     } catch (e) {
         console.error("No se pudo obtener el rol del usuario", e);
+        return false;
     }
 }
 
@@ -82,14 +85,27 @@ let mensajesBuzon = [];
 let paginaActualMensajes = 1;
 const ITEMS_POR_PAGINA_MENSAJES = 10;
 
-window.addEventListener("pageshow", async (event) => {
-    await obtenerRolServidor();
+window.addEventListener("pageshow", async () => {
+    const sesionValida = await obtenerRolServidor();
     const panel = document.querySelector('.admin-layout');
-    if (panel) panel.style.display = 'flex';
+    
+    if (sesionValida && rolUsuarioActual) {
+        if (panel) panel.style.display = 'flex';
+    } else {
+        window.location.replace("/login.html");
+    }
 });
 
 document.addEventListener('DOMContentLoaded', async () => {
-    await obtenerRolServidor();
+    const sesionValida = await obtenerRolServidor();
+    
+    if (!sesionValida) {
+        window.location.replace("/login.html");
+        return;
+    }
+
+    const panel = document.querySelector('.admin-layout');
+    if (panel) panel.style.display = 'flex';
 
     if (!ES_ADMIN) {
         document.querySelector('[data-target="tab-usuarios"]')?.remove();

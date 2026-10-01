@@ -21,23 +21,39 @@ if not SECRET_KEY:
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
+ES_PRODUCCION = os.getenv("ENVIRONMENT", "local").lower() == "production"
+
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# Modificamos la verificación para que lea la cookie HTTP-only en lugar del header Bearer
-def verificar_token(request: Request, db: Session = Depends(get_db)):
+
+def verificar_token(request: Request) -> str:
+    """Verifica la validez del token JWT almacenado en la cookie HTTP-only."""
     token = request.cookies.get("access_token")
     if not token:
-        raise HTTPException(status_code=401, detail="No se encontró la sesión activa")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="No se encontró la sesión activa",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         usuario: str = payload.get("sub")
         if usuario is None:
-            raise HTTPException(status_code=401, detail="Credenciales inválidas")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Credenciales inválidas",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        return usuario
     except JWTError:
-        raise HTTPException(status_code=401, detail="Token expirado o inválido")
-    return usuario
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token expirado o inválido",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
-def requiere_admin(usuario: str = Depends(verificar_token), db: Session = Depends(get_db)):
+
+def requiere_admin(usuario: str = Depends(verificar_token), db: Session = Depends(get_db)) -> str:
     u = db.query(UsuarioModel).filter(UsuarioModel.username == usuario).first()
     if not u or u.rol != "admin":
         raise HTTPException(
@@ -46,9 +62,11 @@ def requiere_admin(usuario: str = Depends(verificar_token), db: Session = Depend
         )
     return usuario
 
+
 class CredencialesAdmin(BaseModel):
     usuario: str
     password: str
+
 
 @router.post("/api/login")
 @limiter.limit("5/minute")
@@ -72,30 +90,31 @@ def login_admin(request: Request, response: Response, credenciales: Credenciales
 
     token_jwt = jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
 
-    # Inyectamos el JWT de forma segura en una Cookie HTTP-only
     response.set_cookie(
         key="access_token",
         value=token_jwt,
-        httponly=True,   # Evita que JavaScript (XSS) pueda leer la cookie
-        secure=True,     # Obliga a que viaje solo por HTTPS (en producción colocar True)
-        samesite="lax",  # Protección contra ataques CSRF
+        httponly=True,
+        secure=ES_PRODUCCION,   
+        samesite="lax",
         max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60
     )
 
     return {"mensaje": "Autenticación exitosa"}
 
-# Endpoint para cerrar sesión destruyendo la cookie
+
 @router.post("/api/logout")
 def logout(response: Response):
+    """Cierra la sesión destruyendo la cookie HTTP-only."""
     response.delete_cookie(key="access_token")
-    return {"mensaje": "Sesión cerrada exitosamente"}       
+    return {"mensaje": "Sesión cerrada exitosamente"}
+
 
 @router.get("/api/auth/me")
 def obtener_usuario_actual(usuario: str = Depends(verificar_token), db: Session = Depends(get_db)):
-    """Devuelve el rol y nombre del usuario autenticado leyendo la cookie HTTP-only."""
+    """Devuelve el rol y usuario autenticado leyendo la cookie HTTP-only."""
     u = db.query(UsuarioModel).filter(UsuarioModel.username == usuario).first()
     if not u:
-        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
     return {
         "username": u.username,
         "rol": u.rol
