@@ -13,14 +13,14 @@ data/clean/
 data/chroma_db/
 
 # Bases de datos locales y archivos SQLite
-
 *.db
 *.sqlite3
 data/*.db
 data/usuarios.db
 
 # logs
-logs/auditoria.log
+logs/
+*.log
 
 # Caché de Python
 __pycache__/
