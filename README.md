@@ -48,5 +48,5 @@ Plataforma de búsqueda inteligente, analítica y gestión de datos abiertos par
    ```bash
    uvicorn app.main:app 
    ```
-  Accede a la plataforma en: http://127.0.0.1:8000
-  Documentación interactiva de la API (Swagger UI): http://127.0.0.1:8000/docs
+  ---
+Desarrollado por [Francisco Marín-Castillo](https://frankmarincas.dev/)
