@@ -49,4 +49,4 @@ Plataforma de búsqueda inteligente, analítica y gestión de datos abiertos par
    uvicorn app.main:app 
    ```
   ---
-Desarrollado por [Francisco Marín-Castillo](https://frankmarincas.dev/)
+Desarrollado por [Francisco Marin Castillo](https://frankmarincas.dev/)
