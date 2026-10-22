@@ -21,8 +21,17 @@ def obtener_todos_datasets():
     return coleccion.get(include=["metadatas", "documents"]) # Extraer los documentos (títulos) y los metadatos (dependencia, fecha)
 
 
-def guardar_datasets(ids: list, textos: list, embeddings: list, metadatas: list): 
+def guardar_datasets(ids: list, textos: list, embeddings: list, metadatas: list):
     coleccion.add(
+        ids=ids,
+        documents=textos,
+        embeddings=embeddings,
+        metadatas=metadatas
+    )
+
+def guardar_o_actualizar_datasets(ids: list, textos: list, embeddings: list, metadatas: list):
+    # A diferencia de add(), upsert() reemplaza los IDs que ya existen en lugar de duplicarlos
+    coleccion.upsert(
         ids=ids,
         documents=textos,
         embeddings=embeddings,
