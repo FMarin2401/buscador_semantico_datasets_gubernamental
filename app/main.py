@@ -161,7 +161,9 @@ async def agregar_cabeceras_seguridad(request: Request, call_next):
     else:
         csp = (
             "default-src 'self'; "
-            "script-src 'self' https://cdn.jsdelivr.net; " # Sin 'unsafe-inline': todo el JS vive en archivos .js, así un script inyectado no se ejecuta
+            # Sin 'unsafe-inline': todo el JS vive en archivos .js, así un script inyectado no se ejecuta.
+            # Del CDN solo se permite la versión fija de Chart.js que usa admin.html, no cualquier paquete de jsDelivr.
+            "script-src 'self' https://cdn.jsdelivr.net/npm/chart.js@4.5.1/; "
             "style-src 'self' 'unsafe-inline'; "
             "img-src 'self' data:; "
             "font-src 'self'; "
