@@ -131,6 +131,20 @@ app.add_middleware(
 )
 
 # --- MIDDLEWARE DE SEGURIDAD HTTP ---
+
+# Swagger (/docs) y ReDoc (/redoc) los genera FastAPI con un script inline y recursos de CDN.
+# Solo en esas páginas se permite: muestran la documentación de la API, nunca contenido escrito por usuarios.
+RUTAS_DOCUMENTACION_API = {"/docs", "/docs/oauth2-redirect", "/redoc"}
+CSP_DOCUMENTACION_API = (
+    "default-src 'self'; "
+    "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+    "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; "
+    "img-src 'self' data: https://fastapi.tiangolo.com https://cdn.redoc.ly; "
+    "font-src 'self' https://fonts.gstatic.com; "
+    "worker-src 'self' blob:; " # ReDoc procesa la especificación en un web worker
+    "connect-src 'self';"
+)
+
 @app.middleware("http")
 async def agregar_cabeceras_seguridad(request: Request, call_next):
     response = await call_next(request)
@@ -142,14 +156,17 @@ async def agregar_cabeceras_seguridad(request: Request, call_next):
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     
     # Content-Security-Policy (CSP)
-    csp = (
-        "default-src 'self'; "
-        "script-src 'self' https://cdn.jsdelivr.net; " # Sin 'unsafe-inline': todo el JS vive en archivos .js, así un script inyectado no se ejecuta
-        "style-src 'self' 'unsafe-inline'; "
-        "img-src 'self' data:; "
-        "font-src 'self'; "
-        "connect-src 'self';"
-    )
+    if request.url.path in RUTAS_DOCUMENTACION_API:
+        csp = CSP_DOCUMENTACION_API
+    else:
+        csp = (
+            "default-src 'self'; "
+            "script-src 'self' https://cdn.jsdelivr.net; " # Sin 'unsafe-inline': todo el JS vive en archivos .js, así un script inyectado no se ejecuta
+            "style-src 'self' 'unsafe-inline'; "
+            "img-src 'self' data:; "
+            "font-src 'self'; "
+            "connect-src 'self';"
+        )
     response.headers["Content-Security-Policy"] = csp
     
     return response
