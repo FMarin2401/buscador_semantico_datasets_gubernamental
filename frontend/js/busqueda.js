@@ -316,8 +316,8 @@ function renderizarFiltrosDependencias(lista) {
         htmlFiltros += `
             <label class="filter-item">
                 <input type="checkbox" class="filtro-cat" value="${escaparAtributo(cat)}" ${isChecked}> 
-                <span title="${escaparAtributo(cat)}">${escaparHTML(cat)}</span> 
-                <span>${conteosCat[cat]}</span>
+                <span class="filtro-nombre">${escaparHTML(cat)}</span>
+                <span class="filtro-conteo">${conteosCat[cat]}</span>
             </label>
         `;
     });

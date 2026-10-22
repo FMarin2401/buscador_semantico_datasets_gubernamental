@@ -21,10 +21,26 @@ body {
     display: none;
     background: none;
     border: none;
+    min-width: 44px;
+    min-height: 44px;
     font-size: 1.8rem;
     color: var(--blue-dark);
     cursor: pointer;
     margin-left: 10px;
+}
+
+.btn-toggle-password {
+    position: absolute;
+    right: 0.5rem;
+    width: 40px;
+    height: 40px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #64748b;
 }
 
 .sr-only {
@@ -110,10 +126,12 @@ ul.nav-links {
 }
 
 .footer-links li {
-    margin-bottom: 12px;
+    margin-bottom: 4px;
 }
 
 .footer-links a {
+    display: inline-block;
+    padding: 4px 0; /* Área táctil de 24 px como mínimo */
     color: #d1e2f3;
     text-decoration: none;
     font-size: 0.9rem;
@@ -195,7 +213,7 @@ ul.nav-links {
 
 .logo-text .site-slogan {
     display: block;
-    font-size: 0.65rem;
+    font-size: 0.75rem; /* 12 px: antes 10.4 px, demasiado chico para leer en mayúsculas */
     color: var(--text-muted);
     margin-top: 3px;
     letter-spacing: 0.5px;
@@ -239,8 +257,8 @@ ul.nav-links {
     background: white;
     border: 1px solid #ccc;
     border-radius: 50%;
-    width: 28px;
-    height: 28px;
+    width: 36px;
+    height: 36px;
     cursor: pointer;
     color: var(--text-muted);
     display: flex;
@@ -474,6 +492,7 @@ ul.nav-links {
     border: none;
     outline: none;
     width: 100%;
+    min-height: 40px; /* Antes medía 20 px de alto en móvil: difícil de tocar */
     font-size: 1rem;
     margin-left: 10px;
 }
@@ -601,8 +620,17 @@ ul.nav-links {
     cursor: pointer;
 }
 
-.filter-item span {
-    color: #999;
+/* Nombre a la izquierda junto a su casilla y conteo a la derecha.
+   Antes el nombre quedaba centrado y en #999 (contraste 2.7:1, por debajo del mínimo de 4.5:1) */
+.filtro-nombre {
+    flex: 1;
+    color: var(--text-dark);
+    font-size: 0.85rem;
+    text-align: left;
+}
+
+.filtro-conteo {
+    color: var(--text-muted);
     font-size: 0.8rem;
 }
 
@@ -1523,6 +1551,7 @@ ul.nav-links {
         outline: none;
         font-size: 0.9rem;
         padding: 8px 4px;
+        min-height: 40px;
         min-width: 0; /* Vital para que el flexbox no rompa el input en pantallas chicas */
         background: transparent;
     }
