@@ -13,7 +13,7 @@ Plataforma de búsqueda inteligente, analítica y gestión de datos abiertos par
 
 ## Stack Tecnológico
 * **Backend & API:** Python, FastAPI, Pandas, LXML.
-* **Inteligencia Artificial & NLP:** Sentence Transformers (`paraphrase-multilingual-MiniLM-L12-v2`), Google Generative AI (Gemini).
+* **Inteligencia Artificial & NLP:** Sentence Transformers (`intfloat/multilingual-e5-small`), Google Generative AI (Gemini).
 * **Bases de Datos & Persistencia:** ChromaDB (Vectorial), SQLite con SQLAlchemy (Relacional).
 * **Seguridad & Autenticación:** OAuth2 / JWT (PyJWT), pwdlib (Argon2).
 * **Frontend:** HTML5 semántico, CSS3 (Mobile-First, Flexbox/Grid), Vanilla JavaScript (Arquitectura desacoplada sin frameworks pesados), Chart.js.

@@ -28,9 +28,9 @@ GROUND_TRUTH = "eval/ground_truth.json"
 # clave: (modelo en Hugging Face, prefijo de consulta, prefijo de documento)
 # Los modelos e5 se entrenaron con prefijos "query: " y "passage: "; sin ellos rinden bastante peor
 CATALOGO_MODELOS = {
-    "minilm": ("sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2", "", ""), # Modelo actual en produccion
+    "minilm": ("sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2", "", ""), # Modelo anterior (hasta 2026-10)
     "mpnet": ("sentence-transformers/paraphrase-multilingual-mpnet-base-v2", "", ""),
-    "e5-small": ("intfloat/multilingual-e5-small", "query: ", "passage: "),
+    "e5-small": ("intfloat/multilingual-e5-small", "query: ", "passage: "), # Modelo actual en produccion
     "e5-base": ("intfloat/multilingual-e5-base", "query: ", "passage: "),
 }
 

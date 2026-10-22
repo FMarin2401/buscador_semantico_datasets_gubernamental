@@ -19,8 +19,8 @@ from app.api import manipulate_datasets, pages, search, auth, contact, users
 from app.db_core.connection import SessionLocal, get_db
 from app.db_core.migraciones import aplicar_migraciones
 from app.db_core.models import UsuarioModel
-from app.nlp_model import generar_embedding
-from app.db_chroma import coleccion
+from app.nlp_model import generar_embedding_consulta, NOMBRE_MODELO
+from app.db_chroma import coleccion, modelo_indexado, registrar_modelo_indexado
 from app.limiter import limiter
 from app.security import cifrar_password
 
@@ -40,7 +40,8 @@ logger = logging.getLogger(__name__)
 
 # --- CONTROL GLOBAL DE ESTADO (HEALTH PROBES) ---
 app_state = {
-    "warmup_ready": False
+    "warmup_ready": False,
+    "modelo_compatible": False
 }
 
 # --- CICLO DE VIDA (STARTUP) ---
@@ -70,9 +71,23 @@ async def lifespan(app: FastAPI):
     finally:
         db.close()
 
+    # --- COMPATIBILIDAD DEL ÍNDICE ---
+    # Dos modelos pueden generar vectores del mismo tamaño: si el índice se creó con otro modelo, ChromaDB no falla,
+    # pero compara vectores incompatibles y la búsqueda devuelve resultados sin sentido. En ese caso no se marca la app como lista.
+    indexado_con = modelo_indexado()
+    if coleccion.count() == 0 and indexado_con != NOMBRE_MODELO:
+        registrar_modelo_indexado(NOMBRE_MODELO) # Colección vacía: todo lo que se agregue desde el panel usará el modelo actual
+        indexado_con = NOMBRE_MODELO
+    app_state["modelo_compatible"] = indexado_con == NOMBRE_MODELO
+    if not app_state["modelo_compatible"]:
+        logger.error(
+            f"ChromaDB se indexó con '{indexado_con or 'un modelo anterior no registrado'}', pero la app usa '{NOMBRE_MODELO}'. "
+            "Ejecuta scripts/migrate_chroma.py para re-indexar."
+        )
+
     # --- WARM-UP ---
     try:
-        vector_test = generar_embedding("warm up test municipal")
+        vector_test = generar_embedding_consulta("warm up test municipal")
         coleccion.query(query_embeddings=[vector_test], n_results=1)
         app_state["warmup_ready"] = True
         print("[WARM-UP] Modelo semántico y ChromaDB precargados exitosamente en RAM.")
@@ -162,6 +177,9 @@ def readiness_check(response: Response, db: Session = Depends(get_db)):
 
     if not app_state["warmup_ready"]:
         errores.append("Warm-up del modelo semántico o ChromaDB en progreso.")
+
+    if not app_state["modelo_compatible"]:
+        errores.append("La base vectorial se indexó con otro modelo de embeddings; hay que re-indexarla.")
 
     try:
         db.execute(text("SELECT 1"))
