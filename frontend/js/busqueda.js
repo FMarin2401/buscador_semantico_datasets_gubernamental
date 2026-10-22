@@ -387,7 +387,7 @@ function mostrarPaginaActual() {
         const descripcion = item.descripcion || "Conjunto de datos oficial disponible para consulta y descarga municipal.";
         const dependencia = item.dependencia || "";
         const categoria = item.categoria || "General";
-        const fecha = item.fecha_actualizacion || "";
+        const fecha = item.fecha_actualizacion || "Sin fecha";
         const idSeguro = encodeURIComponent(item.id);
 
         htmlContent += `

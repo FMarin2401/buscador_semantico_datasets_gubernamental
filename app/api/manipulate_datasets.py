@@ -1,9 +1,9 @@
 import os
-import shutil
 import uuid
 from uuid import UUID
 import json
 from datetime import datetime
+from typing import Literal
 import pandas as pd
 import logging
 import hashlib
@@ -37,6 +37,20 @@ class DatasetActualizar(BaseModel):
     descripcion: str = Field(..., min_length=1, max_length=MAX_DESCRIPCION)
     dependencia: str = Field(..., min_length=1, max_length=MAX_DEPENDENCIA)
     categoria: str = Field(..., min_length=1, max_length=MAX_CATEGORIA)
+
+def es_csv_legible(contenido: bytes) -> bool:
+    """Comprueba que el archivo se pueda leer como CSV con al menos una columna (se leen solo las primeras filas)."""
+    if b"\x00" in contenido[:8192]:
+        return False # Un CSV de texto nunca tiene bytes nulos; es un archivo binario (imagen, Excel, PDF...) renombrado
+    for codificacion in ("utf-8", "latin-1"):
+        try:
+            df = pd.read_csv(io.BytesIO(contenido), nrows=50, encoding=codificacion)
+            return len(df.columns) > 0
+        except UnicodeDecodeError:
+            continue # Se reintenta con latin-1, igual que al descargar
+        except (pd.errors.ParserError, pd.errors.EmptyDataError, ValueError):
+            return False
+    return False
 
 def registrar_evento_auditoria(db: Session, usuario: str, accion: str, detalles: str):
     """Inserta de manera transaccional un registro en la tabla de bitácora relacional."""
@@ -88,16 +102,10 @@ def publicar_dataset(
     usuario_autenticado: str = Depends(verificar_token),
     db: Session = Depends(get_db)
 ):
-    if not archivo.filename.endswith(".csv"):
+    if not archivo.filename.lower().endswith(".csv"):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Formato inválido. Solo se permiten archivos .csv"
-        )
-        
-    if archivo.content_type not in ["text/csv", "application/vnd.ms-excel"]:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="El contenido del archivo no es un CSV válido."
         )
 
     contenido_archivo = archivo.file.read() # En un endpoint "def" se usa el archivo síncrono subyacente
@@ -108,45 +116,60 @@ def publicar_dataset(
             detail=f"El archivo excede el tamaño máximo permitido de {MAX_FILE_SIZE_BYTES // (1024 * 1024)} MB."
         )
 
-    hash_calculado = hashlib.sha256(contenido_archivo).hexdigest()
-    archivo.file.seek(0)
+    # El content_type lo manda el navegador y se puede falsificar (o variar según el sistema operativo);
+    # lo confiable es comprobar que pandas pueda leerlo como CSV
+    if not es_csv_legible(contenido_archivo):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El contenido del archivo no es un CSV válido."
+        )
 
-    datos_existentes = obtener_todos_datasets()
-    if datos_existentes and datos_existentes.get("metadatas"):
-        for meta in datos_existentes["metadatas"]:
-            if meta and meta.get("hash_sha256") == hash_calculado:
-                logger.warning(f"[ALERTA] Ingesta bloqueada por duplicidad: {archivo.filename}")
-                raise HTTPException(
-                    status_code=status.HTTP_409_CONFLICT,
-                    detail="Este dataset ya fue subido anteriormente (Duplicado detectado)."
-                )
+    hash_calculado = hashlib.sha256(contenido_archivo).hexdigest()
+
+    # Se filtra por hash en ChromaDB en lugar de traer toda la colección
+    if coleccion.get(where={"hash_sha256": hash_calculado}, limit=1)["ids"]:
+        logger.warning(f"[ALERTA] Ingesta bloqueada por duplicidad: {archivo.filename}")
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Este dataset ya fue subido anteriormente (Duplicado detectado)."
+        )
 
     id_unico = str(uuid.uuid4())
     fecha_actual = datetime.now().strftime("%Y-%m-%d")
 
-    carpeta_destino = "data/raw"
-    os.makedirs(carpeta_destino, exist_ok=True) 
-    ruta_archivo = f"{carpeta_destino}/{id_unico}.csv"
-    
-    with open(ruta_archivo, "wb") as buffer:
-        shutil.copyfileobj(archivo.file, buffer)
-        
+    # El embedding se genera antes de escribir nada: si falla, no queda ningún archivo a medias
     vector = generar_embedding_documento(texto_para_indexar(titulo, descripcion, dependencia))
-    
+
     metadata = {
         "dependencia": dependencia,
-        "categoria": categoria, 
+        "categoria": categoria,
         "descripcion": descripcion,
         "fecha_actualizacion": fecha_actual,
         "hash_sha256": hash_calculado
     }
-    
-    guardar_datasets(
-        ids=[id_unico], 
-        textos=[titulo], 
-        embeddings=[vector],
-        metadatas=[metadata]
-    )
+
+    carpeta_destino = "data/raw"
+    os.makedirs(carpeta_destino, exist_ok=True)
+    ruta_archivo = f"{carpeta_destino}/{id_unico}.csv"
+
+    with open(ruta_archivo, "wb") as buffer:
+        buffer.write(contenido_archivo)
+
+    try:
+        guardar_datasets(
+            ids=[id_unico],
+            textos=[titulo],
+            embeddings=[vector],
+            metadatas=[metadata]
+        )
+    except Exception:
+        # Si ChromaDB falla, se borra el CSV para no dejar un archivo huérfano en data/raw
+        os.remove(ruta_archivo)
+        logger.exception(f"Error al guardar el dataset '{titulo}' en ChromaDB")
+        raise HTTPException(
+            status_code=500,
+            detail="Error al guardar el dataset en la base vectorial."
+        )
     
     # Registro dual: archivo plano y tabla de SQLite
     logger.info(f"[BITACORA AUDITORIA] El usuario '{usuario_autenticado}' subió el dataset '{titulo}' con ID: {id_unico}.")
@@ -171,16 +194,17 @@ def actualizar_dataset(
         if not item_actual or not item_actual.get("ids"):
             raise HTTPException(status_code=404, detail="Dataset no encontrado en la base de datos.")
 
-        meta_vieja = item_actual["metadatas"][0] if item_actual["metadatas"] else {}
-        hash_original = meta_vieja.get("hash_sha256", "")
+        meta_vieja = (item_actual["metadatas"][0] if item_actual["metadatas"] else None) or {}
         fecha_actual = datetime.now().strftime("%Y-%m-%d")
 
+        # Se parte de los metadatos existentes para conservar hash_sha256 y archivo_original:
+        # sin archivo_original, migrate_chroma.py no reconocería el dataset y crearía un duplicado
         nuevo_metadata = {
+            **meta_vieja,
             "dependencia": datos.dependencia,
             "categoria": datos.categoria,
             "descripcion": datos.descripcion,
             "fecha_actualizacion": fecha_actual,
-            "hash_sha256": hash_original
         }
 
         nuevo_vector = generar_embedding_documento(texto_para_indexar(datos.titulo, datos.descripcion, datos.dependencia))
@@ -239,7 +263,11 @@ def eliminar_dataset(
     return {"mensaje": "Dataset eliminado permanentemente"}
 
 @router.get("/api/descargar/{id_dataset}")
-def descargar_dataset(id_dataset: UUID, formato: str = "csv", db: Session = Depends(get_db)):
+def descargar_dataset(
+    id_dataset: UUID,
+    formato: Literal["csv", "json", "xml", "geojson"] = "csv", # Un formato inválido se rechaza (422) antes de contar la descarga
+    db: Session = Depends(get_db)
+):
     id_dataset = str(id_dataset) # Solo un UUID válido llega a construir la ruta del archivo
     ruta_csv = f"data/raw/{id_dataset}.csv"
     if not os.path.exists(ruta_csv):

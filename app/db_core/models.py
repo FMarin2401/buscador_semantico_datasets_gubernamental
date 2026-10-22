@@ -1,6 +1,11 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import Column, Integer, String, Text, DateTime
 from app.db_core.connection import Base
+
+def ahora_utc():
+    # Reemplaza a datetime.utcnow (obsoleto desde Python 3.12). Se guarda sin zona horaria,
+    # igual que antes, porque las columnas son DateTime sin zona y la exportación ya las marca como UTC
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 
 class UsuarioModel(Base):
     __tablename__ = "usuarios"
@@ -17,7 +22,7 @@ class MensajeContactoModel(Base):
     nombre = Column(String, nullable=False)
     email = Column(String, nullable=False)
     mensaje = Column(Text, nullable=False)
-    fecha_envio = Column(DateTime, default=datetime.utcnow)
+    fecha_envio = Column(DateTime, default=ahora_utc)
 
 class BitacoraAuditoriaModel(Base):
     __tablename__ = "bitacora_auditoria"
@@ -26,7 +31,7 @@ class BitacoraAuditoriaModel(Base):
     usuario = Column(String, nullable=False)          #
     accion = Column(String, nullable=False)           
     detalles = Column(String, nullable=False)         
-    fecha_hora = Column(DateTime, default=datetime.utcnow) 
+    fecha_hora = Column(DateTime, default=ahora_utc) 
 
 class DescargasDatasetModel(Base):
     __tablename__ = "descargas_datasets"
