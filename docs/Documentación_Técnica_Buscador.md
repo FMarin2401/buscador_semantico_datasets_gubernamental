@@ -635,7 +635,7 @@ python scripts/comparar_modelos.py minilm e5-small --salida eval/resultados/comp
 | Enumeración de usuarios | Verificación contra un hash ficticio cuando el usuario no existe, para igualar los tiempos de respuesta |
 | Sesión | JWT (PyJWT) en una cookie `HttpOnly` y `SameSite=Lax`, `Secure` en producción, expiración de 30 min |
 | Autorización | RBAC en el servidor; el rol se verifica contra la BD |
-| Fuerza bruta / abuso | SlowAPI: login 5/min, contacto 5/min, búsqueda 15/min por IP |
+| Fuerza bruta / abuso | SlowAPI: login 5/min, contacto 5/min, búsqueda 15/min por IP. La IP se toma del **último** valor de `X-Forwarded-For` (el que agrega el ingress de Azure), no del primero, que el cliente puede inventar (`app/limiter.py`) |
 | Validación de entradas | Longitudes máximas en búsqueda, login, formularios y metadatos; IDs como `UUID`; formatos de descarga como `Literal` |
 | Cabeceras HTTP | `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Strict-Transport-Security`, `Referrer-Policy`, `Content-Security-Policy` |
 | CSP | Portal: `script-src` sin `'unsafe-inline'` y limitado a `'self'` y a la versión fija de Chart.js. `/docs` y `/redoc` tienen una CSP propia, porque FastAPI las genera con un script inline y recursos de CDN |
@@ -667,7 +667,7 @@ python scripts/comparar_modelos.py minilm e5-small --salida eval/resultados/comp
 - Base `python:3.12-slim`, con las dependencias de sistema para compilar LXML.
 - **Descarga el modelo `intfloat/multilingual-e5-small` durante el build**, para que el contenedor arranque sin depender de Hugging Face.
 - Copia `data/chroma_db` y `data/raw` desde la máquina donde se construye: **sin volumen** (como en Azure Container Apps), esos son los datasets que sirve la app. `data/` no está en git, así que **hay que re-indexar con `migrate_chroma.py` antes de construir** si cambió el modelo o el catálogo. Si se olvida, el *readiness* responde `503` en lugar de servir búsquedas incorrectas.
-- Uvicorn arranca con `--proxy-headers --forwarded-allow-ips=*`, para obtener la IP real detrás de un proxy inverso (ver [17](#17-problemas-conocidos-y-trabajo-futuro)).
+- Uvicorn arranca con `--proxy-headers --forwarded-allow-ips=*` para respetar `X-Forwarded-Proto`, porque Azure termina el HTTPS. Con `*`, Uvicorn toma la **primera** IP de `X-Forwarded-For`, que el cliente puede falsificar; por eso el rate limit no usa esa IP, sino la última de la cabecera (ver [13. Seguridad](#13-seguridad)).
 
 ### Compose (`docker-compose.yml`)
 
@@ -686,6 +686,30 @@ Volúmenes persistentes:
 
 > Si `./data/usuarios.db` no existe en el host antes del primer `up`, Docker crea un **directorio** con ese nombre y SQLite falla. Crea el archivo antes con `touch data/usuarios.db`, o usa `DATABASE_URL` con PostgreSQL.
 
+### Azure Container Apps
+
+| Recurso | Valor |
+|---|---|
+| Container App | `app-portal-datos` (grupo `rg-portal-datos`, región Mexico Central) |
+| Registro | `acrportaldatos6462.azurecr.io/portal-datos-leon` (ACR Basic) |
+| Recursos | 1 vCPU, 2 GiB |
+| Escala | Mínimo 0, máximo **1** réplica: se apaga cuando nadie lo usa (la primera visita espera la carga del modelo) y con una sola réplica la SQLite y el rate limit son consistentes |
+| Base relacional | SQLite dentro del contenedor (sin `DATABASE_URL`): los usuarios se recrean desde `ADMIN_USER`/`ADMIN_PASSWORD` y los datos del panel se pierden al reiniciar (aceptado para la demo) |
+| Variables | `ENVIRONMENT=production`, `ALLOWED_ORIGINS`; `SECRET_KEY` y `ADMIN_PASSWORD` como **secretos** del Container App (`secretRef`) |
+| Probes | **Startup** y **readiness** en `/api/health/ready` (el tráfico solo llega cuando el modelo cargó y el índice es compatible); **liveness** en `/api/health/live` |
+
+Para publicar una versión nueva:
+
+```bash
+python scripts/migrate_chroma.py --simular   # Debe mostrar 0 cambios: la imagen copia esta Chroma
+docker build -t acrportaldatos6462.azurecr.io/portal-datos-leon:vN .
+az acr login -n acrportaldatos6462
+docker push acrportaldatos6462.azurecr.io/portal-datos-leon:vN
+az containerapp update -n app-portal-datos -g rg-portal-datos --image acrportaldatos6462.azurecr.io/portal-datos-leon:vN
+```
+
+Para volver a la versión anterior, el mismo `az containerapp update` con la etiqueta previa.
+
 ### Checklist de producción
 
 - [ ] Definir `ENVIRONMENT=production` (activa la cookie `Secure`).
@@ -696,7 +720,8 @@ Volúmenes persistentes:
 - [ ] Re-indexar con `migrate_chroma.py` antes de construir la imagen si cambió el modelo o el catálogo.
 - [ ] Respaldar periódicamente `data/chroma_db` y `data/raw`.
 - [ ] Mantener `LOG_LEVEL` en `INFO` (el valor por defecto).
-- [ ] Restringir `--forwarded-allow-ips` al rango del ingress.
+- [ ] Guardar `SECRET_KEY` y `ADMIN_PASSWORD` como secretos, no como variables en texto plano.
+- [ ] Configurar los probes de startup, readiness y liveness.
 
 ---
 
@@ -729,6 +754,8 @@ La revisión de código del 2026-10-07 (`docs/pendientes.md`) detectó varios fa
 | `datetime.utcnow()` obsoleto | Python 3.12 | `ahora_utc()` | #8 |
 | CSP con `'unsafe-inline'` en `script-src` | — | Se quitó (no hay JS inline); CSP propia para `/docs` y `/redoc` | #8, #9 |
 | Chart.js sin versión fija | `cdn.jsdelivr.net/npm/chart.js` cargaba siempre la última versión | Versión 4.5.1 con SRI; CSP limitada a esa ruta | #10 |
+| **El rate limit se podía saltar con una IP falsa** | Con `--forwarded-allow-ips=*`, Uvicorn toma la primera IP de `X-Forwarded-For`, que escribe el cliente; Azure agrega la real al final | El rate limit usa la última IP de la cabecera (`obtener_ip_cliente` en `app/limiter.py`) | — |
+| Configuración de Azure incompleta | Sin probes, hasta 2 réplicas con SQLite y rate limit separados, secretos en texto plano y cookie sin `Secure` | Probes, máximo 1 réplica, secretos con `secretRef` y `ENVIRONMENT=production` | Fase 6 |
 
 El análisis detallado de la evaluación y del cambio de modelo está en `eval/experimentos/`.
 
@@ -738,9 +765,9 @@ El análisis detallado de la evaluación y del cambio de modelo está en `eval/e
 
 | # | Tema | Detalle |
 |---|---|---|
-| 1 | `--forwarded-allow-ips=*` | Uvicorn confía en `X-Forwarded-For` venga de quien venga. Según cómo lo maneje el ingress, un atacante podría falsificar su IP y saltarse el rate limit del login. Hay que restringirlo al rango del ingress de Azure |
-| 2 | Rate limit por réplica | SlowAPI cuenta en memoria: con N réplicas el límite real se multiplica por N y se reinicia con cada reinicio. Con una réplica es suficiente; con varias, usar `storage_uri="redis://..."` |
-| 3 | Persistencia en Azure Container Apps | Sin volumen, los datasets subidos desde el panel y `logs/auditoria.log` se pierden al reiniciar el contenedor. Es aceptable mientras el despliegue sea de demostración; la opción más directa sería **pgvector** en el PostgreSQL existente |
+| 1 | IP en los logs de acceso | Los logs de Uvicorn muestran la primera IP de `X-Forwarded-For`, que el cliente puede falsificar. El rate limit ya no depende de ella, pero esos logs no sirven para identificar a un cliente |
+| 2 | Rate limit por réplica | SlowAPI cuenta en memoria y se reinicia con cada arranque. Con el máximo de 1 réplica es suficiente; si se escala, usar `storage_uri="redis://..."` |
+| 3 | Persistencia en Azure Container Apps | Sin volumen ni PostgreSQL, los datasets subidos desde el panel, los usuarios creados, la bitácora y `logs/auditoria.log` se pierden cada vez que el contenedor se apaga (también al escalar a 0). Es aceptable mientras el despliegue sea de demostración; la opción más directa sería un PostgreSQL con **pgvector** |
 | 4 | Umbral fijo | Las distancias de los aciertos y de las consultas ajenas se traslapan: con 0.19 quedan 6 aciertos ocultos por muy poco y 5 consultas ajenas aceptadas. Un umbral relativo o un re-ranker podrían mejorarlo |
 | 5 | Nombres propios locales | 5 consultas siguen fuera del Top-5, casi todas por nombres que un modelo general no conoce ("oruga", "Tota Carbajal", "Poliforum"). Candidatas para **fine-tuning** o **búsqueda híbrida** (BM25 + embeddings) |
 | 6 | `analyze_csv.py` sin prueba real | La salida estructurada y los reintentos se probaron con un cliente simulado; falta una corrida contra la API de Gemini |

@@ -14,7 +14,7 @@ El resto del documento se conserva tal como se escribió en la revisión. Esta t
 | 2.1 | Evaluación no confiable | ✅ Resuelto (línea base real: 78 %; con e5-small: 95 %) | #2, #7 |
 | 2.2 | Persistencia en Azure Container Apps | ⏳ Pendiente (Fase 6). Aceptado mientras el despliegue sea de demostración | — |
 | 2.3 | `publicar_dataset` bloqueaba el event loop | ✅ Resuelto | #3 |
-| 2.4 | Rate limiting: IP falsificable | ⏳ Pendiente (Fase 6): `--forwarded-allow-ips` requiere el rango del ingress | — |
+| 2.4 | Rate limiting: IP falsificable | ✅ Resuelto: el rate limit usa la última IP de `X-Forwarded-For` (la que agrega Azure) y el Container App queda con máximo 1 réplica | — |
 | 2.5 | `python-jose` y `passlib` | ✅ Resuelto (PyJWT y pwdlib con Argon2) | #5 |
 | 3.1 | Sin migraciones | ✅ Resuelto (Alembic) | #6 |
 | 3.2 | `migrate_chroma.py` no idempotente | ✅ Resuelto | #6 |
