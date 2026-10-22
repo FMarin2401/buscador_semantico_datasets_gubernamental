@@ -81,7 +81,7 @@
 
         <section id="tab-subir" class="pestana-admin pestana-oculta">
             <h2>Publicar Nuevo Conjunto de Datos</h2>
-            <p>Sube el archivo CSV oficial para que la IA lo procese e indexe automáticamente.</p>
+            <p>Completa los datos y sube el archivo CSV oficial: el buscador semántico lo indexará en cuanto se publique.</p>
 
             <div class="hero-section">
                 <div class="hero-card admin-card">
@@ -132,6 +132,7 @@
                 <input type="search" id="inputBuscarAdmin" class="form-input" placeholder="🔍 Filtrar por título o secretaría...">
             </div>
 
+            <div class="tabla-desplazable" tabindex="0" role="region" aria-label="Tabla del catálogo de datasets">
             <table class="admin-table">
                 <thead>
                     <tr>
@@ -144,6 +145,7 @@
                 <tbody id="tablaCuerpoDatasets">
                 </tbody>
             </table>
+            </div>
             <nav id="paginacionAdmin" class="paginacion-container" aria-label="Paginación del catálogo" style="display: none; margin-top: 25px;">
                 <button type="button" id="btnAdminPagAnterior" class="btn-secundario-pag">Anterior</button>
                 <div id="numerosPaginacionAdmin" class="numeros-paginacion"></div>
@@ -154,6 +156,7 @@
             <h2>Buzón Ciudadano</h2>
             <p>Mensajes y reportes enviados a través del formulario de contacto.</p>
             
+            <div class="tabla-desplazable" tabindex="0" role="region" aria-label="Tabla de mensajes del buzón">
             <table class="admin-table">
                 <thead>
                     <tr>
@@ -168,6 +171,7 @@
                     <tr><td colspan="5" class="text-center">Cargando mensajes...</td></tr>
                 </tbody>
             </table>
+            </div>
             <nav id="paginacionMensajes" class="paginacion-container" aria-label="Paginación de mensajes" style="display: none; margin-top: 25px;">
                 <button type="button" id="btnMensajesPagAnterior" class="btn-secundario-pag">Anterior</button>
                 <div id="numerosPaginacionMensajes" class="numeros-paginacion"></div>
@@ -203,6 +207,7 @@
                 </div>
 
                 <div>
+                    <div class="tabla-desplazable" tabindex="0" role="region" aria-label="Tabla de funcionarios">
                     <table class="admin-table" style="margin-top: 0;">
                         <thead>
                             <tr>
@@ -215,6 +220,7 @@
                             <tr><td colspan="3" class="text-center">Cargando cuentas...</td></tr>
                         </tbody>
                     </table>
+                    </div>
                 </div>
             </div>
         </section>

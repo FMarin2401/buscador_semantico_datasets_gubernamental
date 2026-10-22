@@ -363,7 +363,7 @@ function mostrarPaginaActual() {
     const params = new URLSearchParams(window.location.search);
     const hayBusquedaActiva = params.has('q') && params.get('q').trim() !== '';
 
-    textoResultados.innerHTML = `<strong>${listaEnMemoria.length}</strong> conjuntos encontrados`;
+    textoResultados.innerHTML = `<strong>${listaEnMemoria.length}</strong> ${listaEnMemoria.length === 1 ? 'conjunto encontrado' : 'conjuntos encontrados'}`;
 
     const btnRestablecer = document.getElementById('btnRestablecerBusqueda');
     if (btnRestablecer) {
@@ -512,7 +512,7 @@ async function cargarVistaPrevia(idDataset) {
         const encabezados = data.columnas.map(c => `<th scope="col">${escaparHTML(c)}</th>`).join('');
         const filas = data.filas.map(fila => `<tr>${fila.map(v => `<td>${escaparHTML(v)}</td>`).join('')}</tr>`).join('');
         contenedor.innerHTML = `
-            <p class="vista-previa-estado">${data.total_filas} ${data.total_filas === 1 ? 'fila' : 'filas'} · ${data.total_columnas} columnas. Primeras ${data.filas.length}:</p>
+            <p class="vista-previa-estado">${data.total_filas} ${data.total_filas === 1 ? 'fila' : 'filas'} · ${data.total_columnas} columnas${data.total_filas > data.filas.length ? `. Primeras ${data.filas.length}:` : ''}</p>
             <div class="vista-previa-tabla" tabindex="0" role="region" aria-label="Vista previa de los datos">
                 <table><thead><tr>${encabezados}</tr></thead><tbody>${filas}</tbody></table>
             </div>`;

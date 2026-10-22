@@ -568,6 +568,8 @@ ul.nav-links {
 }
 
 .link-limpiar {
+    min-height: 32px;
+    padding: 0 8px;
     color: var(--blue-primary);
     text-decoration: none;
     font-size: 0.9rem;
@@ -703,9 +705,10 @@ ul.nav-links {
 
 .paginacion-container {
     display: flex;
+    flex-wrap: wrap; /* Con muchas páginas, la fila no cabía en móvil y ensanchaba toda la página */
     justify-content: center;
     align-items: center;
-    gap: 20px;
+    gap: 12px 20px;
     margin: 40px 0;
 }
 
@@ -1191,6 +1194,12 @@ ul.nav-links {
 
 .msg-danger { 
     color: red; 
+}
+
+/* Las tablas del panel se desplazan dentro de su caja: en móvil empujaban la página a ~570 px de ancho */
+.tabla-desplazable {
+    overflow-x: auto;
+    max-width: 100%;
 }
 
 .admin-table { 
@@ -1794,8 +1803,17 @@ ul.nav-links {
 
 /* Panel de administración en móvil: el menú lateral pasa arriba como una fila desplazable */
 @media (max-width: 768px) {
+    /* En móvil, los números de página van en su propia fila, arriba de Anterior y Siguiente */
+    .paginacion-container .numeros-paginacion {
+        order: -1;
+        flex-basis: 100%;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
     .hero-card h1 {
         font-size: 2.2rem;
+        max-width: none; /* En pantallas angostas, 14ch partía el titular en 4 líneas */
     }
 
     .admin-layout {
