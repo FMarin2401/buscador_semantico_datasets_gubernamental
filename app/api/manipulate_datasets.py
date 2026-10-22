@@ -10,15 +10,17 @@ import hashlib
 import io
 import csv
 
-from fastapi import APIRouter, File, Form, HTTPException, UploadFile, status, Depends
+from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile, status, Depends
 from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 # Módulos internos del proyecto
+from app.catalogo import CATEGORIAS
 from app.db_chroma import coleccion, guardar_datasets, obtener_todos_datasets
 from app.nlp_model import generar_embedding_documento, texto_para_indexar
 from app.api.auth import verificar_token, requiere_admin
+from app.limiter import limiter
 from app.db_core.connection import get_db
 from app.db_core.models import BitacoraAuditoriaModel, DescargasDatasetModel
 
@@ -37,6 +39,15 @@ class DatasetActualizar(BaseModel):
     descripcion: str = Field(..., min_length=1, max_length=MAX_DESCRIPCION)
     dependencia: str = Field(..., min_length=1, max_length=MAX_DEPENDENCIA)
     categoria: str = Field(..., min_length=1, max_length=MAX_CATEGORIA)
+
+def validar_categoria(categoria: str):
+    # Solo se aceptan las categorías oficiales: una escrita a mano crearía un filtro nuevo en el portal.
+    # El mensaje es texto (no la lista de errores de Pydantic) para que el panel lo muestre tal cual.
+    if categoria not in CATEGORIAS:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Categoría no válida. Usa una de las oficiales: {', '.join(CATEGORIAS)}."
+        )
 
 def es_csv_legible(contenido: bytes) -> bool:
     """Comprueba que el archivo se pueda leer como CSV con al menos una columna (se leen solo las primeras filas)."""
@@ -102,6 +113,8 @@ def publicar_dataset(
     usuario_autenticado: str = Depends(verificar_token),
     db: Session = Depends(get_db)
 ):
+    validar_categoria(categoria)
+
     if not archivo.filename.lower().endswith(".csv"):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -189,6 +202,7 @@ def actualizar_dataset(
     db: Session = Depends(get_db)
 ):
     id_dataset = str(id_dataset)
+    validar_categoria(datos.categoria)
     try:
         item_actual = coleccion.get(ids=[id_dataset], include=["metadatas", "documents"])
         if not item_actual or not item_actual.get("ids"):
@@ -262,6 +276,34 @@ def eliminar_dataset(
 
     return {"mensaje": "Dataset eliminado permanentemente"}
 
+def leer_csv(ruta_csv: str, **opciones) -> pd.DataFrame:
+    # Los CSV del municipio llegan en UTF-8 o en latin-1 (exportados desde Excel)
+    try:
+        return pd.read_csv(ruta_csv, encoding="utf-8", **opciones)
+    except UnicodeDecodeError:
+        return pd.read_csv(ruta_csv, encoding="latin-1", **opciones)
+
+FILAS_VISTA_PREVIA = 5
+MAX_CARACTERES_CELDA = 100
+
+@router.get("/api/datasets/{id_dataset}/vista-previa")
+@limiter.limit("30/minute") # Muestra solo unas filas, pero sin límite serviría para leer los archivos en masa
+def vista_previa_dataset(request: Request, id_dataset: UUID):
+    """Columnas y primeras filas de un dataset, para la ficha técnica. No suma al contador de descargas."""
+    ruta_csv = f"data/raw/{id_dataset}.csv"
+    if not os.path.exists(ruta_csv):
+        raise HTTPException(status_code=404, detail="Dataset no encontrado")
+
+    # Todo como texto y sin convertir vacíos a NaN: se muestra el valor tal como está en el archivo
+    # (si no, pandas convierte "1" en "1.0" en una columna numérica con celdas vacías)
+    df = leer_csv(ruta_csv, dtype=str, keep_default_na=False)
+    return {
+        "columnas": [str(c) for c in df.columns],
+        "filas": [[v[:MAX_CARACTERES_CELDA] for v in fila] for fila in df.head(FILAS_VISTA_PREVIA).values.tolist()],
+        "total_filas": len(df),
+        "total_columnas": len(df.columns),
+    }
+
 @router.get("/api/descargar/{id_dataset}")
 def descargar_dataset(
     id_dataset: UUID,
@@ -284,11 +326,8 @@ def descargar_dataset(
     if formato == "csv":
         return FileResponse(path=ruta_csv, filename=f"{id_dataset}.csv", media_type="text/csv")
         
-    try:
-        df = pd.read_csv(ruta_csv, encoding="utf-8")
-    except UnicodeDecodeError:
-        df = pd.read_csv(ruta_csv, encoding="latin-1")
-    
+    df = leer_csv(ruta_csv)
+
     if formato == "json":
         json_data = df.to_json(orient="records")
         return Response(content=json_data, media_type="application/json", 

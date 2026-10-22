@@ -192,6 +192,12 @@ def readiness_check(response: Response, db: Session = Depends(get_db)):
     que ChromaDB esté en RAM y que la base relacional responda consultas.
     """
     errores = []
+    # Estado por componente, siempre presente (también con 503): el panel de administración lo muestra tal cual
+    componentes = {
+        "db_relacional": "ok",
+        "nlp_chromadb": "ok" if app_state["warmup_ready"] else "cargando",
+        "indice_vectorial": "ok" if app_state["modelo_compatible"] else "incompatible",
+    }
 
     if not app_state["warmup_ready"]:
         errores.append("Warm-up del modelo semántico o ChromaDB en progreso.")
@@ -203,21 +209,16 @@ def readiness_check(response: Response, db: Session = Depends(get_db)):
         db.execute(text("SELECT 1"))
     except Exception:
         logger.exception("Readiness: la base de datos no respondió")
+        componentes["db_relacional"] = "error"
         errores.append("Base de datos no disponible.") # Este endpoint es público: el detalle del error solo va al log
 
+    respuesta = {
+        "status": "unhealthy" if errores else "ready",
+        "ready": not errores,
+        "components": componentes,
+        "modelo": NOMBRE_MODELO,
+    }
     if errores:
         response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
-        return {
-            "status": "unhealthy",
-            "ready": False,
-            "errores": errores
-        }
-
-    return {
-        "status": "ready",
-        "ready": True,
-        "components": {
-            "db_relacional": "ok",
-            "nlp_chromadb": "ok"
-        }
-    }
+        respuesta["errores"] = errores
+    return respuesta

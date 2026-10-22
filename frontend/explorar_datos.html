@@ -7,14 +7,14 @@
 <main>
     <header class="page-header">
         <h1>Conjuntos de datos</h1>
-        <p>Busca por palabra clave y refina por categoría, dependencia publicadora y formato.</p>
+        <p>Busca por palabra clave y refina los resultados por categoría.</p>
     </header>
 
     <section class="search-sort-bar" aria-label="Barra de búsqueda y ordenamiento">
         <form class="search-input-wrapper" role="search" id="formBusquedaInterna">
-            <span aria-hidden="true">🔍</span>
+            <svg class="icono-buscar" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="7"/><path d="m20 20-4.2-4.2"/></svg>
             <label for="searchInputResultados" class="sr-only">Buscar conjuntos de datos</label>
-            <input type="search" id="searchInputResultados" maxlength="300" placeholder="Cargando total de datos...">
+            <input type="search" id="searchInputResultados" maxlength="300" placeholder="Ej. rutas de basura">
             <button type="submit" class="btn-buscar-small">Buscar</button>
         </form>
         <div class="sort-wrapper">
@@ -37,7 +37,7 @@
             <fieldset class="filter-group">
                 <legend>CATEGORÍA</legend>
                 <div id="contenedor-filtros-dependencias">
-                    <p style="font-size: 0.85rem; color: #888; margin: 0;">Cargando dependencias...</p>
+                    <p class="vista-previa-estado">Cargando categorías...</p>
                 </div>
             </fieldset>
         </aside>
@@ -46,11 +46,14 @@
             <div class="resultados-header" style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;">
                 <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
                     <span id="texto-resultados"><strong>0</strong> conjuntos encontrados</span>
-                    <a href="/explorar_datos.html" id="btnRestablecerBusqueda" class="btn-restablecer" style="display: none; font-size: 0.82rem; color: #b91c1c; text-decoration: none; background: #fee2e2; padding: 0.25rem 0.65rem; border-radius: 9999px; font-weight: 500; border: 1px solid #fca5a5;">
-                        ✕ Ver catálogo completo
+                    <a href="/explorar_datos.html" id="btnRestablecerBusqueda" class="btn-restablecer" style="display: none;">
+                        Limpiar búsqueda
                     </a>
                 </div>
-                <button type="button" class="link-explorar-cat" id="btnExplorarCat">Explorar por categoría</button>
+                <!-- Muestra u oculta los filtros; en móvil están ocultos por defecto, así que debe ser un botón visible -->
+                <button type="button" class="btn-filtros" id="btnExplorarCat" aria-controls="sidebarFiltros" aria-expanded="true">
+                    Filtros <span class="contador-filtros" id="contadorFiltros" hidden></span>
+                </button>
             </div>
             <div id="contenedor-tarjetas"></div>
             <nav id="paginacionContenedor" class="paginacion-container" aria-label="Navegación de páginas" style="display: none;">
@@ -79,14 +82,20 @@
             <button type="button" class="modal-close btn-cerrar-modal" aria-label="Cerrar modal">&times;</button>
         </header>
         <div class="modal-body">
-            <p><strong>Título:</strong> <span id="modalTitulo"></span></p>
-            <p><strong>Dependencia:</strong> <span id="modalDependencia"></span></p>
-            <p><strong>Última Actualización:</strong> <span id="modalFecha"></span></p>
-            <p style="margin-top: 20px; font-weight: bold;">Descargar directamente:</p>
-            <div id="modalDownloadLinks" style="display: flex; gap: 10px; flex-wrap: wrap;"></div>
+            <h4 id="modalTitulo" class="ficha-titulo"></h4>
+            <p id="modalDescripcion" class="ficha-descripcion"></p>
+            <dl class="ficha-datos">
+                <dt>Dependencia</dt><dd id="modalDependencia"></dd>
+                <dt>Categoría</dt><dd id="modalCategoria"></dd>
+                <dt>Última actualización</dt><dd id="modalFecha"></dd>
+            </dl>
+            <h5 class="ficha-subtitulo">Vista previa</h5>
+            <div id="modalVistaPrevia"></div>
+            <h5 class="ficha-subtitulo">Descargar</h5>
+            <div id="modalDownloadLinks"></div>
         </div>
         <footer class="modal-footer">
-            <button type="button" class="btn-primary btn-cerrar-modal">Cerrar</button>
+            <button type="button" class="btn-outline btn-cerrar-modal">Cerrar</button>
         </footer>
     </div>
 </div>

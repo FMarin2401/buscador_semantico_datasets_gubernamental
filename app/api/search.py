@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.orm import Session
 
 # Módulos internos del proyecto
+from app.catalogo import CATEGORIAS
 from app.limiter import limiter
 from app.db_chroma import buscar_similares, coleccion
 from app.nlp_model import generar_embedding_consulta, UMBRAL_DISTANCIA
@@ -35,6 +36,12 @@ def formatear_dataset(id_dataset: str, titulo: str, meta: dict, distancia: float
         "distancia": round(distancia, 4),
         "descargas": descargas,
     }
+
+
+@router.get("/api/categorias")
+def listar_categorias():
+    # Categorías oficiales, para los selectores del panel (una sola fuente: app/catalogo.py)
+    return {"categorias": CATEGORIAS}
 
 
 @router.get("/api/catalogos")

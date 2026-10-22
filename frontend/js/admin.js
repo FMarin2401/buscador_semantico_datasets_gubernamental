@@ -272,6 +272,7 @@ function cambiarPestana(idPestana, botonClickeado) {
 }
 
 async function renderizarDashboard() {
+    actualizarSaludSistema(); // En paralelo: no espera a que cargue el catálogo
     try {
         const respuesta = await fetch(`/api/admin/datasets`);
         const data = await respuesta.json();
@@ -290,6 +291,9 @@ async function renderizarDashboard() {
                 conteoCategorias[cat] = (conteoCategorias[cat] || 0) + 1;
             });
 
+            // De mayor a menor: así se lee de un vistazo qué categorías concentran el catálogo
+            const categoriasOrdenadas = Object.entries(conteoCategorias).sort((a, b) => b[1] - a[1]);
+
             const canvasElement = document.getElementById('graficaCategorias');
             if (canvasElement) {
                 const ctx = canvasElement.getContext('2d');
@@ -301,10 +305,10 @@ async function renderizarDashboard() {
                 window.miGraficaBarras = new Chart(ctx, {
                     type: 'bar',
                     data: {
-                        labels: Object.keys(conteoCategorias),
+                        labels: categoriasOrdenadas.map(([categoria]) => categoria),
                         datasets: [{
                             label: 'Datasets por Categoría',
-                            data: Object.values(conteoCategorias),
+                            data: categoriasOrdenadas.map(([, total]) => total),
                             backgroundColor: '#004b87',
                             borderRadius: 4
                         }]
@@ -312,8 +316,12 @@ async function renderizarDashboard() {
                     options: {
                         indexAxis: 'y',
                         responsive: true,
+                        maintainAspectRatio: false, // Usa la altura de .grafica-contenedor; si no, en móvil queda aplastada
                         plugins: { legend: { display: false } },
-                        scales: { x: { beginAtZero: true, ticks: { stepSize: 1 } } }
+                        scales: {
+                            x: { beginAtZero: true, ticks: { stepSize: 1 } },
+                            y: { ticks: { autoSkip: false } } // Muestra todas las categorías (antes en móvil se saltaba la mitad)
+                        }
                     }
                 });
             }
@@ -408,10 +416,8 @@ async function poblarOpcionesDinamicas() {
 
         const selectDep = document.getElementById('selectDependencia');
         const selectEditDep = document.getElementById('editDependencia');
-        const datalistCat = document.getElementById('listaCategoriasSugeridas');
 
         const dependencias = [...new Set(data.resultados.map(d => d.dependencia).filter(Boolean))].sort();
-        const categorias = [...new Set(data.resultados.map(d => d.categoria).filter(Boolean))].sort();
 
         if (selectDep) {
             selectDep.innerHTML = '<option value="">Selecciona una dependencia...</option>';
@@ -427,14 +433,60 @@ async function poblarOpcionesDinamicas() {
             });
         }
 
-        if (datalistCat) {
-            datalistCat.innerHTML = '';
+        // Categorías: solo las oficiales, desde el servidor (no las que aparezcan en el catálogo)
+        const respCategorias = await fetch(`/api/categorias`);
+        const { categorias = [] } = await respCategorias.json();
+        ['inputCategoria', 'editCategoria'].forEach(idSelect => {
+            const select = document.getElementById(idSelect);
+            if (!select) return;
+            select.innerHTML = '<option value="">Selecciona una categoría...</option>';
             categorias.forEach(cat => {
-                datalistCat.innerHTML += `<option value="${escaparAtributo(cat)}">`;
+                select.innerHTML += `<option value="${escaparAtributo(cat)}">${escaparHTML(cat)}</option>`;
             });
-        }
+        });
     } catch (error) {
         console.error("Error al poblar dependencias y categorías:", error);
+    }
+}
+
+// Etiqueta y estilo de cada estado que devuelve /api/health/ready en "components"
+const ESTADOS_SALUD = {
+    ok: { texto: 'En línea', clase: 'text-success' },
+    cargando: { texto: 'Cargando', clase: 'text-warning' },
+    incompatible: { texto: 'Hay que re-indexar', clase: 'text-danger' },
+    error: { texto: 'Sin conexión', clase: 'text-danger' },
+};
+
+async function actualizarSaludSistema() {
+    const kpiEstado = document.getElementById('kpi-estado');
+    const detalle = document.getElementById('saludDetalle');
+    let data = null;
+    try {
+        // Responde 200 si todo está listo y 503 si algo falla; en ambos casos trae el estado por componente
+        const respuesta = await fetch('/api/health/ready', { cache: 'no-store' });
+        data = await respuesta.json();
+    } catch (error) {
+        data = null;
+    }
+
+    const componentes = (data && data.components) || {};
+    ['nlp_chromadb', 'indice_vectorial', 'db_relacional'].forEach(clave => {
+        const celda = document.getElementById(`salud-${clave}`);
+        if (!celda) return;
+        const estado = ESTADOS_SALUD[componentes[clave]] || { texto: 'Sin respuesta', clase: 'text-danger' };
+        celda.textContent = estado.texto;
+        celda.className = estado.clase;
+    });
+
+    if (kpiEstado) {
+        const listo = Boolean(data && data.ready);
+        kpiEstado.textContent = listo ? '● Operativo' : (data ? '● Con fallas' : '● Sin respuesta');
+        kpiEstado.className = `kpi-status ${listo ? 'kpi-status-online' : 'kpi-status-offline'}`;
+    }
+    if (detalle) {
+        const errores = (data && data.errores) || (data ? [] : ['El servidor no respondió a la verificación de salud.']);
+        const modelo = data && data.modelo ? `Modelo: ${data.modelo}. ` : '';
+        detalle.textContent = modelo + errores.join(' ') + ` Verificado a las ${new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}.`;
     }
 }
 
@@ -780,8 +832,9 @@ function abrirModalEdicion(id, titulo, descripcion, dependencia, categoria) {
     document.getElementById('editTitulo').value = titulo;
     document.getElementById('editDescripcion').value = descripcion;
     document.getElementById('editDependencia').value = dependencia;
+    // Si la categoría guardada no es oficial, el selector queda vacío y obliga a elegir una válida
     document.getElementById('editCategoria').value = categoria;
-    
+
     document.getElementById('modalEditar').style.display = 'flex';
 }
 

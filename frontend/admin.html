@@ -42,24 +42,26 @@
                 </div>
                 <div class="kpi-card">
                     <span class="kpi-label">ESTADO DEL SISTEMA</span>
-                    <span class="kpi-status-online">🟢 Operativo</span>
+                    <span id="kpi-estado" class="kpi-status kpi-status-verificando" role="status">Verificando…</span>
                 </div>
             </div>
 
             <div class="dashboard-grid">
                 <div class="card-grafica">
                     <h3>Distribución por Categoría</h3>
-                    <canvas id="graficaCategorias"></canvas>
+                    <div class="grafica-contenedor"><canvas id="graficaCategorias" role="img" aria-label="Número de datasets por categoría"></canvas></div>
                 </div>
                 
                 <div class="card-derecha-admin">
                     <div class="card-sistema-info">
                         <h3>Salud de los Servicios</h3>
-                        <ul class="system-health-list">
-                            <li><span>Motor Semántico</span> <strong class="text-success">Activo</strong></li>
-                            <li><span>ChromaDB</span> <strong class="text-success">Conectada</strong></li>
-                            <li><span>JWT</span> <strong class="text-success">Blindada</strong></li>
+                        <!-- Se llena con /api/health/ready al abrir el resumen (admin.js: actualizarSaludSistema) -->
+                        <ul class="system-health-list" id="listaSaludServicios">
+                            <li><span>Motor semántico y ChromaDB</span> <strong id="salud-nlp_chromadb">…</strong></li>
+                            <li><span>Índice vectorial</span> <strong id="salud-indice_vectorial">…</strong></li>
+                            <li><span>Base de datos</span> <strong id="salud-db_relacional">…</strong></li>
                         </ul>
+                        <p class="salud-detalle" id="saludDetalle"></p>
                     </div>
                     
                     <div class="card-auditoria-info">
@@ -79,7 +81,7 @@
 
         <section id="tab-subir" class="pestana-admin pestana-oculta">
             <h2>Publicar Nuevo Conjunto de Datos</h2>
-            <p>Sube el archivo CSV oficial para que la IA lo procese e indexe automáticamente.</p>
+            <p>Completa los datos y sube el archivo CSV oficial: el buscador semántico lo indexará en cuanto se publique.</p>
 
             <div class="hero-section">
                 <div class="hero-card admin-card">
@@ -102,11 +104,12 @@
                             </select>
                         </div>
 
-                        <!-- Input de categoría con autocompletado para subida -->
+                        <!-- Solo las categorías oficiales (GET /api/categorias): una escrita a mano crearía un filtro nuevo en el portal -->
                         <div class="filter-group">
                             <label for="inputCategoria" class="admin-label">CATEGORÍA</label>
-                            <input type="text" id="inputCategoria" class="form-input" maxlength="100" list="listaCategoriasSugeridas" placeholder="Selecciona o escribe una categoría..." required>
-                            <datalist id="listaCategoriasSugeridas"></datalist>
+                            <select id="inputCategoria" class="form-input" required>
+                                <option value="">Cargando categorías...</option>
+                            </select>
                         </div>
 
                         <div class="filter-group">
@@ -126,9 +129,13 @@
             <p>Gestiona los conjuntos de datos publicados en el portal.</p>
             
             <div style="margin: 20px 0; max-width: 400px;">
-                <input type="search" id="inputBuscarAdmin" class="form-input" placeholder="🔍 Filtrar por título o secretaría...">
+                <div class="campo-con-icono">
+                    <svg class="icono-buscar" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="7"/><path d="m20 20-4.2-4.2"/></svg>
+                    <input type="search" id="inputBuscarAdmin" class="form-input" placeholder="Filtrar por título o secretaría..." aria-label="Filtrar el catálogo por título o secretaría">
+                </div>
             </div>
 
+            <div class="tabla-desplazable" tabindex="0" role="region" aria-label="Tabla del catálogo de datasets">
             <table class="admin-table">
                 <thead>
                     <tr>
@@ -141,6 +148,7 @@
                 <tbody id="tablaCuerpoDatasets">
                 </tbody>
             </table>
+            </div>
             <nav id="paginacionAdmin" class="paginacion-container" aria-label="Paginación del catálogo" style="display: none; margin-top: 25px;">
                 <button type="button" id="btnAdminPagAnterior" class="btn-secundario-pag">Anterior</button>
                 <div id="numerosPaginacionAdmin" class="numeros-paginacion"></div>
@@ -151,6 +159,7 @@
             <h2>Buzón Ciudadano</h2>
             <p>Mensajes y reportes enviados a través del formulario de contacto.</p>
             
+            <div class="tabla-desplazable" tabindex="0" role="region" aria-label="Tabla de mensajes del buzón">
             <table class="admin-table">
                 <thead>
                     <tr>
@@ -165,6 +174,7 @@
                     <tr><td colspan="5" class="text-center">Cargando mensajes...</td></tr>
                 </tbody>
             </table>
+            </div>
             <nav id="paginacionMensajes" class="paginacion-container" aria-label="Paginación de mensajes" style="display: none; margin-top: 25px;">
                 <button type="button" id="btnMensajesPagAnterior" class="btn-secundario-pag">Anterior</button>
                 <div id="numerosPaginacionMensajes" class="numeros-paginacion"></div>
@@ -200,6 +210,7 @@
                 </div>
 
                 <div>
+                    <div class="tabla-desplazable" tabindex="0" role="region" aria-label="Tabla de funcionarios">
                     <table class="admin-table" style="margin-top: 0;">
                         <thead>
                             <tr>
@@ -212,6 +223,7 @@
                             <tr><td colspan="3" class="text-center">Cargando cuentas...</td></tr>
                         </tbody>
                     </table>
+                    </div>
                 </div>
             </div>
         </section>
@@ -243,7 +255,9 @@
 
             <div class="filter-group">
                 <label for="editCategoria" class="admin-label">CATEGORÍA</label>
-                <input type="text" id="editCategoria" class="form-input" maxlength="100" list="listaCategoriasSugeridas" required>
+                <select id="editCategoria" class="form-input" required>
+                    <option value="">Cargando categorías...</option>
+                </select>
             </div>
 
             <div class="modal-actions">

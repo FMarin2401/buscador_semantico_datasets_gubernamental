@@ -354,6 +354,8 @@ Leyenda de acceso: 🌐 público · 🔑 sesión válida (admin o editor) · �
 |---|---|---|---|---|
 | GET | `/api/buscar?prompt=...` | 🌐 | 15/min por IP | Búsqueda semántica. `prompt` de 2 a 300 caracteres (`422` si no) |
 | GET | `/api/catalogos` | 🌐 | — | Catálogo completo con contadores de descargas |
+| GET | `/api/categorias` | 🌐 | — | Las 10 categorías oficiales (`app/catalogo.py`), para los selectores del panel |
+| GET | `/api/datasets/{id}/vista-previa` | 🌐 | 30/min por IP | Columnas, primeras 5 filas (como texto, tal como están en el archivo) y totales. No suma al contador de descargas |
 | GET | `/api/descargar/{id}?formato=csv\|json\|xml\|geojson` | 🌐 | — | Descarga el dataset e incrementa su contador. `id` debe ser un UUID y `formato` uno de los cuatro (`422` si no, sin contar la descarga) |
 
 **Ejemplo de respuesta de `/api/buscar`:**
@@ -424,7 +426,7 @@ Leyenda de acceso: 🌐 público · 🔑 sesión válida (admin o editor) · �
 |---|---|---|
 | GET | `/api/status` | Comprueba que el servidor responde |
 | GET | `/api/health/live` | *Liveness probe* |
-| GET | `/api/health/ready` | *Readiness probe*: verifica el warm-up, la compatibilidad del índice vectorial con el modelo y la conexión a la BD. Devuelve `503` si algo falla |
+| GET | `/api/health/ready` | *Readiness probe*: verifica el warm-up, la compatibilidad del índice vectorial con el modelo y la conexión a la BD. Devuelve `503` si algo falla. Siempre incluye `components` (`db_relacional`, `nlp_chromadb`, `indice_vectorial`) y `modelo`: el panel de administración muestra ese estado real |
 
 ### Páginas y estáticos
 
@@ -529,9 +531,9 @@ FastAPI sirve el frontend como plantillas Jinja2, sin build ni frameworks pesado
 | Página | Script | Función |
 |---|---|---|
 | `index.html` | `index.js` | Portada con caja de búsqueda; redirige a la exploración |
-| `explorar_datos.html` | `busqueda.js` | Búsqueda semántica, filtros por dependencia y categoría, ordenamiento, paginación, ficha de detalle (modal), descarga en varios formatos. Sincroniza los filtros con la URL |
+| `explorar_datos.html` | `busqueda.js` | Búsqueda semántica, filtro por categoría (botón **Filtros** con contador, visible también en móvil), ordenamiento, paginación, ficha técnica (descripción, categoría y vista previa del CSV; se cierra con Escape y devuelve el foco) y descarga en varios formatos. Sincroniza los filtros con la URL |
 | `login.html` | `login.js` | Inicio de sesión |
-| `admin.html` | `admin.js` | Panel con pestañas: **Dashboard** (KPIs + Chart.js), **Subir**, **Gestionar catálogo**, **Buzón ciudadano**, **Funcionarios**. Oculta opciones según el rol (`/api/auth/me`) |
+| `admin.html` | `admin.js` | Panel con pestañas: **Dashboard** (KPIs, gráfica ordenada de Chart.js y salud real del sistema desde `/api/health/ready`), **Subir** y **Gestionar catálogo** (categorías solo de la lista oficial), **Buzón ciudadano**, **Funcionarios**. En móvil el menú lateral pasa a una fila superior. Oculta opciones según el rol (`/api/auth/me`) |
 | `contacto.html` | `contacto.js` | Formulario del buzón ciudadano |
 | Páginas informativas | — | Gobierno abierto, APIs, guía de usuario, FAQ, aviso de privacidad, términos de uso, políticas de datos abiertos |
 | Todas | `accesibilidad.js` | Controles de accesibilidad |
@@ -542,6 +544,8 @@ FastAPI sirve el frontend como plantillas Jinja2, sin build ni frameworks pesado
 - **Todo el JavaScript vive en archivos `.js`**: no hay scripts inline ni atributos `onclick=`, lo que permite una CSP sin `'unsafe-inline'`.
 - **Chart.js** se carga con versión fija (`chart.js@4.5.1`) y firma **SRI** (`integrity`): si el archivo del CDN cambia, el navegador se niega a ejecutarlo.
 - Los inputs tienen los mismos `maxlength` que valida el backend.
+- **Botones:** `.btn-primary` (relleno) para la acción principal de cada pantalla y `.btn-outline` (delineado) para las secundarias.
+- **Accesibilidad verificada** con Playwright en 17 pantallas (escritorio 1366 px y móvil 390 px): contraste WCAG AA en todo el texto, elementos táctiles de al menos 24 px y sin desborde horizontal en móvil.
 - El CSS es Mobile-First, con Flexbox y Grid.
 - La autorización se hace siempre en el servidor. El ocultamiento de opciones en el cliente es solo para la experiencia de usuario.
 
@@ -781,6 +785,11 @@ La revisión de código del 2026-10-07 (`docs/pendientes.md`) detectó varios fa
 | Detección de duplicados lenta | Cargaba toda la colección | Filtro `where={"hash_sha256": ...}` | #8 |
 | `datetime.utcnow()` obsoleto | Python 3.12 | `ahora_utc()` | #8 |
 | CSP con `'unsafe-inline'` en `script-src` | — | Se quitó (no hay JS inline); CSP propia para `/docs` y `/redoc` | #8, #9 |
+| Panel con estado inventado | "Salud de los Servicios" y "Estado del sistema" estaban fijos en el HTML, siempre en verde | Se calculan desde `/api/health/ready` | #14 |
+| Categorías libres en el panel | El formulario permitía escribir cualquier categoría, que creaba un filtro nuevo | `<select>` con las 10 oficiales y validación en la API | #14 |
+| Tarjetas y ficha poco claras | Dependencia en MAYÚSCULAS antes del título, "Dominio público" sin estilo, formatos de 18 px y una ficha que repetía la tarjeta | Título primero, etiquetas con estilo, botones de 32 px y ficha con vista previa del CSV | #14 |
+| Botones principales delineados | `.btn-primary` tenía estilo delineado, así que ingresar o publicar se veían secundarios | `.btn-primary` relleno y `.btn-outline` para lo secundario | #14 |
+| Móvil y accesibilidad | Panel y paginación desbordaban en móvil, filtros escondidos, contraste de 2.7:1 en filtros y controles de 16 a 28 px | Diseño adaptable, botón "Filtros" y contraste y tamaños corregidos | #14 |
 | Chart.js sin versión fija | `cdn.jsdelivr.net/npm/chart.js` cargaba siempre la última versión | Versión 4.5.1 con SRI; CSP limitada a esa ruta | #10 |
 | Rate limit dependiente del proxy | Con `--forwarded-allow-ips=*`, Uvicorn toma la primera IP de `X-Forwarded-For`, que el cliente puede escribir si un proxy conserva la cabecera. **En Azure no era explotable:** los logs muestran que el ingress reemplaza la cabecera con la IP real | Defensa adicional: el rate limit usa la última IP de la cabecera (`obtener_ip_cliente` en `app/limiter.py`) | #11 |
 | Configuración de Azure incompleta | Sin probes, hasta 2 réplicas con SQLite y rate limit separados, secretos en texto plano y cookie sin `Secure` | Probes, máximo 1 réplica, secretos con `secretRef` y `ENVIRONMENT=production` | Despliegue `v6` |

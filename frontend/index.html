@@ -6,18 +6,18 @@
 {% block content %}
 <main class="hero-section">
     <div class="hero-card">
-        <h1>Los datos del<br>municipio, abiertos<br>para todos</h1>
-        <p>Consulta, descarga y reutiliza información pública de las<br>dependencias del Ayuntamiento de León, Guanajuato.</p>
+        <h1>Los datos del municipio, abiertos para todos</h1>
+        <p>Consulta, descarga y reutiliza información pública de las dependencias del Ayuntamiento de León, Guanajuato.</p>
         
         <form class="search-box" role="search" id="searchForm">
-            <span class="search-icon" aria-hidden="true">🔍</span>
+            <svg class="icono-buscar" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="7"/><path d="m20 20-4.2-4.2"/></svg>
             <label for="searchInput" class="sr-only">Buscar datos</label>
-            <input type="search" id="searchInput" maxlength="300" placeholder="Ej. padrón de comercios, incidencia delictiva, aforo vehicular">
+            <input type="search" id="searchInput" maxlength="300" placeholder="Ej. rutas de basura">
             <button type="submit">Buscar</button>
         </form>
         
         <div class="action-buttons">
-            <a href="/explorar_datos.html" class="btn-primary">EXPLORAR DATOS</a>
+            <a href="/explorar_datos.html" class="btn-outline">EXPLORAR DATOS</a>
         </div>
     </div>
 </main>

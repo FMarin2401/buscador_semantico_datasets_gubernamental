@@ -21,10 +21,26 @@ body {
     display: none;
     background: none;
     border: none;
+    min-width: 44px;
+    min-height: 44px;
     font-size: 1.8rem;
     color: var(--blue-dark);
     cursor: pointer;
     margin-left: 10px;
+}
+
+.btn-toggle-password {
+    position: absolute;
+    right: 0.5rem;
+    width: 40px;
+    height: 40px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #64748b;
 }
 
 .sr-only {
@@ -110,10 +126,12 @@ ul.nav-links {
 }
 
 .footer-links li {
-    margin-bottom: 12px;
+    margin-bottom: 4px;
 }
 
 .footer-links a {
+    display: inline-block;
+    padding: 4px 0; /* Área táctil de 24 px como mínimo */
     color: #d1e2f3;
     text-decoration: none;
     font-size: 0.9rem;
@@ -195,7 +213,7 @@ ul.nav-links {
 
 .logo-text .site-slogan {
     display: block;
-    font-size: 0.65rem;
+    font-size: 0.75rem; /* 12 px: antes 10.4 px, demasiado chico para leer en mayúsculas */
     color: var(--text-muted);
     margin-top: 3px;
     letter-spacing: 0.5px;
@@ -218,14 +236,12 @@ ul.nav-links {
     gap: 20px;
 }
 
+/* Texto plano, no píldora: con forma de botón parecía clicable y no lo es */
 .badge-transparencia {
-    background: var(--blue-light);
-    color: var(--blue-primary);
-    padding: 8px 16px;
-    border-radius: 20px;
+    color: var(--blue-dark);
     font-size: 0.8rem;
     font-weight: bold;
-    border: 1px solid #cce0f5;
+    letter-spacing: 0.5px;
 }
 
 .accessibility-controls {
@@ -241,8 +257,8 @@ ul.nav-links {
     background: white;
     border: 1px solid #ccc;
     border-radius: 50%;
-    width: 28px;
-    height: 28px;
+    width: 36px;
+    height: 36px;
     cursor: pointer;
     color: var(--text-muted);
     display: flex;
@@ -298,15 +314,44 @@ ul.nav-links {
     cursor: pointer;
     transition: all 0.2s ease;
     letter-spacing: 0.5px;
+    background: var(--blue-primary);
+    color: white;
+}
+
+/* Sistema de botones: .btn-primary (relleno) para la acción principal de cada pantalla,
+   .btn-outline (delineado) para las secundarias. Antes .btn-primary era delineado, y las
+   acciones principales (ingresar, publicar, enviar) se veían menos importantes que "Buscar". */
+.btn-primary:hover {
+    background-color: var(--blue-dark);
+    border-color: var(--blue-dark);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.btn-outline {
+    display: inline-block;
+    box-sizing: border-box;
+    text-decoration: none;
+    text-align: center;
+    padding: 12px 35px;
+    border-radius: 25px;
+    font-weight: bold;
+    font-size: 0.95rem;
+    border: 2px solid var(--blue-primary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    letter-spacing: 0.5px;
     background: white;
     color: var(--blue-primary);
 }
 
-.btn-primary:hover {
-    background-color: var(--blue-primary);
-    color: white;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+.btn-outline:hover {
+    background-color: var(--blue-light);
+}
+
+.btn-outline:focus-visible {
+    outline: 3px solid var(--blue-dark);
+    outline-offset: 2px;
 }
 
 .action-buttons {
@@ -335,18 +380,24 @@ ul.nav-links {
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
 }
 
+/* El titular y el párrafo se reparten solos (text-wrap: balance) en lugar de con <br> fijos,
+   que en móvil partían las líneas en lugares raros */
 .hero-card h1 {
     color: var(--blue-dark);
     font-size: 3.2rem;
-    margin: 0 0 15px 0;
+    max-width: 14ch;
+    margin: 0 auto 15px;
     line-height: 1.1;
+    text-wrap: balance;
 }
 
 .hero-card p {
     color: var(--text-muted);
     font-size: 1.1rem;
-    margin-bottom: 40px;
+    max-width: 34em;
+    margin: 0 auto 40px;
     line-height: 1.5;
+    text-wrap: balance;
 }
 
 .search-box {
@@ -360,10 +411,35 @@ ul.nav-links {
     background: white;
 }
 
-.search-icon {
-    color: var(--text-muted);
+/* Ícono de búsqueda en SVG (antes el emoji 🔍, que cambia de aspecto según el sistema operativo).
+   Azul en las cajas de búsqueda del portal y gris en el filtro del panel */
+.icono-buscar {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
     margin-right: 10px;
-    font-size: 1.2rem;
+    fill: none;
+    stroke: var(--blue-primary);
+    stroke-width: 2.2;
+    stroke-linecap: round;
+}
+
+.campo-con-icono {
+    position: relative;
+}
+
+.campo-con-icono .icono-buscar {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    margin: 0;
+    stroke: var(--text-muted);
+    pointer-events: none;
+}
+
+.campo-con-icono input {
+    padding-left: 44px;
 }
 
 .search-box input {
@@ -441,6 +517,7 @@ ul.nav-links {
     border: none;
     outline: none;
     width: 100%;
+    min-height: 40px; /* Antes medía 20 px de alto en móvil: difícil de tocar */
     font-size: 1rem;
     margin-left: 10px;
 }
@@ -516,6 +593,8 @@ ul.nav-links {
 }
 
 .link-limpiar {
+    min-height: 32px;
+    padding: 0 8px;
     color: var(--blue-primary);
     text-decoration: none;
     font-size: 0.9rem;
@@ -568,8 +647,17 @@ ul.nav-links {
     cursor: pointer;
 }
 
-.filter-item span {
-    color: #999;
+/* Nombre a la izquierda junto a su casilla y conteo a la derecha.
+   Antes el nombre quedaba centrado y en #999 (contraste 2.7:1, por debajo del mínimo de 4.5:1) */
+.filtro-nombre {
+    flex: 1;
+    color: var(--text-dark);
+    font-size: 0.85rem;
+    text-align: left;
+}
+
+.filtro-conteo {
+    color: var(--text-muted);
     font-size: 0.8rem;
 }
 
@@ -593,26 +681,59 @@ ul.nav-links {
     text-decoration: none;
 }
 
-.link-explorar-cat {
-    background: none;
-    border: none;
-    padding: 0;
-    cursor: pointer;
+.btn-filtros {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 40px;
+    padding: 0 16px;
+    border: 1px solid #c7d3e0;
+    border-radius: 999px;
+    background: white;
+    color: var(--blue-dark);
     font-family: inherit;
-    font-size: 0.95rem; 
+    font-size: 0.95rem;
+    font-weight: bold;
+    cursor: pointer;
 }
 
-.link-explorar-cat:hover {
-    text-decoration: underline;
+.btn-filtros:hover,
+.btn-filtros:focus-visible {
+    background: var(--blue-light);
+    border-color: var(--blue-primary);
+}
+
+.contador-filtros {
+    min-width: 22px;
+    height: 22px;
+    padding: 0 6px;
+    box-sizing: border-box;
+    border-radius: 999px;
+    background: var(--blue-primary);
+    color: white;
+    font-size: 0.8rem;
+    line-height: 22px;
+    text-align: center;
+}
+
+.contador-filtros[hidden] {
+    display: none;
+}
+
+/* La gráfica del resumen ocupa una altura fija, así muestra las 10 categorías también en móvil */
+.grafica-contenedor {
+    position: relative;
+    height: 360px;
 }
 
 /* Tarjetas de Resultados */
 
 .paginacion-container {
     display: flex;
+    flex-wrap: wrap; /* Con muchas páginas, la fila no cabía en móvil y ensanchaba toda la página */
     justify-content: center;
     align-items: center;
-    gap: 20px;
+    gap: 12px 20px;
     margin: 40px 0;
 }
 
@@ -684,42 +805,56 @@ ul.nav-links {
     position: relative;
 }
 
-.card-icon {
-    width: 50px;
-    height: 50px;
-    background: #e6f0fa;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.5rem;
-    color: var(--blue-primary);
-    flex-shrink: 0;
-}
-
 .card-body {
     flex-grow: 1;
+    min-width: 0;
 }
 
 .card-body h3 {
-    margin: 10px 0;
+    margin: 0 0 6px;
     color: var(--blue-dark);
-    font-size: 1.4rem;
+    font-size: 1.35rem;
+    line-height: 1.3;
+}
+
+/* Dependencia debajo del título, en tamaño normal: antes iba primero y en MAYÚSCULAS */
+.card-dependencia {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 12px;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.badge-pub {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 999px;
+    background: #e8f5e9;
+    color: #1b5e20;
+    font-size: 0.75rem;
+    font-weight: bold;
+    white-space: nowrap;
 }
 
 .card-desc {
-    color: var(--text-muted);
+    color: var(--text-dark);
     font-size: 0.95rem;
     line-height: 1.5;
-    max-width: 80%;
-    margin-bottom: 15px;
+    margin: 0 0 15px;
 }
 
 .card-meta {
     display: flex;
-    gap: 20px;
+    flex-wrap: wrap;
+    gap: 6px 20px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
     font-size: 0.85rem;
-    color: #777;
+    color: var(--text-muted);
 }
 
 .card-actions {
@@ -733,28 +868,33 @@ ul.nav-links {
 
 .format-badges {
     display: flex;
-    gap: 5px;
+    gap: 8px;
     flex-wrap: wrap;
     justify-content: flex-end;
 }
 
-.format-badges a {
-    text-decoration: none;
-}
-
-.format-badges span {
-    border: 1px solid #ddd;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 0.75rem;
-    font-weight: bold;
-    color: var(--text-muted);
-    transition: all 0.2s;
+/* Descargas directas: botones de al menos 32 px de alto (antes 18 px, por debajo del mínimo táctil de WCAG) */
+.btn-formato {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 32px;
+    min-width: 48px;
+    padding: 0 12px;
+    box-sizing: border-box;
+    border: 1px solid #c7d3e0;
+    border-radius: 6px;
     background: white;
+    color: var(--blue-dark);
+    font-size: 0.8rem;
+    font-weight: bold;
+    text-decoration: none;
+    transition: all 0.2s;
 }
 
-.format-badges a:hover span {
-    background: #f0f7ff;
+.btn-formato:hover,
+.btn-formato:focus-visible {
+    background: var(--blue-light);
     border-color: var(--blue-primary);
     color: var(--blue-primary);
 }
@@ -884,11 +1024,22 @@ ul.nav-links {
     font-weight: bold;
 }
 
-.kpi-status-online {
+.kpi-status {
     font-size: 1.2rem;
-    color: #2e7d32;
     font-weight: bold;
     margin-top: 5px;
+}
+
+.kpi-status-online {
+    color: #2e7d32;
+}
+
+.kpi-status-offline {
+    color: #c62828;
+}
+
+.kpi-status-verificando {
+    color: var(--text-muted);
 }
 
 .dashboard-grid {
@@ -920,6 +1071,20 @@ ul.nav-links {
 
 .text-success {
     color: #2e7d32;
+}
+
+.text-warning {
+    color: #8a5a00;
+}
+
+.text-danger {
+    color: #c62828;
+}
+
+.salud-detalle {
+    margin: 12px 0 0;
+    font-size: 0.8rem;
+    color: var(--text-muted);
 }
 
 .card-derecha-admin {
@@ -1016,7 +1181,7 @@ ul.nav-links {
 }
 
 .btn-admin { 
-    text-align: center; 
+    text-align: left; /* Igual que las demás secciones del menú */
     text-decoration: none; 
 }
 
@@ -1054,6 +1219,12 @@ ul.nav-links {
 
 .msg-danger { 
     color: red; 
+}
+
+/* Las tablas del panel se desplazan dentro de su caja: en móvil empujaban la página a ~570 px de ancho */
+.tabla-desplazable {
+    overflow-x: auto;
+    max-width: 100%;
 }
 
 .admin-table { 
@@ -1118,11 +1289,13 @@ ul.nav-links {
 .modal-card {
     background: white;
     width: 100%;
-    max-width: 500px;
+    max-width: 640px;
     border-radius: 16px;
     padding: 30px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
     position: relative;
+    max-height: calc(100vh - 40px); /* La vista previa alarga la ficha: se desplaza dentro de la pantalla */
+    overflow-y: auto;
 }
 
 .modal-header {
@@ -1155,14 +1328,74 @@ ul.nav-links {
     line-height: 1.4;
 }
 
-.modal-badge-fmt {
-    background: #f1f3f5;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 0.8rem;
+.ficha-titulo {
+    margin: 0 0 8px;
+    color: var(--blue-dark);
+    font-size: 1.2rem;
+}
+
+.ficha-descripcion {
+    margin: 0 0 16px;
+}
+
+.ficha-datos {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 6px 16px;
+    margin: 0 0 20px;
+    font-size: 0.9rem;
+}
+
+.ficha-datos dt {
     font-weight: bold;
+    color: var(--text-dark);
+}
+
+.ficha-datos dd {
+    margin: 0;
     color: var(--text-muted);
-    border: 1px solid #ddd;
+}
+
+.ficha-subtitulo {
+    margin: 20px 0 8px;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--blue-dark);
+}
+
+.vista-previa-estado {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+/* La tabla se desplaza dentro de su caja: un CSV con muchas columnas no ensancha el diálogo */
+.vista-previa-tabla {
+    overflow-x: auto;
+    border: 1px solid #e3e8ee;
+    border-radius: 8px;
+}
+
+.vista-previa-tabla table {
+    border-collapse: collapse;
+    font-size: 0.8rem;
+    white-space: nowrap;
+}
+
+.vista-previa-tabla th,
+.vista-previa-tabla td {
+    padding: 6px 10px;
+    border-bottom: 1px solid #eef1f4;
+    text-align: left;
+}
+
+.vista-previa-tabla th {
+    background: var(--blue-light);
+    color: var(--blue-dark);
+}
+
+#modalDownloadLinks .format-badges {
+    justify-content: flex-start;
 }
 
 .modal-actions {
@@ -1263,11 +1496,6 @@ ul.nav-links {
     flex-wrap: wrap;
 }
 
-.btn-secondary-alt {
-    background: #f8f9fa;
-    border-color: #ddd;
-    color: var(--text-dark);
-}
 
 .guia-lista {
     color: var(--text-dark);
@@ -1357,6 +1585,7 @@ ul.nav-links {
         outline: none;
         font-size: 0.9rem;
         padding: 8px 4px;
+        min-height: 40px;
         min-width: 0; /* Vital para que el flexbox no rompa el input en pantallas chicas */
         background: transparent;
     }
@@ -1423,8 +1652,8 @@ ul.nav-links {
         gap: 40px;
     }
     
-    .footer-col h4, .site-footer p {
-        text-align: center;
+    .footer-bottom p {
+        text-align: center; /* Solo el copyright; las columnas van alineadas a la izquierda */
     }
 
     .footer-logo {
@@ -1575,4 +1804,82 @@ ul.nav-links {
 .toast-salida {
     opacity: 0;
     transform: translateY(15px);
+}
+/* "Limpiar búsqueda": acción neutra (antes una píldora roja con ✕, que parecía un error) */
+.btn-restablecer {
+    display: inline-flex;
+    align-items: center;
+    min-height: 32px;
+    padding: 0 12px;
+    border: 1px solid #c7d3e0;
+    border-radius: 999px;
+    background: white;
+    color: var(--blue-dark);
+    font-size: 0.85rem;
+    font-weight: bold;
+    text-decoration: none;
+}
+
+.btn-restablecer:hover,
+.btn-restablecer:focus-visible {
+    background: var(--blue-light);
+    border-color: var(--blue-primary);
+}
+
+/* Panel de administración en móvil: el menú lateral pasa arriba como una fila desplazable */
+@media (max-width: 768px) {
+    /* En móvil, los números de página van en su propia fila, arriba de Anterior y Siguiente */
+    .paginacion-container .numeros-paginacion {
+        order: -1;
+        flex-basis: 100%;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    .hero-card h1 {
+        font-size: 2.2rem;
+        max-width: none; /* En pantallas angostas, 14ch partía el titular en 4 líneas */
+    }
+
+    .admin-layout {
+        flex-direction: column;
+    }
+
+    .admin-sidebar {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 12px 16px;
+    }
+
+    .admin-sidebar h3 {
+        margin: 0 0 10px;
+        font-size: 1rem;
+        text-align: left;
+    }
+
+    .admin-nav {
+        flex-direction: row;
+        overflow-x: auto;
+        gap: 8px;
+        padding-bottom: 4px;
+    }
+
+    .admin-nav .admin-tab-btn {
+        white-space: nowrap;
+        flex-shrink: 0;
+        min-height: 44px;
+    }
+
+    .admin-divider {
+        display: none;
+    }
+
+    .admin-main {
+        padding: 20px 16px;
+        min-width: 0;
+    }
+
+    .kpi-container-grid {
+        grid-template-columns: 1fr;
+    }
 }
