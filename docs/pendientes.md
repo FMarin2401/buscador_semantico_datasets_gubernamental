@@ -31,7 +31,7 @@ El resto del documento se conserva tal como se escribió en la revisión. Esta t
 **Encontrados durante la implementación:**
 - La edición de un dataset perdía `archivo_original`, lo que habría duplicado el dataset al re-indexar. Resuelto en #8.
 - La imagen Docker incluía `usuarios.db`. Resuelto en #5.
-- Chart.js se cargaba sin versión fija. Resuelto con versión 4.5.1 y SRI.
+- Chart.js se cargaba sin versión fija. Resuelto en #10 con versión 4.5.1 y SRI.
 
 El estado actualizado del proyecto está en `docs/Documentación_Técnica_Buscador.md` (secciones 16 y 17).
 

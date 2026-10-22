@@ -728,7 +728,7 @@ La revisión de código del 2026-10-07 (`docs/pendientes.md`) detectó varios fa
 | Detección de duplicados lenta | Cargaba toda la colección | Filtro `where={"hash_sha256": ...}` | #8 |
 | `datetime.utcnow()` obsoleto | Python 3.12 | `ahora_utc()` | #8 |
 | CSP con `'unsafe-inline'` en `script-src` | — | Se quitó (no hay JS inline); CSP propia para `/docs` y `/redoc` | #8, #9 |
-| Chart.js sin versión fija | `cdn.jsdelivr.net/npm/chart.js` cargaba siempre la última versión | Versión 4.5.1 con SRI; CSP limitada a esa ruta | — |
+| Chart.js sin versión fija | `cdn.jsdelivr.net/npm/chart.js` cargaba siempre la última versión | Versión 4.5.1 con SRI; CSP limitada a esa ruta | #10 |
 
 El análisis detallado de la evaluación y del cambio de modelo está en `eval/experimentos/`.
 
