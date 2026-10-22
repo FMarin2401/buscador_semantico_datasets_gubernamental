@@ -79,14 +79,20 @@
             <button type="button" class="modal-close btn-cerrar-modal" aria-label="Cerrar modal">&times;</button>
         </header>
         <div class="modal-body">
-            <p><strong>Título:</strong> <span id="modalTitulo"></span></p>
-            <p><strong>Dependencia:</strong> <span id="modalDependencia"></span></p>
-            <p><strong>Última Actualización:</strong> <span id="modalFecha"></span></p>
-            <p style="margin-top: 20px; font-weight: bold;">Descargar directamente:</p>
-            <div id="modalDownloadLinks" style="display: flex; gap: 10px; flex-wrap: wrap;"></div>
+            <h4 id="modalTitulo" class="ficha-titulo"></h4>
+            <p id="modalDescripcion" class="ficha-descripcion"></p>
+            <dl class="ficha-datos">
+                <dt>Dependencia</dt><dd id="modalDependencia"></dd>
+                <dt>Categoría</dt><dd id="modalCategoria"></dd>
+                <dt>Última actualización</dt><dd id="modalFecha"></dd>
+            </dl>
+            <h5 class="ficha-subtitulo">Vista previa</h5>
+            <div id="modalVistaPrevia"></div>
+            <h5 class="ficha-subtitulo">Descargar</h5>
+            <div id="modalDownloadLinks"></div>
         </div>
         <footer class="modal-footer">
-            <button type="button" class="btn-primary btn-cerrar-modal">Cerrar</button>
+            <button type="button" class="btn-outline btn-cerrar-modal">Cerrar</button>
         </footer>
     </div>
 </div>

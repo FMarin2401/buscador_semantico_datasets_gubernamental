@@ -121,11 +121,7 @@ window.onload = async function() {
     if (contenedorTarjetas) {
         contenedorTarjetas.addEventListener('click', (e) => {
             if (e.target.classList.contains('btn-ficha')) {
-                const titulo = e.target.getAttribute('data-titulo');
-                const dependencia = e.target.getAttribute('data-dependencia');
-                const fecha = e.target.getAttribute('data-fecha');
-                const idDataset = e.target.getAttribute('data-id');
-                verFichaDetalle(titulo, dependencia, fecha, idDataset);
+                verFichaDetalle(e.target.getAttribute('data-id'));
             }
         });
     }
@@ -389,35 +385,27 @@ function mostrarPaginaActual() {
         const categoria = item.categoria || "General";
         const fecha = item.fecha_actualizacion || "Sin fecha";
         const idSeguro = encodeURIComponent(item.id);
+        const descargas = Number(item.descargas) || 0;
 
+        // El título va primero porque es lo que decide el clic; la dependencia, debajo y sin mayúsculas
         htmlContent += `
             <article class="card-resultado-v2">
-                <div class="card-icon" aria-hidden="true">📁</div>
                 <div class="card-body">
-                    <header class="badges-container">
-                        <span class="badge-dep">${escaparHTML(dependencia.toUpperCase())}</span>
-                        <span class="badge-pub">DOMINIO PÚBLICO</span>
-                    </header>
                     <h3>${escaparHTML(titulo)}</h3>
+                    <p class="card-dependencia">
+                        ${escaparHTML(dependencia)}
+                        <span class="badge-pub">Dominio público</span>
+                    </p>
                     <p class="card-desc">${escaparHTML(descripcion)}</p>
-                    <footer class="card-meta">
-                        <span>Categoría: ${escaparHTML(categoria)}</span>
-                        <span>Actualizado: ${escaparHTML(fecha)}</span>
-                        <span>${Number(item.descargas) || 0} descargas</span>
-                    </footer>
+                    <ul class="card-meta">
+                        <li>Categoría: ${escaparHTML(categoria)}</li>
+                        <li>Actualizado: ${escaparHTML(fecha)}</li>
+                        ${descargas > 0 ? `<li>${descargas} ${descargas === 1 ? 'descarga' : 'descargas'}</li>` : ''}
+                    </ul>
                 </div>
                 <div class="card-actions">
-                    <div class="format-badges" aria-label="Formatos de descarga disponibles">
-                        <a href="/api/descargar/${idSeguro}?formato=csv"><span>CSV</span></a>
-                        <a href="/api/descargar/${idSeguro}?formato=json"><span>JSON</span></a>
-                        <a href="/api/descargar/${idSeguro}?formato=xml"><span>XML</span></a>
-                        <a href="/api/descargar/${idSeguro}?formato=geojson"><span>GeoJSON</span></a>
-                    </div>
-                    <button type="button" class="btn-ficha" 
-                        data-titulo="${escaparAtributo(titulo)}" 
-                        data-dependencia="${escaparAtributo(dependencia)}" 
-                        data-fecha="${escaparAtributo(fecha)}" 
-                        data-id="${idSeguro}">
+                    ${enlacesDescarga(idSeguro, titulo)}
+                    <button type="button" class="btn-ficha" data-id="${escaparAtributo(item.id)}">
                         Ver ficha
                     </button>
                 </div>
@@ -479,26 +467,67 @@ document.getElementById('btnPagSiguiente')?.addEventListener('click', () => {
     }
 });
 
-function verFichaDetalle(titulo, dependencia, fecha, idDataset) {
+const FORMATOS_DESCARGA = [['csv', 'CSV'], ['json', 'JSON'], ['xml', 'XML'], ['geojson', 'GeoJSON']];
+
+// Botones de descarga; los usan la tarjeta y la ficha. El aria-label dice qué dataset se descarga,
+// porque "CSV" repetido en cada tarjeta no basta para un lector de pantalla
+function enlacesDescarga(idSeguro, titulo) {
+    const enlaces = FORMATOS_DESCARGA.map(([formato, etiqueta]) =>
+        `<a class="btn-formato" href="/api/descargar/${idSeguro}?formato=${formato}" aria-label="Descargar ${escaparAtributo(titulo)} en ${etiqueta}">${etiqueta}</a>`
+    ).join('');
+    return `<div class="format-badges" role="group" aria-label="Formatos de descarga">${enlaces}</div>`;
+}
+
+let elementoAntesDelModal = null;
+
+function verFichaDetalle(idDataset) {
+    const item = resultadosOriginales.find(d => String(d.id) === String(idDataset));
+    if (!item) return;
+
+    const titulo = item.dataset_recomendado || "";
     document.getElementById('modalTitulo').textContent = titulo;
-    document.getElementById('modalDependencia').textContent = dependencia;
-    document.getElementById('modalFecha').textContent = fecha;
+    document.getElementById('modalDescripcion').textContent = item.descripcion || "Sin descripción disponible.";
+    document.getElementById('modalDependencia').textContent = item.dependencia || "No registrada";
+    document.getElementById('modalCategoria').textContent = item.categoria || "General";
+    document.getElementById('modalFecha').textContent = item.fecha_actualizacion || "Sin fecha";
+    document.getElementById('modalDownloadLinks').innerHTML = enlacesDescarga(encodeURIComponent(item.id), titulo);
 
-    const idSeguro = encodeURIComponent(idDataset);
-    const contenedorDescargas = document.getElementById('modalDownloadLinks');
-    contenedorDescargas.innerHTML = `
-        <a href="/api/descargar/${idSeguro}?formato=csv" class="modal-badge-fmt" style="text-decoration:none; color: var(--blue-dark); transition: 0.2s;">CSV</a>
-        <a href="/api/descargar/${idSeguro}?formato=json" class="modal-badge-fmt" style="text-decoration:none; color: var(--blue-dark); transition: 0.2s;">JSON</a>
-        <a href="/api/descargar/${idSeguro}?formato=xml" class="modal-badge-fmt" style="text-decoration:none; color: var(--blue-dark); transition: 0.2s;">XML</a>
-        <a href="/api/descargar/${idSeguro}?formato=geojson" class="modal-badge-fmt" style="text-decoration:none; color: var(--blue-dark); transition: 0.2s;">GeoJSON</a>
-    `;
-
+    elementoAntesDelModal = document.activeElement;
     document.getElementById('modalFicha').style.display = 'flex';
+    document.querySelector('#modalFicha .modal-close')?.focus(); // El foco entra al diálogo para teclado y lectores de pantalla
+
+    cargarVistaPrevia(item.id);
+}
+
+async function cargarVistaPrevia(idDataset) {
+    const contenedor = document.getElementById('modalVistaPrevia');
+    contenedor.innerHTML = '<p class="vista-previa-estado">Cargando vista previa…</p>';
+    try {
+        const respuesta = await fetch(`/api/datasets/${encodeURIComponent(idDataset)}/vista-previa`);
+        if (!respuesta.ok) throw new Error(respuesta.status);
+        const data = await respuesta.json();
+
+        const encabezados = data.columnas.map(c => `<th scope="col">${escaparHTML(c)}</th>`).join('');
+        const filas = data.filas.map(fila => `<tr>${fila.map(v => `<td>${escaparHTML(v)}</td>`).join('')}</tr>`).join('');
+        contenedor.innerHTML = `
+            <p class="vista-previa-estado">${data.total_filas} ${data.total_filas === 1 ? 'fila' : 'filas'} · ${data.total_columnas} columnas. Primeras ${data.filas.length}:</p>
+            <div class="vista-previa-tabla" tabindex="0" role="region" aria-label="Vista previa de los datos">
+                <table><thead><tr>${encabezados}</tr></thead><tbody>${filas}</tbody></table>
+            </div>`;
+    } catch (error) {
+        contenedor.innerHTML = '<p class="vista-previa-estado">No se pudo cargar la vista previa. Puedes descargar el archivo completo.</p>';
+    }
 }
 
 function cerrarFichaModal() {
     document.getElementById('modalFicha').style.display = 'none';
+    elementoAntesDelModal?.focus(); // Regresa el foco al botón "Ver ficha" que abrió el diálogo
 }
+
+document.addEventListener('keydown', (e) => {
+    const modal = document.getElementById('modalFicha');
+    if (e.key === 'Escape' && modal && modal.style.display === 'flex') cerrarFichaModal();
+});
 
 function alternarSidebarFiltros(evento) {
     if (evento) evento.preventDefault();
