@@ -691,7 +691,9 @@ Volúmenes persistentes:
 | Recurso | Valor |
 |---|---|
 | Container App | `app-portal-datos` (grupo `rg-portal-datos`, región Mexico Central) |
+| URL | https://app-portal-datos.niceground-95b8d2a4.mexicocentral.azurecontainerapps.io |
 | Registro | `acrportaldatos6462.azurecr.io/portal-datos-leon` (ACR Basic) |
+| Versión desplegada | **`v6`** (desde 2026-10-22). `v5`, la versión anterior a la revisión (MiniLM), se conserva en el registro para volver atrás |
 | Recursos | 1 vCPU, 2 GiB |
 | Escala | Mínimo 0, máximo **1** réplica: se apaga cuando nadie lo usa (la primera visita espera la carga del modelo) y con una sola réplica la SQLite y el rate limit son consistentes |
 | Base relacional | SQLite dentro del contenedor (sin `DATABASE_URL`): los usuarios se recrean desde `ADMIN_USER`/`ADMIN_PASSWORD` y los datos del panel se pierden al reiniciar (aceptado para la demo) |
@@ -708,20 +710,37 @@ docker push acrportaldatos6462.azurecr.io/portal-datos-leon:vN
 az containerapp update -n app-portal-datos -g rg-portal-datos --image acrportaldatos6462.azurecr.io/portal-datos-leon:vN
 ```
 
-Para volver a la versión anterior, el mismo `az containerapp update` con la etiqueta previa.
+Para volver a la versión anterior, el mismo `az containerapp update` con la etiqueta previa (`:v5`). `v5` trae su propia Chroma indexada con MiniLM, así que es coherente por sí sola.
+
+`az containerapp update --image` solo cambia la imagen: las réplicas, los probes, las variables y los secretos se conservan.
+
+### Despliegue de `v6` (2026-10-22)
+
+Verificado contra la URL pública después de desplegar:
+
+- `/api/health/ready` responde `200`; el catálogo tiene los 75 datasets.
+- Búsquedas con e5: "dónde tiro mis llantas viejas" → *Centros de Acopio de Neumáticos*; "se fundió el foco de la calle" → *Reportes de Fallas en Alumbrado Público*; "receta de pastel de chocolate" → sin resultados.
+- Un login real devuelve la cookie con `HttpOnly; Secure; SameSite=lax`.
+- Rate limit: de 16 intentos rápidos de login con IPs falsas en `X-Forwarded-For`, 7 recibieron `429`.
+- Chromium (Playwright): las páginas públicas, la búsqueda, `/docs` y `/redoc` cargan sin errores de consola ni de CSP.
+- Las sesiones abiertas siguen siendo válidas: los secretos conservan los valores que tenían como variables.
+
+**No medido:** el tiempo de arranque en frío (escala desde 0). El *startup probe* le da hasta ~4 minutos para cargar el modelo.
 
 ### Checklist de producción
 
-- [ ] Definir `ENVIRONMENT=production` (activa la cookie `Secure`).
-- [ ] Usar una `SECRET_KEY` larga y aleatoria.
-- [ ] Ajustar `ALLOWED_ORIGINS` al dominio real.
-- [ ] Configurar `DATABASE_URL` hacia PostgreSQL.
-- [ ] Servir detrás de HTTPS (la cabecera HSTS ya está activa).
-- [ ] Re-indexar con `migrate_chroma.py` antes de construir la imagen si cambió el modelo o el catálogo.
-- [ ] Respaldar periódicamente `data/chroma_db` y `data/raw`.
-- [ ] Mantener `LOG_LEVEL` en `INFO` (el valor por defecto).
-- [ ] Guardar `SECRET_KEY` y `ADMIN_PASSWORD` como secretos, no como variables en texto plano.
-- [ ] Configurar los probes de startup, readiness y liveness.
+Marcado = aplicado en el despliegue actual de Azure.
+
+- [x] Definir `ENVIRONMENT=production` (activa la cookie `Secure`).
+- [x] Usar una `SECRET_KEY` larga y aleatoria.
+- [x] Ajustar `ALLOWED_ORIGINS` al dominio real.
+- [ ] Configurar `DATABASE_URL` hacia PostgreSQL. *No aplica a la demo: se decidió seguir con SQLite efímera.*
+- [x] Servir detrás de HTTPS (la cabecera HSTS ya está activa).
+- [x] Re-indexar con `migrate_chroma.py` antes de construir la imagen si cambió el modelo o el catálogo.
+- [ ] Respaldar periódicamente `data/chroma_db`, `data/raw` y `data/clean`. *Importante: `data/` no está en git y la imagen copia la Chroma local, así que la copia de tu máquina es la única. Hay un respaldo de la versión MiniLM en `~/.cache/respaldo_chroma_minilm_2026-10-22`.*
+- [x] Mantener `LOG_LEVEL` en `INFO` (el valor por defecto).
+- [x] Guardar `SECRET_KEY` y `ADMIN_PASSWORD` como secretos, no como variables en texto plano.
+- [x] Configurar los probes de startup, readiness y liveness.
 
 ---
 
@@ -755,7 +774,7 @@ La revisión de código del 2026-10-07 (`docs/pendientes.md`) detectó varios fa
 | CSP con `'unsafe-inline'` en `script-src` | — | Se quitó (no hay JS inline); CSP propia para `/docs` y `/redoc` | #8, #9 |
 | Chart.js sin versión fija | `cdn.jsdelivr.net/npm/chart.js` cargaba siempre la última versión | Versión 4.5.1 con SRI; CSP limitada a esa ruta | #10 |
 | Rate limit dependiente del proxy | Con `--forwarded-allow-ips=*`, Uvicorn toma la primera IP de `X-Forwarded-For`, que el cliente puede escribir si un proxy conserva la cabecera. **En Azure no era explotable:** los logs muestran que el ingress reemplaza la cabecera con la IP real | Defensa adicional: el rate limit usa la última IP de la cabecera (`obtener_ip_cliente` en `app/limiter.py`) | #11 |
-| Configuración de Azure incompleta | Sin probes, hasta 2 réplicas con SQLite y rate limit separados, secretos en texto plano y cookie sin `Secure` | Probes, máximo 1 réplica, secretos con `secretRef` y `ENVIRONMENT=production` | Fase 6 |
+| Configuración de Azure incompleta | Sin probes, hasta 2 réplicas con SQLite y rate limit separados, secretos en texto plano y cookie sin `Secure` | Probes, máximo 1 réplica, secretos con `secretRef` y `ENVIRONMENT=production` | Despliegue `v6` |
 
 El análisis detallado de la evaluación y del cambio de modelo está en `eval/experimentos/`.
 
