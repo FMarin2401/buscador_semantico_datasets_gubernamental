@@ -16,6 +16,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 # Módulos internos del proyecto
+from app.catalogo import CATEGORIAS
 from app.db_chroma import coleccion, guardar_datasets, obtener_todos_datasets
 from app.nlp_model import generar_embedding_documento, texto_para_indexar
 from app.api.auth import verificar_token, requiere_admin
@@ -37,6 +38,15 @@ class DatasetActualizar(BaseModel):
     descripcion: str = Field(..., min_length=1, max_length=MAX_DESCRIPCION)
     dependencia: str = Field(..., min_length=1, max_length=MAX_DEPENDENCIA)
     categoria: str = Field(..., min_length=1, max_length=MAX_CATEGORIA)
+
+def validar_categoria(categoria: str):
+    # Solo se aceptan las categorías oficiales: una escrita a mano crearía un filtro nuevo en el portal.
+    # El mensaje es texto (no la lista de errores de Pydantic) para que el panel lo muestre tal cual.
+    if categoria not in CATEGORIAS:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Categoría no válida. Usa una de las oficiales: {', '.join(CATEGORIAS)}."
+        )
 
 def es_csv_legible(contenido: bytes) -> bool:
     """Comprueba que el archivo se pueda leer como CSV con al menos una columna (se leen solo las primeras filas)."""
@@ -102,6 +112,8 @@ def publicar_dataset(
     usuario_autenticado: str = Depends(verificar_token),
     db: Session = Depends(get_db)
 ):
+    validar_categoria(categoria)
+
     if not archivo.filename.lower().endswith(".csv"):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -189,6 +201,7 @@ def actualizar_dataset(
     db: Session = Depends(get_db)
 ):
     id_dataset = str(id_dataset)
+    validar_categoria(datos.categoria)
     try:
         item_actual = coleccion.get(ids=[id_dataset], include=["metadatas", "documents"])
         if not item_actual or not item_actual.get("ids"):

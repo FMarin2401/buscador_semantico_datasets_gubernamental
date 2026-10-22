@@ -884,11 +884,22 @@ ul.nav-links {
     font-weight: bold;
 }
 
-.kpi-status-online {
+.kpi-status {
     font-size: 1.2rem;
-    color: #2e7d32;
     font-weight: bold;
     margin-top: 5px;
+}
+
+.kpi-status-online {
+    color: #2e7d32;
+}
+
+.kpi-status-offline {
+    color: #c62828;
+}
+
+.kpi-status-verificando {
+    color: var(--text-muted);
 }
 
 .dashboard-grid {
@@ -920,6 +931,20 @@ ul.nav-links {
 
 .text-success {
     color: #2e7d32;
+}
+
+.text-warning {
+    color: #8a5a00;
+}
+
+.text-danger {
+    color: #c62828;
+}
+
+.salud-detalle {
+    margin: 12px 0 0;
+    font-size: 0.8rem;
+    color: var(--text-muted);
 }
 
 .card-derecha-admin {

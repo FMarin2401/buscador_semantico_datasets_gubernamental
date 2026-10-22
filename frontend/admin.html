@@ -42,7 +42,7 @@
                 </div>
                 <div class="kpi-card">
                     <span class="kpi-label">ESTADO DEL SISTEMA</span>
-                    <span class="kpi-status-online">🟢 Operativo</span>
+                    <span id="kpi-estado" class="kpi-status kpi-status-verificando" role="status">Verificando…</span>
                 </div>
             </div>
 
@@ -55,11 +55,13 @@
                 <div class="card-derecha-admin">
                     <div class="card-sistema-info">
                         <h3>Salud de los Servicios</h3>
-                        <ul class="system-health-list">
-                            <li><span>Motor Semántico</span> <strong class="text-success">Activo</strong></li>
-                            <li><span>ChromaDB</span> <strong class="text-success">Conectada</strong></li>
-                            <li><span>JWT</span> <strong class="text-success">Blindada</strong></li>
+                        <!-- Se llena con /api/health/ready al abrir el resumen (admin.js: actualizarSaludSistema) -->
+                        <ul class="system-health-list" id="listaSaludServicios">
+                            <li><span>Motor semántico y ChromaDB</span> <strong id="salud-nlp_chromadb">…</strong></li>
+                            <li><span>Índice vectorial</span> <strong id="salud-indice_vectorial">…</strong></li>
+                            <li><span>Base de datos</span> <strong id="salud-db_relacional">…</strong></li>
                         </ul>
+                        <p class="salud-detalle" id="saludDetalle"></p>
                     </div>
                     
                     <div class="card-auditoria-info">
@@ -102,11 +104,12 @@
                             </select>
                         </div>
 
-                        <!-- Input de categoría con autocompletado para subida -->
+                        <!-- Solo las categorías oficiales (GET /api/categorias): una escrita a mano crearía un filtro nuevo en el portal -->
                         <div class="filter-group">
                             <label for="inputCategoria" class="admin-label">CATEGORÍA</label>
-                            <input type="text" id="inputCategoria" class="form-input" maxlength="100" list="listaCategoriasSugeridas" placeholder="Selecciona o escribe una categoría..." required>
-                            <datalist id="listaCategoriasSugeridas"></datalist>
+                            <select id="inputCategoria" class="form-input" required>
+                                <option value="">Cargando categorías...</option>
+                            </select>
                         </div>
 
                         <div class="filter-group">
@@ -243,7 +246,9 @@
 
             <div class="filter-group">
                 <label for="editCategoria" class="admin-label">CATEGORÍA</label>
-                <input type="text" id="editCategoria" class="form-input" maxlength="100" list="listaCategoriasSugeridas" required>
+                <select id="editCategoria" class="form-input" required>
+                    <option value="">Cargando categorías...</option>
+                </select>
             </div>
 
             <div class="modal-actions">

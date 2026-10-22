@@ -11,15 +11,8 @@ CATALOGO_REVISADO = "data/clean/catalogo_maestro.csv" # Version revisada; es la 
 CARPETA_RAW_PRODUCCION = "data/raw/" # CSV que sirve la app, nombrados con el ID del dataset
 
 # Categorias oficiales para los filtros del buscador. Gemini solo puede elegir una de estas.
-CATEGORIAS = [
-    "Movilidad",
-    "Medio Ambiente",
-    "Seguridad",
-    "Economía",
-    "Infraestructura y Obras",
-    "Salud",
-    "Desarrollo Social",
-    "Administración y Finanzas",
-    "Cultura y Deporte",
-    "Educación",
-]
+# Se definen en app/catalogo.py para que la API y el panel usen exactamente la misma lista.
+import os
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from app.catalogo import CATEGORIAS  # noqa: E402,F401
