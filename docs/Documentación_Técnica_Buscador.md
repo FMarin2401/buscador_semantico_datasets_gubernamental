@@ -690,8 +690,11 @@ Volúmenes persistentes:
 
 | Recurso | Valor |
 |---|---|
-| Container App | `app-portal-datos` (grupo `rg-portal-datos`, región Mexico Central) |
-| URL | https://app-portal-datos.niceground-95b8d2a4.mexicocentral.azurecontainerapps.io |
+| Dominio | **https://buscador.frankmarincas.dev** (certificado administrado gratuito de Azure, se renueva solo) |
+| Container App | `app-buscador-datos` (grupo `rg-portal-datos`, región Mexico Central) |
+| Entorno | `env-buscador`, modo **WorkloadProfiles** (perfil Consumption) |
+| URL de Azure | https://app-buscador-datos.reddune-b857c04d.mexicocentral.azurecontainerapps.io (sigue funcionando junto al dominio) |
+| DNS | Cloudflare: `CNAME buscador` → URL de Azure y `TXT asuid.buscador` con el código de verificación. El proxy de Cloudflare debe quedar **apagado** ("DNS only"): con él encendido, Azure no puede emitir el certificado y todas las visitas llegarían con IPs de Cloudflare, lo que rompería el rate limit |
 | Registro | `acrportaldatos6462.azurecr.io/portal-datos-leon` (ACR Basic) |
 | Versión desplegada | **`v6`** (desde 2026-10-22). `v5`, la versión anterior a la revisión (MiniLM), se conserva en el registro para volver atrás |
 | Recursos | 1 vCPU, 2 GiB |
@@ -707,12 +710,14 @@ python scripts/migrate_chroma.py --simular   # Debe mostrar 0 cambios: la imagen
 docker build -t acrportaldatos6462.azurecr.io/portal-datos-leon:vN .
 az acr login -n acrportaldatos6462
 docker push acrportaldatos6462.azurecr.io/portal-datos-leon:vN
-az containerapp update -n app-portal-datos -g rg-portal-datos --image acrportaldatos6462.azurecr.io/portal-datos-leon:vN
+az containerapp update -n app-buscador-datos -g rg-portal-datos --image acrportaldatos6462.azurecr.io/portal-datos-leon:vN
 ```
 
 Para volver a la versión anterior, el mismo `az containerapp update` con la etiqueta previa (`:v5`). `v5` trae su propia Chroma indexada con MiniLM, así que es coherente por sí sola.
 
-`az containerapp update --image` solo cambia la imagen: las réplicas, los probes, las variables y los secretos se conservan.
+`az containerapp update --image` solo cambia la imagen: las réplicas, los probes, las variables, los secretos y el dominio se conservan.
+
+> **Entornos Express:** la extensión `containerapp` de la CLI crea entornos en modo **Express** si no se indica otra cosa. Esos entornos **no admiten dominios personalizados** (error `ExpressEnvironmentFeatureNotSupported`). El entorno original (`env-portal-datos-clean`) era Express, y por eso la app se migró a `env-buscador`. Para crear un entorno nuevo, usar siempre `az containerapp env create ... --environment-mode WorkloadProfiles`. El modo no aparece en `az containerapp env show`; se ve en la API REST como `properties.environmentMode`.
 
 ### Despliegue de `v6` (2026-10-22)
 
@@ -726,6 +731,10 @@ Verificado contra la URL pública después de desplegar:
 - Las sesiones abiertas siguen siendo válidas: los secretos conservan los valores que tenían como variables.
 
 **No medido:** el tiempo de arranque en frío (escala desde 0). El *startup probe* le da hasta ~4 minutos para cargar el modelo.
+
+### Dominio propio (2026-10-22)
+
+La app se recreó en el entorno `env-buscador` (WorkloadProfiles) con la misma imagen `v6`, los mismos secretos, probes y escala, y se enlazó `buscador.frankmarincas.dev` con un certificado administrado (emitido por DigiCert). Verificado por el dominio: certificado válido, página de inicio, readiness, búsqueda y login. La app y el entorno Express originales se borraron después.
 
 ### Checklist de producción
 
@@ -775,6 +784,7 @@ La revisión de código del 2026-10-07 (`docs/pendientes.md`) detectó varios fa
 | Chart.js sin versión fija | `cdn.jsdelivr.net/npm/chart.js` cargaba siempre la última versión | Versión 4.5.1 con SRI; CSP limitada a esa ruta | #10 |
 | Rate limit dependiente del proxy | Con `--forwarded-allow-ips=*`, Uvicorn toma la primera IP de `X-Forwarded-For`, que el cliente puede escribir si un proxy conserva la cabecera. **En Azure no era explotable:** los logs muestran que el ingress reemplaza la cabecera con la IP real | Defensa adicional: el rate limit usa la última IP de la cabecera (`obtener_ip_cliente` en `app/limiter.py`) | #11 |
 | Configuración de Azure incompleta | Sin probes, hasta 2 réplicas con SQLite y rate limit separados, secretos en texto plano y cookie sin `Secure` | Probes, máximo 1 réplica, secretos con `secretRef` y `ENVIRONMENT=production` | Despliegue `v6` |
+| Sin dominio propio | El entorno original de Container Apps era **Express**, que no admite dominios personalizados | Entorno nuevo en modo WorkloadProfiles, dominio `buscador.frankmarincas.dev` con certificado administrado gratuito | Despliegue `v6` |
 
 El análisis detallado de la evaluación y del cambio de modelo está en `eval/experimentos/`.
 
