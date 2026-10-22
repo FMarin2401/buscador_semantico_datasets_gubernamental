@@ -87,6 +87,8 @@ La lista completa con posiciones y distancias está en `baseline.json` (campo `d
 
 ## Siguientes pasos
 
+> Los pasos 1 y 2 se completaron el 2026-10-22: ver [implementación de e5-small](2026-10-22_implementacion_e5.md).
+
 1. Implementar e5-small, re-indexar y correr `evaluate_model.py` para confirmar el 95%.
 2. Agregar consultas negativas al Ground Truth y fijar el umbral.
 3. Opcional: probar búsqueda híbrida (BM25 + embeddings) para nombres propios que el modelo no conoce ("Capeltic", "COMUDE", "Tota Carbajal").

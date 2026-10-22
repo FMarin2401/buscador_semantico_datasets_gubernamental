@@ -20,8 +20,8 @@ os.chdir(RAIZ_PROYECTO) # ChromaDB y las rutas del pipeline son relativas a la r
 
 import pandas as pd
 from config_pipeline import CATALOGO_REVISADO, CARPETA_ORIGINALES, CARPETA_RAW_PRODUCCION, CATALOGO_GEMINI
-from app.db_chroma import coleccion, guardar_o_actualizar_datasets
-from app.nlp_model import modelo
+from app.db_chroma import coleccion, guardar_o_actualizar_datasets, modelo_indexado, registrar_modelo_indexado
+from app.nlp_model import NOMBRE_MODELO, generar_embeddings_documentos, texto_para_indexar
 
 # Namespace fijo para generar IDs deterministas: el mismo archivo siempre produce el mismo UUID
 NAMESPACE_DATASETS = uuid.UUID("1158df0d-6605-4cb7-b631-aa49df5c1f6e")
@@ -47,14 +47,18 @@ def cargar_catalogo():
     return df
 
 
-def indexados_por_archivo():
-    # Datasets que ya estan en ChromaDB, indexados por su archivo original (los subidos desde el panel no tienen uno)
+def leer_indexados():
+    # Separa los datasets ya indexados en dos grupos: los del catalogo (tienen archivo original)
+    # y los subidos desde el panel (no lo tienen)
     datos = coleccion.get(include=["metadatas", "documents"])
-    return {
-        meta["archivo_original"]: {"id": id_dataset, "titulo": titulo, "meta": meta}
-        for id_dataset, titulo, meta in zip(datos["ids"], datos["documents"], datos["metadatas"])
-        if meta and meta.get("archivo_original")
-    }
+    del_catalogo, del_panel = {}, []
+    for id_dataset, titulo, meta in zip(datos["ids"], datos["documents"], datos["metadatas"]):
+        registro = {"id": id_dataset, "titulo": titulo, "meta": meta or {}}
+        if registro["meta"].get("archivo_original"):
+            del_catalogo[registro["meta"]["archivo_original"]] = registro
+        else:
+            del_panel.append(registro)
+    return del_catalogo, del_panel
 
 
 def main():
@@ -63,7 +67,8 @@ def main():
     args = parser.parse_args()
 
     df_catalogo = cargar_catalogo()
-    existentes = indexados_por_archivo()
+    existentes, del_panel = leer_indexados()
+    cambio_de_modelo = modelo_indexado() != NOMBRE_MODELO and bool(existentes or del_panel)
     fecha_actual = datetime.now().strftime("%Y-%m-%d")
 
     ids, textos, titulos, metadatas, copias = [], [], [], [], []
@@ -104,13 +109,25 @@ def main():
 
         ids.append(id_dataset)
         titulos.append(row["titulo"])
-        textos.append(f"{row['titulo']}. {row['descripcion']} Dependencia: {row['dependencia']}") # Mismo formato que manipulate_datasets.py
+        textos.append(texto_para_indexar(row["titulo"], row["descripcion"], row["dependencia"]))
         metadatas.append(metadata)
+
+    # Los datasets subidos desde el panel no estan en el catalogo, pero sus vectores tambien deben generarse
+    # con el modelo actual: se re-indexan con sus mismos metadatos
+    for registro in del_panel:
+        meta = registro["meta"]
+        ids.append(registro["id"])
+        titulos.append(registro["titulo"])
+        textos.append(texto_para_indexar(registro["titulo"], meta.get("descripcion", ""), meta.get("dependencia", "")))
+        metadatas.append(meta)
 
     # Datasets con archivo original que ya no estan en el catalogo: se avisan pero no se borran
     retirados = sorted(set(existentes) - set(df_catalogo["archivo_original"]))
 
-    print(f"Catalogo: {len(df_catalogo)} datasets | Ya indexados: {len(existentes)}")
+    print(f"Modelo: {NOMBRE_MODELO} (indice actual: {modelo_indexado() or 'modelo anterior no registrado'})")
+    if cambio_de_modelo:
+        print("  CAMBIO DE MODELO: se recalculan los vectores de todos los datasets")
+    print(f"Catalogo: {len(df_catalogo)} datasets | Ya indexados: {len(existentes)} del catalogo y {len(del_panel)} del panel")
     for etiqueta, archivos in resumen.items():
         print(f"  {etiqueta:<13} {len(archivos)}")
         if etiqueta != "sin cambios":
@@ -131,8 +148,9 @@ def main():
         shutil.copyfile(ruta_origen, ruta_destino)
 
     # Se recalculan todos los embeddings (no solo los cambiados) para que un cambio de modelo re-indexe todo el catalogo
-    embeddings = modelo.encode(textos, batch_size=32, show_progress_bar=True).tolist()
+    embeddings = generar_embeddings_documentos(textos)
     guardar_o_actualizar_datasets(ids=ids, textos=titulos, embeddings=embeddings, metadatas=metadatas)
+    registrar_modelo_indexado(NOMBRE_MODELO) # La app comprueba este dato al arrancar
     print(f"\nListo: {len(ids)} datasets indexados en ChromaDB y {len(copias)} CSV copiados a {CARPETA_RAW_PRODUCCION}")
 
 

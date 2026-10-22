@@ -17,7 +17,7 @@ from sqlalchemy.orm import Session
 
 # Módulos internos del proyecto
 from app.db_chroma import coleccion, guardar_datasets, obtener_todos_datasets
-from app.nlp_model import generar_embedding
+from app.nlp_model import generar_embedding_documento, texto_para_indexar
 from app.api.auth import verificar_token, requiere_admin
 from app.db_core.connection import get_db
 from app.db_core.models import BitacoraAuditoriaModel, DescargasDatasetModel
@@ -131,8 +131,7 @@ def publicar_dataset(
     with open(ruta_archivo, "wb") as buffer:
         shutil.copyfileobj(archivo.file, buffer)
         
-    texto_completo = f"{titulo}. {descripcion} Dependencia: {dependencia}"
-    vector = generar_embedding(texto_completo) 
+    vector = generar_embedding_documento(texto_para_indexar(titulo, descripcion, dependencia))
     
     metadata = {
         "dependencia": dependencia,
@@ -184,8 +183,7 @@ def actualizar_dataset(
             "hash_sha256": hash_original
         }
 
-        texto_completo = f"{datos.titulo}. {datos.descripcion} Dependencia: {datos.dependencia}"
-        nuevo_vector = generar_embedding(texto_completo)
+        nuevo_vector = generar_embedding_documento(texto_para_indexar(datos.titulo, datos.descripcion, datos.dependencia))
 
         coleccion.update(
             ids=[id_dataset],

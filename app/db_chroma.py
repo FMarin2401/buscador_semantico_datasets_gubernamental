@@ -11,6 +11,14 @@ coleccion = cliente.get_or_create_collection( # Busca o crea una coleccion en la
     metadata={"hnsw:space": "cosine"} # Usamos la similitud coseno para medir la distancia entre los embeddings de texto, lo que es adecuado para comparar vectores de alta dimensión
 )
 
+def modelo_indexado():
+    # Modelo con el que se generaron los vectores guardados. Las colecciones indexadas antes de registrarlo devuelven None.
+    return (coleccion.metadata or {}).get("modelo_embeddings")
+
+def registrar_modelo_indexado(nombre_modelo: str):
+    # Solo se envia esta clave: Chroma no permite reenviar "hnsw:space" (la distancia coseno se conserva igual)
+    coleccion.modify(metadata={"modelo_embeddings": nombre_modelo})
+
 def buscar_similares(vector_busqueda: list, n_resultados: int): # Funcion para cada que un usuario haga una busqueda
     return coleccion.query(
         query_embeddings=[vector_busqueda], # Buscamos los embeddings mas similares al vector de busqueda del usuario

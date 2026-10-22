@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 # Módulos internos del proyecto
 from app.limiter import limiter 
 from app.db_chroma import buscar_similares, coleccion
-from app.nlp_model import generar_embedding
+from app.nlp_model import generar_embedding_consulta, UMBRAL_DISTANCIA
 from app.db_core.models import DescargasDatasetModel
 from app.db_core.connection import get_db
 
@@ -55,7 +55,7 @@ def buscar_dataset(
     prompt: str = Query(..., min_length=2, max_length=300), # Evita textos enormes que solo gastan CPU al generar el embedding
     db: Session = Depends(get_db)
 ):
-    vector_prompt = generar_embedding(prompt) 
+    vector_prompt = generar_embedding_consulta(prompt)
     
     n_meta = 10
     resultados = buscar_similares(vector_prompt, n_resultados=n_meta) 
@@ -74,7 +74,7 @@ def buscar_dataset(
         logger.debug(f"Top {idx + 1}: {doc} | Distancia: {dist}")
     logger.debug("------------------\n")
     
-    umbral_maximo = 0.60 
+    umbral_maximo = UMBRAL_DISTANCIA # Depende del modelo de embeddings; se calibra con scripts/evaluate_model.py
     resultados_validos = [] 
     
     for i in range(len(distances)): 
