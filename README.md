@@ -43,11 +43,40 @@ Plataforma de búsqueda inteligente, analítica y gestión de datos abiertos par
    ADMIN_USER=admin_leon
    ADMIN_PASSWORD=tu_contraseña_segura
    LOG_LEVEL=DEBUG  # Opcional: INFO por defecto; DEBUG muestra el detalle de cada búsqueda
+   GEMINI_MODEL=gemini-3.6-flash  # Opcional: modelo que usa scripts/analyze_csv.py
    ```
 
 5. Iniciar el servidor local:
    ```bash
    uvicorn app.main:app 
    ```
+   Al arrancar, la app aplica las migraciones pendientes de la base relacional con Alembic.
+
+## Carga de datasets
+
+Los datasets iniciales se cargan con un pipeline de tres pasos (las rutas están en `scripts/config_pipeline.py`):
+
+1. Colocar los CSV del municipio en `data/entregados_municipio/` y generar sus metadatos con Gemini:
+   ```bash
+   python scripts/analyze_csv.py                  # Solo procesa los CSV nuevos
+   python scripts/analyze_csv.py --solo-columnas  # Para archivos con datos personales: no envía filas a Google
+   ```
+2. **Revisar** `data/clean/catalogo_maestro_procesado.csv` (Gemini puede inventar dependencias o describir mal un dataset) y guardar la versión final como `data/clean/catalogo_maestro.csv`.
+3. Indexar en ChromaDB:
+   ```bash
+   python scripts/migrate_chroma.py --simular  # Muestra qué cambiaría
+   python scripts/migrate_chroma.py
+   ```
+   Se puede correr las veces que haga falta (por ejemplo, al cambiar de modelo de embeddings): no duplica datasets ni cambia sus IDs.
+
+## Base de datos relacional (Alembic)
+
+Para cambiar un modelo de `app/db_core/models.py`:
+```bash
+alembic revision --autogenerate -m "descripcion del cambio"  # Revisar el archivo generado en alembic/versions/
+alembic upgrade head                                         # O simplemente reiniciar la app
+```
+Las bases creadas antes de Alembic se registran automáticamente como la revisión inicial (`0001`) la primera vez que arranca la app.
+
   ---
 Desarrollado por [Francisco Marin Castillo](https://frankmarincas.dev/)

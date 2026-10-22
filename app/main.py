@@ -16,7 +16,8 @@ from sqlalchemy import text
 
 # Módulos internos de la aplicación
 from app.api import manipulate_datasets, pages, search, auth, contact, users
-from app.db_core.connection import engine, Base, SessionLocal, get_db
+from app.db_core.connection import SessionLocal, get_db
+from app.db_core.migraciones import aplicar_migraciones
 from app.db_core.models import UsuarioModel
 from app.nlp_model import generar_embedding
 from app.db_chroma import coleccion
@@ -45,8 +46,9 @@ app_state = {
 # --- CICLO DE VIDA (STARTUP) ---
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Crear la tabla automáticamente
-    Base.metadata.create_all(bind=engine)
+    # Crear o actualizar las tablas con Alembic (create_all no agregaba columnas nuevas a tablas existentes).
+    # Con una sola réplica es seguro hacerlo al arrancar; con varias, conviene moverlo a un paso previo del despliegue.
+    aplicar_migraciones()
 
     db = SessionLocal()
     try:
