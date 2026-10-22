@@ -107,7 +107,6 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # Servidores de archivos estáticos
-app.mount("/data", StaticFiles(directory="data/raw"), name="data")
 app.mount("/css", StaticFiles(directory="frontend/css"), name="css")
 app.mount("/js", StaticFiles(directory="frontend/js"), name="js")
 app.mount("/assets", StaticFiles(directory="frontend/assets"), name="assets")
@@ -145,7 +144,7 @@ async def agregar_cabeceras_seguridad(request: Request, call_next):
     # Content-Security-Policy (CSP)
     csp = (
         "default-src 'self'; "
-        "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; " 
+        "script-src 'self' https://cdn.jsdelivr.net; " # Sin 'unsafe-inline': todo el JS vive en archivos .js, así un script inyectado no se ejecuta
         "style-src 'self' 'unsafe-inline'; "
         "img-src 'self' data:; "
         "font-src 'self'; "
