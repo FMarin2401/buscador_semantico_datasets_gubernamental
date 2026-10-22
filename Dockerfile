@@ -30,6 +30,6 @@ EXPOSE 8000
 
 # Comando para iniciar la aplicación
 # --proxy-headers hace que Uvicorn respete X-Forwarded-Proto (Azure termina el HTTPS). La IP del rate limit
-# NO sale de aquí (con "*" Uvicorn toma la primera IP de X-Forwarded-For, que el cliente puede inventar):
-# la calcula app/limiter.py con la última, que es la que agrega el ingress de Azure.
+# no depende de esto: con "*" Uvicorn toma la primera IP de X-Forwarded-For, que detrás de un proxy que conserve
+# la cabecera podría inventar el cliente; app/limiter.py usa la última, la que agrega el proxy más cercano.
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers", "--forwarded-allow-ips=*"]

@@ -635,7 +635,7 @@ python scripts/comparar_modelos.py minilm e5-small --salida eval/resultados/comp
 | Enumeración de usuarios | Verificación contra un hash ficticio cuando el usuario no existe, para igualar los tiempos de respuesta |
 | Sesión | JWT (PyJWT) en una cookie `HttpOnly` y `SameSite=Lax`, `Secure` en producción, expiración de 30 min |
 | Autorización | RBAC en el servidor; el rol se verifica contra la BD |
-| Fuerza bruta / abuso | SlowAPI: login 5/min, contacto 5/min, búsqueda 15/min por IP. La IP se toma del **último** valor de `X-Forwarded-For` (el que agrega el ingress de Azure), no del primero, que el cliente puede inventar (`app/limiter.py`) |
+| Fuerza bruta / abuso | SlowAPI: login 5/min, contacto 5/min, búsqueda 15/min por IP. La IP se toma del **último** valor de `X-Forwarded-For` (el que agrega el proxy más cercano), no del primero, que el cliente podría inventar si algún proxy conserva la cabecera (`app/limiter.py`). El ingress de Azure reemplaza la cabecera con la IP real |
 | Validación de entradas | Longitudes máximas en búsqueda, login, formularios y metadatos; IDs como `UUID`; formatos de descarga como `Literal` |
 | Cabeceras HTTP | `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Strict-Transport-Security`, `Referrer-Policy`, `Content-Security-Policy` |
 | CSP | Portal: `script-src` sin `'unsafe-inline'` y limitado a `'self'` y a la versión fija de Chart.js. `/docs` y `/redoc` tienen una CSP propia, porque FastAPI las genera con un script inline y recursos de CDN |
@@ -667,7 +667,7 @@ python scripts/comparar_modelos.py minilm e5-small --salida eval/resultados/comp
 - Base `python:3.12-slim`, con las dependencias de sistema para compilar LXML.
 - **Descarga el modelo `intfloat/multilingual-e5-small` durante el build**, para que el contenedor arranque sin depender de Hugging Face.
 - Copia `data/chroma_db` y `data/raw` desde la máquina donde se construye: **sin volumen** (como en Azure Container Apps), esos son los datasets que sirve la app. `data/` no está en git, así que **hay que re-indexar con `migrate_chroma.py` antes de construir** si cambió el modelo o el catálogo. Si se olvida, el *readiness* responde `503` en lugar de servir búsquedas incorrectas.
-- Uvicorn arranca con `--proxy-headers --forwarded-allow-ips=*` para respetar `X-Forwarded-Proto`, porque Azure termina el HTTPS. Con `*`, Uvicorn toma la **primera** IP de `X-Forwarded-For`, que el cliente puede falsificar; por eso el rate limit no usa esa IP, sino la última de la cabecera (ver [13. Seguridad](#13-seguridad)).
+- Uvicorn arranca con `--proxy-headers --forwarded-allow-ips=*` para respetar `X-Forwarded-Proto`, porque Azure termina el HTTPS. Con `*`, Uvicorn toma la **primera** IP de `X-Forwarded-For`, que detrás de un proxy que conserve la cabecera podría falsificar el cliente; por eso el rate limit no usa esa IP, sino la última (ver [13. Seguridad](#13-seguridad)). En Azure la cabecera trae una sola IP, la real.
 
 ### Compose (`docker-compose.yml`)
 
@@ -754,7 +754,7 @@ La revisión de código del 2026-10-07 (`docs/pendientes.md`) detectó varios fa
 | `datetime.utcnow()` obsoleto | Python 3.12 | `ahora_utc()` | #8 |
 | CSP con `'unsafe-inline'` en `script-src` | — | Se quitó (no hay JS inline); CSP propia para `/docs` y `/redoc` | #8, #9 |
 | Chart.js sin versión fija | `cdn.jsdelivr.net/npm/chart.js` cargaba siempre la última versión | Versión 4.5.1 con SRI; CSP limitada a esa ruta | #10 |
-| **El rate limit se podía saltar con una IP falsa** | Con `--forwarded-allow-ips=*`, Uvicorn toma la primera IP de `X-Forwarded-For`, que escribe el cliente; Azure agrega la real al final | El rate limit usa la última IP de la cabecera (`obtener_ip_cliente` en `app/limiter.py`) | #11 |
+| Rate limit dependiente del proxy | Con `--forwarded-allow-ips=*`, Uvicorn toma la primera IP de `X-Forwarded-For`, que el cliente puede escribir si un proxy conserva la cabecera. **En Azure no era explotable:** los logs muestran que el ingress reemplaza la cabecera con la IP real | Defensa adicional: el rate limit usa la última IP de la cabecera (`obtener_ip_cliente` en `app/limiter.py`) | #11 |
 | Configuración de Azure incompleta | Sin probes, hasta 2 réplicas con SQLite y rate limit separados, secretos en texto plano y cookie sin `Secure` | Probes, máximo 1 réplica, secretos con `secretRef` y `ENVIRONMENT=production` | Fase 6 |
 
 El análisis detallado de la evaluación y del cambio de modelo está en `eval/experimentos/`.
@@ -765,7 +765,7 @@ El análisis detallado de la evaluación y del cambio de modelo está en `eval/e
 
 | # | Tema | Detalle |
 |---|---|---|
-| 1 | IP en los logs de acceso | Los logs de Uvicorn muestran la primera IP de `X-Forwarded-For`, que el cliente puede falsificar. El rate limit ya no depende de ella, pero esos logs no sirven para identificar a un cliente |
+| 1 | IP en los logs de acceso | Los logs de Uvicorn muestran la primera IP de `X-Forwarded-For`. En Azure es la real porque el ingress reemplaza la cabecera, pero detrás de otro proxy podría ser falsa. El rate limit ya no depende de ella |
 | 2 | Rate limit por réplica | SlowAPI cuenta en memoria y se reinicia con cada arranque. Con el máximo de 1 réplica es suficiente; si se escala, usar `storage_uri="redis://..."` |
 | 3 | Persistencia en Azure Container Apps | Sin volumen ni PostgreSQL, los datasets subidos desde el panel, los usuarios creados, la bitácora y `logs/auditoria.log` se pierden cada vez que el contenedor se apaga (también al escalar a 0). Es aceptable mientras el despliegue sea de demostración; la opción más directa sería un PostgreSQL con **pgvector** |
 | 4 | Umbral fijo | Las distancias de los aciertos y de las consultas ajenas se traslapan: con 0.19 quedan 6 aciertos ocultos por muy poco y 5 consultas ajenas aceptadas. Un umbral relativo o un re-ranker podrían mejorarlo |
