@@ -411,10 +411,35 @@ ul.nav-links {
     background: white;
 }
 
-.search-icon {
-    color: var(--text-muted);
+/* Ícono de búsqueda en SVG (antes el emoji 🔍, que cambia de aspecto según el sistema operativo).
+   Azul en las cajas de búsqueda del portal y gris en el filtro del panel */
+.icono-buscar {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
     margin-right: 10px;
-    font-size: 1.2rem;
+    fill: none;
+    stroke: var(--blue-primary);
+    stroke-width: 2.2;
+    stroke-linecap: round;
+}
+
+.campo-con-icono {
+    position: relative;
+}
+
+.campo-con-icono .icono-buscar {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    margin: 0;
+    stroke: var(--text-muted);
+    pointer-events: none;
+}
+
+.campo-con-icono input {
+    padding-left: 44px;
 }
 
 .search-box input {

@@ -73,7 +73,7 @@ window.onload = async function() {
         const total = dataCat.resultados ? dataCat.resultados.length : 0;
         const inputSmall = document.getElementById('searchInputResultados');
         if (inputSmall && !busqueda) {
-            inputSmall.placeholder = `Buscar en ${total} conjuntos de datos...`;
+            inputSmall.placeholder = `Buscar en ${total} conjuntos`; // Corto para que no se corte en móvil
         }
     } catch (e) {
         console.error("Error cargando total de catálogos:", e);
