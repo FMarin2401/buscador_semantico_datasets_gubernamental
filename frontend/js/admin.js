@@ -291,6 +291,9 @@ async function renderizarDashboard() {
                 conteoCategorias[cat] = (conteoCategorias[cat] || 0) + 1;
             });
 
+            // De mayor a menor: así se lee de un vistazo qué categorías concentran el catálogo
+            const categoriasOrdenadas = Object.entries(conteoCategorias).sort((a, b) => b[1] - a[1]);
+
             const canvasElement = document.getElementById('graficaCategorias');
             if (canvasElement) {
                 const ctx = canvasElement.getContext('2d');
@@ -302,10 +305,10 @@ async function renderizarDashboard() {
                 window.miGraficaBarras = new Chart(ctx, {
                     type: 'bar',
                     data: {
-                        labels: Object.keys(conteoCategorias),
+                        labels: categoriasOrdenadas.map(([categoria]) => categoria),
                         datasets: [{
                             label: 'Datasets por Categoría',
-                            data: Object.values(conteoCategorias),
+                            data: categoriasOrdenadas.map(([, total]) => total),
                             backgroundColor: '#004b87',
                             borderRadius: 4
                         }]

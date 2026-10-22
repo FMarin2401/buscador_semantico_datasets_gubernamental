@@ -218,14 +218,12 @@ ul.nav-links {
     gap: 20px;
 }
 
+/* Texto plano, no píldora: con forma de botón parecía clicable y no lo es */
 .badge-transparencia {
-    background: var(--blue-light);
-    color: var(--blue-primary);
-    padding: 8px 16px;
-    border-radius: 20px;
+    color: var(--blue-dark);
     font-size: 0.8rem;
     font-weight: bold;
-    border: 1px solid #cce0f5;
+    letter-spacing: 0.5px;
 }
 
 .accessibility-controls {
@@ -298,15 +296,44 @@ ul.nav-links {
     cursor: pointer;
     transition: all 0.2s ease;
     letter-spacing: 0.5px;
+    background: var(--blue-primary);
+    color: white;
+}
+
+/* Sistema de botones: .btn-primary (relleno) para la acción principal de cada pantalla,
+   .btn-outline (delineado) para las secundarias. Antes .btn-primary era delineado, y las
+   acciones principales (ingresar, publicar, enviar) se veían menos importantes que "Buscar". */
+.btn-primary:hover {
+    background-color: var(--blue-dark);
+    border-color: var(--blue-dark);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.btn-outline {
+    display: inline-block;
+    box-sizing: border-box;
+    text-decoration: none;
+    text-align: center;
+    padding: 12px 35px;
+    border-radius: 25px;
+    font-weight: bold;
+    font-size: 0.95rem;
+    border: 2px solid var(--blue-primary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    letter-spacing: 0.5px;
     background: white;
     color: var(--blue-primary);
 }
 
-.btn-primary:hover {
-    background-color: var(--blue-primary);
-    color: white;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+.btn-outline:hover {
+    background-color: var(--blue-light);
+}
+
+.btn-outline:focus-visible {
+    outline: 3px solid var(--blue-dark);
+    outline-offset: 2px;
 }
 
 .action-buttons {
@@ -1060,7 +1087,7 @@ ul.nav-links {
 }
 
 .btn-admin { 
-    text-align: center; 
+    text-align: left; /* Igual que las demás secciones del menú */
     text-decoration: none; 
 }
 
@@ -1369,11 +1396,6 @@ ul.nav-links {
     flex-wrap: wrap;
 }
 
-.btn-secondary-alt {
-    background: #f8f9fa;
-    border-color: #ddd;
-    color: var(--text-dark);
-}
 
 .guia-lista {
     color: var(--text-dark);
@@ -1529,8 +1551,8 @@ ul.nav-links {
         gap: 40px;
     }
     
-    .footer-col h4, .site-footer p {
-        text-align: center;
+    .footer-bottom p {
+        text-align: center; /* Solo el copyright; las columnas van alineadas a la izquierda */
     }
 
     .footer-logo {
@@ -1681,4 +1703,24 @@ ul.nav-links {
 .toast-salida {
     opacity: 0;
     transform: translateY(15px);
+}
+/* "Limpiar búsqueda": acción neutra (antes una píldora roja con ✕, que parecía un error) */
+.btn-restablecer {
+    display: inline-flex;
+    align-items: center;
+    min-height: 32px;
+    padding: 0 12px;
+    border: 1px solid #c7d3e0;
+    border-radius: 999px;
+    background: white;
+    color: var(--blue-dark);
+    font-size: 0.85rem;
+    font-weight: bold;
+    text-decoration: none;
+}
+
+.btn-restablecer:hover,
+.btn-restablecer:focus-visible {
+    background: var(--blue-light);
+    border-color: var(--blue-primary);
 }
