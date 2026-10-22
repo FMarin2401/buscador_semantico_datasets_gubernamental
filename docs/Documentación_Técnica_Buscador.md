@@ -700,7 +700,7 @@ Volúmenes persistentes:
 | URL de Azure | https://app-buscador-datos.reddune-b857c04d.mexicocentral.azurecontainerapps.io (sigue funcionando junto al dominio) |
 | DNS | Cloudflare: `CNAME buscador` → URL de Azure y `TXT asuid.buscador` con el código de verificación. El proxy de Cloudflare debe quedar **apagado** ("DNS only"): con él encendido, Azure no puede emitir el certificado y todas las visitas llegarían con IPs de Cloudflare, lo que rompería el rate limit |
 | Registro | `acrportaldatos6462.azurecr.io/portal-datos-leon` (ACR Basic) |
-| Versión desplegada | **`v6`** (desde 2026-10-22). `v5`, la versión anterior a la revisión (MiniLM), se conserva en el registro para volver atrás |
+| Versión desplegada | **`v7`** (desde 2026-10-22, con el rediseño del frontend). En el registro se conservan `v6` (fases 1 a 6 y e5, sin el rediseño) y `v5` (anterior a la revisión, con MiniLM) |
 | Recursos | 1 vCPU, 2 GiB |
 | Escala | Mínimo 0, máximo **1** réplica: se apaga cuando nadie lo usa (la primera visita espera la carga del modelo) y con una sola réplica la SQLite y el rate limit son consistentes |
 | Base relacional | SQLite dentro del contenedor (sin `DATABASE_URL`): los usuarios se recrean desde `ADMIN_USER`/`ADMIN_PASSWORD` y los datos del panel se pierden al reiniciar (aceptado para la demo) |
@@ -717,7 +717,7 @@ docker push acrportaldatos6462.azurecr.io/portal-datos-leon:vN
 az containerapp update -n app-buscador-datos -g rg-portal-datos --image acrportaldatos6462.azurecr.io/portal-datos-leon:vN
 ```
 
-Para volver a la versión anterior, el mismo `az containerapp update` con la etiqueta previa (`:v5`). `v5` trae su propia Chroma indexada con MiniLM, así que es coherente por sí sola.
+Para volver a la versión anterior, el mismo `az containerapp update` con la etiqueta previa: `:v6` deshace solo el rediseño; `:v5` vuelve a antes de la revisión, y trae su propia Chroma indexada con MiniLM, así que es coherente por sí sola.
 
 `az containerapp update --image` solo cambia la imagen: las réplicas, los probes, las variables, los secretos y el dominio se conservan.
 
@@ -735,6 +735,12 @@ Verificado contra la URL pública después de desplegar:
 - Las sesiones abiertas siguen siendo válidas: los secretos conservan los valores que tenían como variables.
 
 **No medido:** el tiempo de arranque en frío (escala desde 0). El *startup probe* le da hasta ~4 minutos para cargar el modelo.
+
+### Despliegue de `v7` (2026-10-22)
+
+La `v7` agrega el rediseño del frontend (#14): salud real en el panel, categorías oficiales, tarjetas y ficha con vista previa, botones consistentes, móvil y accesibilidad. Solo cambió la imagen; probes, réplicas, secretos y dominio se conservaron.
+
+Verificado en `buscador.frankmarincas.dev`: readiness con estado por componente, `/api/categorias` (10), vista previa de un dataset, ícono de búsqueda SVG y panel sin estados fijos. En Chromium, en escritorio y móvil: tarjetas nuevas, ficha con vista previa, sin desborde horizontal y sin errores de consola ni de CSP.
 
 ### Dominio propio (2026-10-22)
 
