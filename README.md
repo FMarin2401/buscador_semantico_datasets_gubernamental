@@ -42,6 +42,7 @@ Plataforma de búsqueda inteligente, analítica y gestión de datos abiertos par
    SECRET_KEY=tu_llave_secreta_jwt
    ADMIN_USER=admin_leon
    ADMIN_PASSWORD=tu_contraseña_segura
+   LOG_LEVEL=DEBUG  # Opcional: INFO por defecto; DEBUG muestra el detalle de cada búsqueda
    ```
 
 5. Iniciar el servidor local:

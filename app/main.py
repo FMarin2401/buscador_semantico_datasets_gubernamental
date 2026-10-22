@@ -27,7 +27,7 @@ from app.limiter import limiter
 os.makedirs("logs", exist_ok=True)
 
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=os.getenv("LOG_LEVEL", "INFO").upper(), # En desarrollo se puede usar LOG_LEVEL=DEBUG en el .env para ver el detalle de cada búsqueda
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
         logging.FileHandler("logs/auditoria.log"),
@@ -166,8 +166,9 @@ def readiness_check(response: Response, db: Session = Depends(get_db)):
 
     try:
         db.execute(text("SELECT 1"))
-    except Exception as e:
-        errores.append(f"Base de datos no disponible: {str(e)}")
+    except Exception:
+        logger.exception("Readiness: la base de datos no respondió")
+        errores.append("Base de datos no disponible.") # Este endpoint es público: el detalle del error solo va al log
 
     if errores:
         response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE

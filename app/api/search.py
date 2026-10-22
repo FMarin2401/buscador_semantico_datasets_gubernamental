@@ -1,5 +1,5 @@
 import logging
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.orm import Session
 
 # Módulos internos del proyecto
@@ -50,7 +50,11 @@ def obtener_todo_el_catalogo(db: Session = Depends(get_db)):
 
 @router.get("/api/buscar")
 @limiter.limit("15/minute")
-def buscar_dataset(request: Request, prompt: str, db: Session = Depends(get_db)):
+def buscar_dataset(
+    request: Request,
+    prompt: str = Query(..., min_length=2, max_length=300), # Evita textos enormes que solo gastan CPU al generar el embedding
+    db: Session = Depends(get_db)
+):
     vector_prompt = generar_embedding(prompt) 
     
     n_meta = 10

@@ -1,6 +1,7 @@
 import os
 import shutil
 import uuid
+from uuid import UUID
 import json
 from datetime import datetime
 import pandas as pd
@@ -11,7 +12,7 @@ import csv
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile, status, Depends
 from fastapi.responses import FileResponse, Response
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 # Módulos internos del proyecto
@@ -25,11 +26,17 @@ router = APIRouter(tags=["Gestión y Descarga de Datasets"])
 logger = logging.getLogger(__name__)
 MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024  # 26,214,400 bytes
 
+# Límites de longitud para los metadatos (deben coincidir con los maxlength de frontend/admin.html)
+MAX_TITULO = 200
+MAX_DESCRIPCION = 2000
+MAX_DEPENDENCIA = 200
+MAX_CATEGORIA = 100
+
 class DatasetActualizar(BaseModel):
-    titulo: str
-    descripcion: str
-    dependencia: str
-    categoria: str
+    titulo: str = Field(..., min_length=1, max_length=MAX_TITULO)
+    descripcion: str = Field(..., min_length=1, max_length=MAX_DESCRIPCION)
+    dependencia: str = Field(..., min_length=1, max_length=MAX_DEPENDENCIA)
+    categoria: str = Field(..., min_length=1, max_length=MAX_CATEGORIA)
 
 def registrar_evento_auditoria(db: Session, usuario: str, accion: str, detalles: str):
     """Inserta de manera transaccional un registro en la tabla de bitácora relacional."""
@@ -69,12 +76,14 @@ def obtener_bitacora(
     logs = db.query(BitacoraAuditoriaModel).order_by(BitacoraAuditoriaModel.fecha_hora.desc()).limit(15).all()
     return {"registros": logs}
 
+# Es "def" y no "async def": generar el embedding usa CPU y bloquearía el event loop (y con él todas las búsquedas).
+# FastAPI ejecuta los endpoints "def" en un threadpool, así que el servidor sigue atendiendo otras peticiones.
 @router.post("/api/admin/subir")
-async def publicar_dataset(
-    titulo: str = Form(...),
-    descripcion: str = Form(...),
-    dependencia: str = Form(...),
-    categoria: str = Form(...),
+def publicar_dataset(
+    titulo: str = Form(..., min_length=1, max_length=MAX_TITULO),
+    descripcion: str = Form(..., min_length=1, max_length=MAX_DESCRIPCION),
+    dependencia: str = Form(..., min_length=1, max_length=MAX_DEPENDENCIA),
+    categoria: str = Form(..., min_length=1, max_length=MAX_CATEGORIA),
     archivo: UploadFile = File(...),
     usuario_autenticado: str = Depends(verificar_token),
     db: Session = Depends(get_db)
@@ -91,7 +100,7 @@ async def publicar_dataset(
             detail="El contenido del archivo no es un CSV válido."
         )
 
-    contenido_archivo = await archivo.read()
+    contenido_archivo = archivo.file.read() # En un endpoint "def" se usa el archivo síncrono subyacente
 
     if len(contenido_archivo) > MAX_FILE_SIZE_BYTES:
         raise HTTPException(
@@ -100,7 +109,7 @@ async def publicar_dataset(
         )
 
     hash_calculado = hashlib.sha256(contenido_archivo).hexdigest()
-    await archivo.seek(0)
+    archivo.file.seek(0)
 
     datos_existentes = obtener_todos_datasets()
     if datos_existentes and datos_existentes.get("metadatas"):
@@ -152,11 +161,12 @@ async def publicar_dataset(
 
 @router.put("/api/admin/datasets/{id_dataset}")
 def actualizar_dataset(
-    id_dataset: str, 
+    id_dataset: UUID, # Declararlo como UUID rechaza cualquier otro valor antes de usarlo en consultas o rutas
     datos: DatasetActualizar,
     usuario_autenticado: str = Depends(verificar_token),
     db: Session = Depends(get_db)
 ):
+    id_dataset = str(id_dataset)
     try:
         item_actual = coleccion.get(ids=[id_dataset], include=["metadatas", "documents"])
         if not item_actual or not item_actual.get("ids"):
@@ -187,31 +197,35 @@ def actualizar_dataset(
         logger.info(f"[BITACORA AUDITORIA] El usuario '{usuario_autenticado}' actualizó los metadatos del dataset con ID: {id_dataset}")
         registrar_evento_auditoria(db, usuario_autenticado, "Actualización", f"{datos.titulo} (ID: {id_dataset[:8]}...)")
 
-    except Exception as e:
-        if isinstance(e, HTTPException):
-            raise e
+    except HTTPException:
+        raise
+    except Exception:
+        # El detalle completo va al log; al cliente solo un mensaje genérico para no exponer rutas ni versiones
+        logger.exception(f"Error al actualizar el dataset {id_dataset}")
         raise HTTPException(
-            status_code=500, 
-            detail=f"Error al actualizar el dataset en la base vectorial: {str(e)}"
+            status_code=500,
+            detail="Error al actualizar el dataset en la base vectorial."
         )
     
     return {"mensaje": "Dataset actualizado exitosamente", "id": id_dataset}
 
 @router.delete("/api/admin/datasets/{id_dataset}")
 def eliminar_dataset(
-    id_dataset: str, 
+    id_dataset: UUID,
     usuario_autenticado: str = Depends(requiere_admin),
     db: Session = Depends(get_db)
 ):
+    id_dataset = str(id_dataset)
     try:
         item_actual = coleccion.get(ids=[id_dataset], include=["documents"])
         nombre_dataset = item_actual["documents"][0] if item_actual and item_actual.get("documents") else id_dataset
-        
+
         coleccion.delete(ids=[id_dataset])
-    except Exception as e:
+    except Exception:
+        logger.exception(f"Error al eliminar el dataset {id_dataset}")
         raise HTTPException(
-            status_code=500, 
-            detail=f"Error al limpiar la base de datos: {str(e)}"
+            status_code=500,
+            detail="Error al limpiar la base de datos."
         )
 
     ruta_csv = f"data/raw/{id_dataset}.csv"
@@ -227,7 +241,8 @@ def eliminar_dataset(
     return {"mensaje": "Dataset eliminado permanentemente"}
 
 @router.get("/api/descargar/{id_dataset}")
-def descargar_dataset(id_dataset: str, formato: str = "csv", db: Session = Depends(get_db)):
+def descargar_dataset(id_dataset: UUID, formato: str = "csv", db: Session = Depends(get_db)):
+    id_dataset = str(id_dataset) # Solo un UUID válido llega a construir la ruta del archivo
     ruta_csv = f"data/raw/{id_dataset}.csv"
     if not os.path.exists(ruta_csv):
         raise HTTPException(status_code=404, detail="Dataset no encontrado")

@@ -86,12 +86,12 @@
                     <form id="formSubirDataset">
                         <div class="filter-group">
                             <label for="inputTitulo" class="admin-label">TÍTULO DEL DATASET</label>
-                            <input type="text" id="inputTitulo" class="form-input" placeholder="Ej. Padrón de Comercios 2026" required>
+                            <input type="text" id="inputTitulo" class="form-input" maxlength="200" placeholder="Ej. Padrón de Comercios 2026" required>
                         </div>
 
                         <div class="filter-group">
                             <label for="inputDescripcion" class="admin-label">DESCRIPCIÓN</label>
-                            <textarea id="inputDescripcion" class="form-input" placeholder="Describe brevemente el contenido de la tabla..." rows="4" required></textarea>
+                            <textarea id="inputDescripcion" class="form-input" maxlength="2000" placeholder="Describe brevemente el contenido de la tabla..." rows="4" required></textarea>
                         </div>
 
                         <!-- Selector de dependencias dinámico para subida -->
@@ -105,7 +105,7 @@
                         <!-- Input de categoría con autocompletado para subida -->
                         <div class="filter-group">
                             <label for="inputCategoria" class="admin-label">CATEGORÍA</label>
-                            <input type="text" id="inputCategoria" class="form-input" list="listaCategoriasSugeridas" placeholder="Selecciona o escribe una categoría..." required>
+                            <input type="text" id="inputCategoria" class="form-input" maxlength="100" list="listaCategoriasSugeridas" placeholder="Selecciona o escribe una categoría..." required>
                             <datalist id="listaCategoriasSugeridas"></datalist>
                         </div>
 
@@ -226,12 +226,12 @@
             
             <div class="filter-group">
                 <label for="editTitulo" class="admin-label">TÍTULO</label>
-                <input type="text" id="editTitulo" class="form-input" required>
+                <input type="text" id="editTitulo" class="form-input" maxlength="200" required>
             </div>
 
             <div class="filter-group">
                 <label for="editDescripcion" class="admin-label">DESCRIPCIÓN</label>
-                <textarea id="editDescripcion" class="form-input" rows="3" required></textarea>
+                <textarea id="editDescripcion" class="form-input" maxlength="2000" rows="3" required></textarea>
             </div>
 
             <div class="filter-group">
@@ -243,7 +243,7 @@
 
             <div class="filter-group">
                 <label for="editCategoria" class="admin-label">CATEGORÍA</label>
-                <input type="text" id="editCategoria" class="form-input" list="listaCategoriasSugeridas" required>
+                <input type="text" id="editCategoria" class="form-input" maxlength="100" list="listaCategoriasSugeridas" required>
             </div>
 
             <div class="modal-actions">
