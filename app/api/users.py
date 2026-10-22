@@ -5,7 +5,8 @@ from typing import Literal
 
 from app.db_core.connection import get_db
 from app.db_core.models import UsuarioModel, BitacoraAuditoriaModel
-from app.api.auth import requiere_admin, pwd_context
+from app.api.auth import requiere_admin
+from app.security import cifrar_password
 
 router = APIRouter(tags=["Administración de Usuarios"])
 
@@ -41,7 +42,7 @@ def crear_usuario(
             detail="El nombre de usuario ya existe en el sistema."
         )
 
-    password_cifrado = pwd_context.hash(datos.password)
+    password_cifrado = cifrar_password(datos.password)
 
     nuevo_admin = UsuarioModel(
         username=datos.username.strip(),

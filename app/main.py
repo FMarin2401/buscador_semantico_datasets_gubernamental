@@ -13,7 +13,6 @@ from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from sqlalchemy.orm import Session
 from sqlalchemy import text
-from passlib.context import CryptContext
 
 # Módulos internos de la aplicación
 from app.api import manipulate_datasets, pages, search, auth, contact, users
@@ -22,6 +21,7 @@ from app.db_core.models import UsuarioModel
 from app.nlp_model import generar_embedding
 from app.db_chroma import coleccion
 from app.limiter import limiter
+from app.security import cifrar_password
 
 # Configuración de logging para consola y archivo para auditoria
 os.makedirs("logs", exist_ok=True)
@@ -42,9 +42,6 @@ app_state = {
     "warmup_ready": False
 }
 
-# Configuración de Passlib para cifrar la contraseña inicial
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
 # --- CICLO DE VIDA (STARTUP) ---
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -62,7 +59,7 @@ async def lifespan(app: FastAPI):
 
             nuevo_admin = UsuarioModel(
                 username=user_env,
-                password_hash=pwd_context.hash(pass_env),
+                password_hash=cifrar_password(pass_env),
                 rol="admin"
             )
             db.add(nuevo_admin)

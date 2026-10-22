@@ -8,3 +8,14 @@ __pycache__/
 .gitignore
 .env
 logs/*.log
+# Datos que no deben viajar en la imagen: la base de usuarios (hashes de contraseñas),
+# los CSV originales del municipio y el catálogo intermedio. chroma_db y raw sí se copian,
+# porque en Azure (sin volumen) son los datasets que sirve la app.
+data/*.db
+data/entregados_municipio/
+data/clean/
+
+# Documentación y resultados de evaluación: no se usan en tiempo de ejecución
+docs/
+eval/
+logs/

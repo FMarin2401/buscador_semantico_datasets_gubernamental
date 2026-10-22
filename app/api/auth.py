@@ -1,15 +1,15 @@
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+import jwt
 from fastapi import APIRouter, Depends, HTTPException, status, Request, Response
-from jose import JWTError, jwt
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 from sqlalchemy.orm import Session
-from passlib.context import CryptContext
 
 from app.db_core.connection import get_db
 from app.db_core.models import UsuarioModel
 from app.limiter import limiter
+from app.security import verificar_password
 
 router = APIRouter(tags=["Autenticación"])
 load_dotenv()
@@ -22,8 +22,6 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 ES_PRODUCCION = os.getenv("ENVIRONMENT", "local").lower() == "production"
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 def verificar_token(request: Request) -> str:
@@ -45,7 +43,7 @@ def verificar_token(request: Request) -> str:
                 headers={"WWW-Authenticate": "Bearer"},
             )
         return usuario
-    except JWTError:
+    except jwt.InvalidTokenError: # Incluye token expirado, firma inválida y token mal formado
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token expirado o inválido",
@@ -64,8 +62,8 @@ def requiere_admin(usuario: str = Depends(verificar_token), db: Session = Depend
 
 
 class CredencialesAdmin(BaseModel):
-    usuario: str
-    password: str
+    usuario: str = Field(..., max_length=50)
+    password: str = Field(..., max_length=128) # Evita contraseñas enormes que solo gastan CPU al calcular el hash
 
 
 @router.post("/api/login")
@@ -73,14 +71,25 @@ class CredencialesAdmin(BaseModel):
 def login_admin(request: Request, response: Response, credenciales: CredencialesAdmin, db: Session = Depends(get_db)):
     usuario_db = db.query(UsuarioModel).filter(UsuarioModel.username == credenciales.usuario).first()
 
-    if not usuario_db or not pwd_context.verify(credenciales.password, usuario_db.password_hash):
+    # Siempre se calcula un hash (aunque el usuario no exista) para que el tiempo de respuesta no revele qué usuarios existen
+    es_valida, hash_nuevo = verificar_password(
+        credenciales.password,
+        usuario_db.password_hash if usuario_db else None
+    )
+
+    if not es_valida:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Usuario o contraseña incorrectos"
         )
 
+    if hash_nuevo:
+        # El hash era antiguo (bcrypt): se reemplaza por uno Argon2 aprovechando que tenemos la contraseña en texto plano
+        usuario_db.password_hash = hash_nuevo
+        db.commit()
+
     tiempo_expiracion = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    expira_en = datetime.utcnow() + tiempo_expiracion
+    expira_en = datetime.now(timezone.utc) + tiempo_expiracion
 
     payload = {
         "sub": usuario_db.username,
