@@ -754,7 +754,7 @@ La revisión de código del 2026-10-07 (`docs/pendientes.md`) detectó varios fa
 | `datetime.utcnow()` obsoleto | Python 3.12 | `ahora_utc()` | #8 |
 | CSP con `'unsafe-inline'` en `script-src` | — | Se quitó (no hay JS inline); CSP propia para `/docs` y `/redoc` | #8, #9 |
 | Chart.js sin versión fija | `cdn.jsdelivr.net/npm/chart.js` cargaba siempre la última versión | Versión 4.5.1 con SRI; CSP limitada a esa ruta | #10 |
-| **El rate limit se podía saltar con una IP falsa** | Con `--forwarded-allow-ips=*`, Uvicorn toma la primera IP de `X-Forwarded-For`, que escribe el cliente; Azure agrega la real al final | El rate limit usa la última IP de la cabecera (`obtener_ip_cliente` en `app/limiter.py`) | — |
+| **El rate limit se podía saltar con una IP falsa** | Con `--forwarded-allow-ips=*`, Uvicorn toma la primera IP de `X-Forwarded-For`, que escribe el cliente; Azure agrega la real al final | El rate limit usa la última IP de la cabecera (`obtener_ip_cliente` en `app/limiter.py`) | #11 |
 | Configuración de Azure incompleta | Sin probes, hasta 2 réplicas con SQLite y rate limit separados, secretos en texto plano y cookie sin `Secure` | Probes, máximo 1 réplica, secretos con `secretRef` y `ENVIRONMENT=production` | Fase 6 |
 
 El análisis detallado de la evaluación y del cambio de modelo está en `eval/experimentos/`.
