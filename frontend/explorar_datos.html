@@ -7,14 +7,14 @@
 <main>
     <header class="page-header">
         <h1>Conjuntos de datos</h1>
-        <p>Busca por palabra clave y refina por categoría, dependencia publicadora y formato.</p>
+        <p>Busca por palabra clave y refina los resultados por categoría.</p>
     </header>
 
     <section class="search-sort-bar" aria-label="Barra de búsqueda y ordenamiento">
         <form class="search-input-wrapper" role="search" id="formBusquedaInterna">
             <span aria-hidden="true">🔍</span>
             <label for="searchInputResultados" class="sr-only">Buscar conjuntos de datos</label>
-            <input type="search" id="searchInputResultados" maxlength="300" placeholder="Cargando total de datos...">
+            <input type="search" id="searchInputResultados" maxlength="300" placeholder="Ej. rutas de basura">
             <button type="submit" class="btn-buscar-small">Buscar</button>
         </form>
         <div class="sort-wrapper">
@@ -37,7 +37,7 @@
             <fieldset class="filter-group">
                 <legend>CATEGORÍA</legend>
                 <div id="contenedor-filtros-dependencias">
-                    <p style="font-size: 0.85rem; color: #888; margin: 0;">Cargando dependencias...</p>
+                    <p class="vista-previa-estado">Cargando categorías...</p>
                 </div>
             </fieldset>
         </aside>
@@ -50,7 +50,10 @@
                         Limpiar búsqueda
                     </a>
                 </div>
-                <button type="button" class="link-explorar-cat" id="btnExplorarCat">Explorar por categoría</button>
+                <!-- Muestra u oculta los filtros; en móvil están ocultos por defecto, así que debe ser un botón visible -->
+                <button type="button" class="btn-filtros" id="btnExplorarCat" aria-controls="sidebarFiltros" aria-expanded="true">
+                    Filtros <span class="contador-filtros" id="contadorFiltros" hidden></span>
+                </button>
             </div>
             <div id="contenedor-tarjetas"></div>
             <nav id="paginacionContenedor" class="paginacion-container" aria-label="Navegación de páginas" style="display: none;">

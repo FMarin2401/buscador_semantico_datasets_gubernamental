@@ -316,8 +316,12 @@ async function renderizarDashboard() {
                     options: {
                         indexAxis: 'y',
                         responsive: true,
+                        maintainAspectRatio: false, // Usa la altura de .grafica-contenedor; si no, en móvil queda aplastada
                         plugins: { legend: { display: false } },
-                        scales: { x: { beginAtZero: true, ticks: { stepSize: 1 } } }
+                        scales: {
+                            x: { beginAtZero: true, ticks: { stepSize: 1 } },
+                            y: { ticks: { autoSkip: false } } // Muestra todas las categorías (antes en móvil se saltaba la mitad)
+                        }
                     }
                 });
             }

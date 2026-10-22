@@ -362,18 +362,24 @@ ul.nav-links {
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
 }
 
+/* El titular y el párrafo se reparten solos (text-wrap: balance) en lugar de con <br> fijos,
+   que en móvil partían las líneas en lugares raros */
 .hero-card h1 {
     color: var(--blue-dark);
     font-size: 3.2rem;
-    margin: 0 0 15px 0;
+    max-width: 14ch;
+    margin: 0 auto 15px;
     line-height: 1.1;
+    text-wrap: balance;
 }
 
 .hero-card p {
     color: var(--text-muted);
     font-size: 1.1rem;
-    margin-bottom: 40px;
+    max-width: 34em;
+    margin: 0 auto 40px;
     line-height: 1.5;
+    text-wrap: balance;
 }
 
 .search-box {
@@ -620,17 +626,49 @@ ul.nav-links {
     text-decoration: none;
 }
 
-.link-explorar-cat {
-    background: none;
-    border: none;
-    padding: 0;
-    cursor: pointer;
+.btn-filtros {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 40px;
+    padding: 0 16px;
+    border: 1px solid #c7d3e0;
+    border-radius: 999px;
+    background: white;
+    color: var(--blue-dark);
     font-family: inherit;
-    font-size: 0.95rem; 
+    font-size: 0.95rem;
+    font-weight: bold;
+    cursor: pointer;
 }
 
-.link-explorar-cat:hover {
-    text-decoration: underline;
+.btn-filtros:hover,
+.btn-filtros:focus-visible {
+    background: var(--blue-light);
+    border-color: var(--blue-primary);
+}
+
+.contador-filtros {
+    min-width: 22px;
+    height: 22px;
+    padding: 0 6px;
+    box-sizing: border-box;
+    border-radius: 999px;
+    background: var(--blue-primary);
+    color: white;
+    font-size: 0.8rem;
+    line-height: 22px;
+    text-align: center;
+}
+
+.contador-filtros[hidden] {
+    display: none;
+}
+
+/* La gráfica del resumen ocupa una altura fija, así muestra las 10 categorías también en móvil */
+.grafica-contenedor {
+    position: relative;
+    height: 360px;
 }
 
 /* Tarjetas de Resultados */
@@ -1723,4 +1761,53 @@ ul.nav-links {
 .btn-restablecer:focus-visible {
     background: var(--blue-light);
     border-color: var(--blue-primary);
+}
+
+/* Panel de administración en móvil: el menú lateral pasa arriba como una fila desplazable */
+@media (max-width: 768px) {
+    .hero-card h1 {
+        font-size: 2.2rem;
+    }
+
+    .admin-layout {
+        flex-direction: column;
+    }
+
+    .admin-sidebar {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 12px 16px;
+    }
+
+    .admin-sidebar h3 {
+        margin: 0 0 10px;
+        font-size: 1rem;
+        text-align: left;
+    }
+
+    .admin-nav {
+        flex-direction: row;
+        overflow-x: auto;
+        gap: 8px;
+        padding-bottom: 4px;
+    }
+
+    .admin-nav .admin-tab-btn {
+        white-space: nowrap;
+        flex-shrink: 0;
+        min-height: 44px;
+    }
+
+    .admin-divider {
+        display: none;
+    }
+
+    .admin-main {
+        padding: 20px 16px;
+        min-width: 0;
+    }
+
+    .kpi-container-grid {
+        grid-template-columns: 1fr;
+    }
 }

@@ -111,6 +111,7 @@ window.onload = async function() {
     const btnExplorarCat = document.getElementById('btnExplorarCat');
     if (btnExplorarCat) {
         btnExplorarCat.addEventListener('click', alternarSidebarFiltros);
+        sincronizarBotonFiltros();
     }
 
     document.querySelectorAll('.btn-cerrar-modal').forEach(btn => {
@@ -256,6 +257,7 @@ function limpiarFiltros(evento) {
 }
 
 function aplicarFiltrosLocales(actualizarUrl = true) {
+    actualizarContadorFiltros();
     const checkboxesActivos = document.querySelectorAll('.filtro-cat:checked');
     const categoriasSeleccionadas = Array.from(checkboxesActivos).map(cb => cb.value);
 
@@ -535,5 +537,22 @@ function alternarSidebarFiltros(evento) {
     if (sidebar) {
         sidebar.classList.toggle('oculto');
         sidebar.classList.toggle('activo');
+        sincronizarBotonFiltros();
     }
+}
+
+// aria-expanded según si el panel de filtros se ve (en móvil empieza oculto, en escritorio visible)
+function sincronizarBotonFiltros() {
+    const sidebar = document.getElementById('sidebarFiltros');
+    const boton = document.getElementById('btnExplorarCat');
+    if (sidebar && boton) boton.setAttribute('aria-expanded', getComputedStyle(sidebar).display !== 'none');
+}
+
+// Número de filtros activos junto al botón, para que se note que hay resultados filtrados aunque el panel esté oculto
+function actualizarContadorFiltros() {
+    const contador = document.getElementById('contadorFiltros');
+    if (!contador) return;
+    const activos = document.querySelectorAll('.filtro-cat:checked').length;
+    contador.textContent = activos;
+    contador.hidden = activos === 0;
 }
