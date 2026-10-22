@@ -1,0 +1,67 @@
+{
+  "fecha": "2026-10-21T22:04:33",
+  "datasets_indexados": 75,
+  "consultas": 100,
+  "resultados": {
+    "minilm": {
+      "modelo": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+      "dimensiones": 384,
+      "max_tokens": 128,
+      "docs_truncados": 0,
+      "recall_1": 49.0,
+      "recall_5": 78.0,
+      "recall_10": 88.0,
+      "mrr": 0.6266,
+      "distancia_correcto_p50": 0.5076,
+      "distancia_correcto_p90": 0.7033,
+      "distancia_correcto_max": 1.0139,
+      "distancia_ajenas_min": 0.5864,
+      "distancia_ajenas_p50": 0.8194
+    },
+    "mpnet": {
+      "modelo": "sentence-transformers/paraphrase-multilingual-mpnet-base-v2",
+      "dimensiones": 768,
+      "max_tokens": 128,
+      "docs_truncados": 0,
+      "recall_1": 61.0,
+      "recall_5": 87.0,
+      "recall_10": 93.0,
+      "mrr": 0.7277,
+      "distancia_correcto_p50": 0.4697,
+      "distancia_correcto_p90": 0.6083,
+      "distancia_correcto_max": 0.8665,
+      "distancia_ajenas_min": 0.6239,
+      "distancia_ajenas_p50": 0.7685
+    },
+    "e5-small": {
+      "modelo": "intfloat/multilingual-e5-small",
+      "dimensiones": 384,
+      "max_tokens": 512,
+      "docs_truncados": 0,
+      "recall_1": 72.0,
+      "recall_5": 95.0,
+      "recall_10": 98.0,
+      "mrr": 0.8156,
+      "distancia_correcto_p50": 0.1541,
+      "distancia_correcto_p90": 0.1837,
+      "distancia_correcto_max": 0.2362,
+      "distancia_ajenas_min": 0.1951,
+      "distancia_ajenas_p50": 0.209
+    },
+    "e5-base": {
+      "modelo": "intfloat/multilingual-e5-base",
+      "dimensiones": 768,
+      "max_tokens": 512,
+      "docs_truncados": 0,
+      "recall_1": 74.0,
+      "recall_5": 97.0,
+      "recall_10": 98.0,
+      "mrr": 0.8383,
+      "distancia_correcto_p50": 0.172,
+      "distancia_correcto_p90": 0.2132,
+      "distancia_correcto_max": 0.2566,
+      "distancia_ajenas_min": 0.2115,
+      "distancia_ajenas_p50": 0.2284
+    }
+  }
+}
