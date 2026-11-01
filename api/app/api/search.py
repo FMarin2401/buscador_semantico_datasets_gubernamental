@@ -1,5 +1,7 @@
 import logging
+from typing import Optional
 from fastapi import APIRouter, Depends, Query, Request
+from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.orm import Session
 
 # Módulos internos del proyecto
@@ -9,9 +11,52 @@ from app.db_chroma import buscar_similares, coleccion
 from app.nlp_model import generar_embedding_consulta, UMBRAL_DISTANCIA
 from app.db_core.models import DescargasDatasetModel
 from app.db_core.connection import get_db
+from app.api.esquemas import ERROR_429
 
 router = APIRouter(tags=["Búsqueda Semántica"])
 logger = logging.getLogger(__name__)
+
+
+class DatasetResultado(BaseModel):
+    id: str = Field(description="UUID del dataset; se usa en /api/descargar/{id} y en la vista previa")
+    dataset_recomendado: str = Field(description="Título del dataset")
+    descripcion: str
+    dependencia: str
+    categoria: str
+    fecha_actualizacion: Optional[str] = Field(description="AAAA-MM-DD, o null si no se registró")
+    distancia: float = Field(description="Distancia coseno a la consulta (menor = más parecido). 0 en el catálogo completo")
+    descargas: int
+
+
+EJEMPLO_DATASET = {
+    "id": "6d1c0f3a-8b52-5e1e-9c41-2f0a7a1b9e10",
+    "dataset_recomendado": "Centros de Acopio de Neumáticos",
+    "descripcion": "Lugares autorizados para la recolección de llantas usadas.",
+    "dependencia": "Dirección General de Medio Ambiente",
+    "categoria": "Medio Ambiente",
+    "fecha_actualizacion": "2026-10-22",
+    "distancia": 0.1312,
+    "descargas": 4,
+}
+
+
+class ResultadosBusqueda(BaseModel):
+    busqueda: str
+    resultados: list[DatasetResultado]
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"busqueda": "dónde tiro mis llantas viejas", "resultados": [EJEMPLO_DATASET]}]})
+
+
+class Catalogo(BaseModel):
+    resultados: list[DatasetResultado]
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"resultados": [{**EJEMPLO_DATASET, "distancia": 0.0}]}]})
+
+
+class ListaCategorias(BaseModel):
+    categorias: list[str]
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"categorias": ["Movilidad", "Medio Ambiente", "Seguridad"]}]})
 
 
 def obtener_conteos_descargas(db: Session, ids: list) -> dict:
@@ -38,13 +83,23 @@ def formatear_dataset(id_dataset: str, titulo: str, meta: dict, distancia: float
     }
 
 
-@router.get("/api/categorias")
+@router.get(
+    "/api/categorias",
+    response_model=ListaCategorias,
+    summary="Categorías oficiales",
+    description="Las únicas categorías que acepta el catálogo. Las usan los filtros del portal y el formulario del panel.",
+)
 def listar_categorias():
     # Categorías oficiales, para los selectores del panel (una sola fuente: app/catalogo.py)
     return {"categorias": CATEGORIAS}
 
 
-@router.get("/api/catalogos")
+@router.get(
+    "/api/catalogos",
+    response_model=Catalogo,
+    summary="Catálogo completo",
+    description="Todos los datasets publicados con su número de descargas. El portal pagina y filtra en el navegador.",
+)
 def obtener_todo_el_catalogo(db: Session = Depends(get_db)):
     todos = coleccion.get(include=["documents", "metadatas"])
     ids = todos.get("ids", [])
@@ -56,11 +111,21 @@ def obtener_todo_el_catalogo(db: Session = Depends(get_db)):
     ]
     return {"resultados": catalogos_completos}
 
-@router.get("/api/buscar")
+@router.get(
+    "/api/buscar",
+    response_model=ResultadosBusqueda,
+    summary="Búsqueda semántica",
+    description=(
+        "Convierte la consulta en un embedding (modelo `intfloat/multilingual-e5-small`) y devuelve hasta 10 datasets "
+        "parecidos en significado, aunque no compartan palabras. Descarta los que superan el umbral de distancia, así que "
+        "una consulta sin relación con el catálogo devuelve una lista vacía. Límite: 15 búsquedas por minuto por IP."
+    ),
+    responses={429: ERROR_429},
+)
 @limiter.limit("15/minute")
 def buscar_dataset(
     request: Request,
-    prompt: str = Query(..., min_length=2, max_length=300), # Evita textos enormes que solo gastan CPU al generar el embedding
+    prompt: str = Query(..., min_length=2, max_length=300, description="Consulta en lenguaje natural", examples=["dónde tiro mis llantas viejas"]), # Evita textos enormes que solo gastan CPU al generar el embedding
     db: Session = Depends(get_db)
 ):
     vector_prompt = generar_embedding_consulta(prompt)

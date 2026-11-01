@@ -3,16 +3,16 @@ import uuid
 from uuid import UUID
 import json
 from datetime import datetime
-from typing import Literal
+from typing import Literal, Optional
 import pandas as pd
 import logging
 import hashlib
 import io
 import csv
 
-from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile, status, Depends
+from fastapi import APIRouter, File, Form, HTTPException, Query, Request, UploadFile, status, Depends
 from fastapi.responses import FileResponse, Response
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.orm import Session
 
 # Módulos internos del proyecto
@@ -25,6 +25,7 @@ from app.db_core.connection import get_db
 from app.db_core.models import BitacoraAuditoriaModel, DescargasDatasetModel, DatasetModel, UsuarioModel
 from app.db_core.auditoria import registrar_evento_auditoria
 from app.db_core.sincronizacion import valores_desde_chroma
+from app.api.esquemas import MensajeRespuesta, ERROR_401, ERROR_403, ERROR_429, error
 
 router = APIRouter(tags=["Gestión y Descarga de Datasets"])
 logger = logging.getLogger(__name__)
@@ -40,14 +41,95 @@ class DatasetActualizar(BaseModel):
     titulo: str = Field(..., min_length=1, max_length=MAX_TITULO)
     descripcion: str = Field(..., min_length=1, max_length=MAX_DESCRIPCION)
     dependencia: str = Field(..., min_length=1, max_length=MAX_DEPENDENCIA)
-    categoria: str = Field(..., min_length=1, max_length=MAX_CATEGORIA)
+    categoria: str = Field(..., min_length=1, max_length=MAX_CATEGORIA, description="Una de GET /api/categorias")
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{
+        "titulo": "Accidentes Viales 2026",
+        "descripcion": "Registro de colisiones y percances viales con ubicación y daños, actualizado a octubre.",
+        "dependencia": "Dirección General de Movilidad",
+        "categoria": "Movilidad",
+    }]})
+
+
+class DatasetAdmin(BaseModel):
+    id: str
+    titulo: str
+    descripcion: str
+    dependencia: str
+    categoria: str
+    fecha: str = Field(description="Fecha de actualización AAAA-MM-DD, o N/A")
+
+
+class ListaDatasetsAdmin(BaseModel):
+    resultados: list[DatasetAdmin]
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"resultados": [{
+        "id": "6d1c0f3a-8b52-5e1e-9c41-2f0a7a1b9e10", "titulo": "Accidentes Viales",
+        "descripcion": "Registro de colisiones y percances viales con ubicación y daños.",
+        "dependencia": "Dirección General de Movilidad", "categoria": "Movilidad", "fecha": "2026-10-22",
+    }]}]})
+
+
+class EventoBitacora(BaseModel):
+    id: int
+    usuario: str = Field(description="Nombre del funcionario al momento del evento")
+    usuario_id: Optional[int] = Field(description="Cuenta del funcionario; null si ya se borró")
+    accion: str
+    detalles: str
+    fecha_hora: datetime = Field(description="UTC")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ListaBitacora(BaseModel):
+    registros: list[EventoBitacora]
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"registros": [{
+        "id": 41, "usuario": "admin_leon", "usuario_id": 1, "accion": "Publicación",
+        "detalles": "Accidentes Viales 2026 (Dirección General de Movilidad)", "fecha_hora": "2026-11-01T18:42:10",
+    }]}]})
+
+
+class DatasetPublicado(BaseModel):
+    mensaje: str
+    id: str = Field(description="UUID asignado al dataset")
+    archivo_guardado: str = Field(description="Nombre del archivo que se subió")
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{
+        "mensaje": "Dataset publicado exitosamente", "id": "0b8f6c1e-3d2a-4c55-9a7e-1f2b3c4d5e6f", "archivo_guardado": "accidentes_2026.csv",
+    }]})
+
+
+class DatasetActualizado(BaseModel):
+    mensaje: str
+    id: str
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"mensaje": "Dataset actualizado exitosamente", "id": "0b8f6c1e-3d2a-4c55-9a7e-1f2b3c4d5e6f"}]})
+
+
+class VistaPrevia(BaseModel):
+    columnas: list[str]
+    filas: list[list[str]] = Field(description="Primeras filas, como texto y recortadas a 100 caracteres por celda")
+    total_filas: int
+    total_columnas: int
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{
+        "columnas": ["Folio", "Causa", "Interseccion"],
+        "filas": [["ACC-101", "Alcance", "Blvd. Aeropuerto y Delta"], ["ACC-102", "Exceso de Velocidad", "Malecón del Río"]],
+        "total_filas": 3,
+        "total_columnas": 3,
+    }]})
+
+
+ERROR_DATASET_404 = error("El dataset no existe", "Dataset no encontrado")
+ERROR_500_BASE = error("Falló la base vectorial o la relacional; el detalle queda en el log del servidor", "Error al guardar el dataset en la base vectorial.")
 
 def validar_categoria(categoria: str):
     # Solo se aceptan las categorías oficiales: una escrita a mano crearía un filtro nuevo en el portal.
     # El mensaje es texto (no la lista de errores de Pydantic) para que el panel lo muestre tal cual.
     if categoria not in CATEGORIAS:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=f"Categoría no válida. Usa una de las oficiales: {', '.join(CATEGORIAS)}."
         )
 
@@ -65,7 +147,13 @@ def es_csv_legible(contenido: bytes) -> bool:
             return False
     return False
 
-@router.get("/api/admin/datasets")
+@router.get(
+    "/api/admin/datasets",
+    response_model=ListaDatasetsAdmin,
+    summary="Catálogo para el panel",
+    description="Todos los datasets con sus metadatos editables. Requiere sesión (administrador o editor).",
+    responses={401: ERROR_401},
+)
 def listar_datasets_admin(usuario_autenticado: str = Depends(verificar_token)):
     datos = obtener_todos_datasets()
     resultados = []
@@ -84,7 +172,13 @@ def listar_datasets_admin(usuario_autenticado: str = Depends(verificar_token)):
             
     return {"resultados": resultados}
 
-@router.get("/api/admin/bitacora")
+@router.get(
+    "/api/admin/bitacora",
+    response_model=ListaBitacora,
+    summary="Últimos eventos de la bitácora",
+    description="Los 15 eventos administrativos más recientes (publicaciones, ediciones, bajas, cambios de estado). Solo administradores.",
+    responses={401: ERROR_401, 403: ERROR_403},
+)
 def obtener_bitacora(
     usuario_autenticado: str = Depends(requiere_admin),
     db: Session = Depends(get_db)
@@ -95,13 +189,32 @@ def obtener_bitacora(
 
 # Es "def" y no "async def": generar el embedding usa CPU y bloquearía el event loop (y con él todas las búsquedas).
 # FastAPI ejecuta los endpoints "def" en un threadpool, así que el servidor sigue atendiendo otras peticiones.
-@router.post("/api/admin/subir")
+@router.post(
+    "/api/admin/subir",
+    status_code=status.HTTP_201_CREATED,
+    response_model=DatasetPublicado,
+    summary="Publicar un dataset",
+    description=(
+        "Recibe un CSV (máximo 25 MB) y sus metadatos como `multipart/form-data`. Genera el embedding, lo indexa en "
+        "ChromaDB y lo registra en la tabla `datasets`. Reglas: la categoría debe ser oficial; el archivo debe poder "
+        "leerse como CSV (no basta con la extensión); el mismo archivo (mismo SHA-256) no se puede publicar dos veces. "
+        "Requiere sesión (administrador o editor)."
+    ),
+    responses={
+        400: error("El archivo no es .csv o su contenido no es un CSV válido", "El contenido del archivo no es un CSV válido."),
+        401: ERROR_401,
+        409: error("El mismo archivo ya está publicado", "Este dataset ya fue subido anteriormente (Duplicado detectado)."),
+        413: error("El archivo supera 25 MB", "El archivo excede el tamaño máximo permitido de 25 MB."),
+        422: error("Categoría no oficial o campos fuera de los límites", "Categoría no válida. Usa una de las oficiales: Movilidad, Medio Ambiente, ..."),
+        500: ERROR_500_BASE,
+    },
+)
 def publicar_dataset(
-    titulo: str = Form(..., min_length=1, max_length=MAX_TITULO),
-    descripcion: str = Form(..., min_length=1, max_length=MAX_DESCRIPCION),
-    dependencia: str = Form(..., min_length=1, max_length=MAX_DEPENDENCIA),
-    categoria: str = Form(..., min_length=1, max_length=MAX_CATEGORIA),
-    archivo: UploadFile = File(...),
+    titulo: str = Form(..., min_length=1, max_length=MAX_TITULO, examples=["Accidentes Viales 2026"]),
+    descripcion: str = Form(..., min_length=1, max_length=MAX_DESCRIPCION, examples=["Registro de colisiones y percances viales con ubicación y daños."]),
+    dependencia: str = Form(..., min_length=1, max_length=MAX_DEPENDENCIA, examples=["Dirección General de Movilidad"]),
+    categoria: str = Form(..., min_length=1, max_length=MAX_CATEGORIA, description="Una de GET /api/categorias", examples=["Movilidad"]),
+    archivo: UploadFile = File(..., description="Archivo .csv de hasta 25 MB"),
     usuario_autenticado: str = Depends(verificar_token),
     db: Session = Depends(get_db)
 ):
@@ -201,7 +314,18 @@ def publicar_dataset(
         "archivo_guardado": archivo.filename
     }
 
-@router.put("/api/admin/datasets/{id_dataset}")
+@router.put(
+    "/api/admin/datasets/{id_dataset}",
+    response_model=DatasetActualizado,
+    summary="Editar los metadatos de un dataset",
+    description="Reemplaza título, descripción, dependencia y categoría, y recalcula su embedding. El archivo no cambia. Requiere sesión (administrador o editor).",
+    responses={
+        401: ERROR_401,
+        404: error("El dataset no existe", "Dataset no encontrado en la base de datos."),
+        422: error("Categoría no oficial, campos vacíos o un ID que no es UUID", "Categoría no válida. Usa una de las oficiales: Movilidad, Medio Ambiente, ..."),
+        500: error("Falló la base vectorial o la relacional", "Error al actualizar el dataset en la base vectorial."),
+    },
+)
 def actualizar_dataset(
     id_dataset: UUID, # Declararlo como UUID rechaza cualquier otro valor antes de usarlo en consultas o rutas
     datos: DatasetActualizar,
@@ -261,7 +385,18 @@ def actualizar_dataset(
     
     return {"mensaje": "Dataset actualizado exitosamente", "id": id_dataset}
 
-@router.delete("/api/admin/datasets/{id_dataset}")
+@router.delete(
+    "/api/admin/datasets/{id_dataset}",
+    response_model=MensajeRespuesta,
+    summary="Eliminar un dataset",
+    description="Lo borra de ChromaDB, de la tabla `datasets` (con su contador de descargas y sus reportes) y borra su archivo. Solo administradores.",
+    responses={
+        401: ERROR_401,
+        403: ERROR_403,
+        404: error("El dataset no existe", "Dataset no encontrado en la base de datos."),
+        500: error("Falló la base vectorial", "Error al limpiar la base de datos."),
+    },
+)
 def eliminar_dataset(
     id_dataset: UUID,
     usuario_autenticado: str = Depends(requiere_admin),
@@ -270,8 +405,14 @@ def eliminar_dataset(
     id_dataset = str(id_dataset)
     try:
         item_actual = coleccion.get(ids=[id_dataset], include=["documents"])
-        nombre_dataset = item_actual["documents"][0] if item_actual and item_actual.get("documents") else id_dataset
+    except Exception:
+        logger.exception(f"Error al consultar el dataset {id_dataset}")
+        raise HTTPException(status_code=500, detail="Error al limpiar la base de datos.")
+    if not item_actual or not item_actual.get("ids"):
+        raise HTTPException(status_code=404, detail="Dataset no encontrado en la base de datos.")
+    nombre_dataset = item_actual["documents"][0] if item_actual.get("documents") else id_dataset
 
+    try:
         coleccion.delete(ids=[id_dataset])
     except Exception:
         logger.exception(f"Error al eliminar el dataset {id_dataset}")
@@ -306,7 +447,13 @@ def leer_csv(ruta_csv: str, **opciones) -> pd.DataFrame:
 FILAS_VISTA_PREVIA = 5
 MAX_CARACTERES_CELDA = 100
 
-@router.get("/api/datasets/{id_dataset}/vista-previa")
+@router.get(
+    "/api/datasets/{id_dataset}/vista-previa",
+    response_model=VistaPrevia,
+    summary="Vista previa de un dataset",
+    description="Columnas y primeras 5 filas, para la ficha técnica. Público, no cuenta como descarga. Límite: 30 por minuto por IP.",
+    responses={404: ERROR_DATASET_404, 429: ERROR_429},
+)
 @limiter.limit("30/minute") # Muestra solo unas filas, pero sin límite serviría para leer los archivos en masa
 def vista_previa_dataset(request: Request, id_dataset: UUID):
     """Columnas y primeras filas de un dataset, para la ficha técnica. No suma al contador de descargas."""
@@ -324,10 +471,31 @@ def vista_previa_dataset(request: Request, id_dataset: UUID):
         "total_columnas": len(df.columns),
     }
 
-@router.get("/api/descargar/{id_dataset}")
+@router.get(
+    "/api/descargar/{id_dataset}",
+    summary="Descargar un dataset",
+    description=(
+        "Público. Devuelve el archivo en el formato pedido: el CSV original, o convertido al vuelo a JSON, XML o GeoJSON "
+        "(el GeoJSON toma las columnas `latitud`/`longitud` o `lat`/`lon`). Suma una descarga al contador del dataset."
+    ),
+    response_class=Response,
+    responses={
+        200: {
+            "description": "Archivo como adjunto (Content-Disposition: attachment)",
+            "content": {
+                "text/csv": {"example": "Folio,Causa\nACC-101,Alcance\n"},
+                "application/json": {"example": [{"Folio": "ACC-101", "Causa": "Alcance"}]},
+                "application/xml": {"example": "<data><row><Folio>ACC-101</Folio></row></data>"},
+                "application/geo+json": {"example": {"type": "FeatureCollection", "features": []}},
+            },
+        },
+        404: ERROR_DATASET_404,
+        422: {"description": "Formato distinto de csv, json, xml o geojson, o un ID que no es UUID"},
+    },
+)
 def descargar_dataset(
     id_dataset: UUID,
-    formato: Literal["csv", "json", "xml", "geojson"] = "csv", # Un formato inválido se rechaza (422) antes de contar la descarga
+    formato: Literal["csv", "json", "xml", "geojson"] = Query("csv", description="Formato del archivo"), # Un formato inválido se rechaza (422) antes de contar la descarga
     db: Session = Depends(get_db)
 ):
     id_dataset = str(id_dataset) # Solo un UUID válido llega a construir la ruta del archivo
@@ -387,7 +555,17 @@ def descargar_dataset(
     
     raise HTTPException(status_code=400, detail="Formato no soportado")
 
-@router.get("/api/admin/bitacora/exportar")
+@router.get(
+    "/api/admin/bitacora/exportar",
+    summary="Exportar la bitácora completa",
+    description="Todos los eventos de auditoría en un CSV (fechas en UTC). Solo administradores.",
+    response_class=Response,
+    responses={
+        200: {"description": "CSV como adjunto", "content": {"text/csv": {"example": "ID,Usuario,Accion,Detalles,Fecha_Hora_UTC\n41,admin_leon,Publicación,Accidentes Viales 2026,2026-11-01 18:42:10\n"}}},
+        401: ERROR_401,
+        403: ERROR_403,
+    },
+)
 def exportar_bitacora_csv(
     usuario_autenticado: str = Depends(requiere_admin),
     db: Session = Depends(get_db)

@@ -12,6 +12,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.api.auth import verificar_token, requiere_admin
+from app.api.esquemas import MensajeRespuesta, ERROR_401, ERROR_403, ERROR_429, error
 from app.db_core.auditoria import registrar_evento_auditoria
 from app.db_core.connection import get_db
 from app.db_core.models import DatasetModel, ReporteDatasetModel, UsuarioModel, ahora_utc
@@ -33,10 +34,6 @@ TRANSICIONES = {
 
 
 # --- Esquemas ---
-
-class ErrorRespuesta(BaseModel):
-    detail: str = Field(examples=["Reporte no encontrado."])
-
 
 class NuevoReporte(BaseModel):
     tipo: TipoReporte = Field(description="Clase de problema")
@@ -111,12 +108,6 @@ class ListaResumen(BaseModel):
     datasets: list[ResumenDataset]
 
 
-class MensajeRespuesta(BaseModel):
-    mensaje: str = Field(examples=["Reporte eliminado."])
-
-
-ERROR_401 = {"model": ErrorRespuesta, "description": "Sin sesión activa o sesión expirada"}
-ERROR_404 = {"model": ErrorRespuesta, "description": "No existe"}
 
 
 def a_detalle(reporte: ReporteDatasetModel) -> ReporteDetalle:
@@ -149,10 +140,7 @@ def obtener_reporte(db: Session, id_reporte: int) -> ReporteDatasetModel:
     response_model=ReporteCreado,
     summary="Reportar un problema en un dataset",
     description="Endpoint público (sin sesión). El reporte se crea en estado `abierto`. Límite: 5 reportes por minuto por IP.",
-    responses={
-        404: {**ERROR_404, "description": "El dataset no existe"},
-        429: {"description": "Demasiados reportes seguidos desde la misma IP"},
-    },
+    responses={404: error("El dataset no existe", "Dataset no encontrado."), 429: ERROR_429},
 )
 @limiter.limit("5/minute")
 def crear_reporte(request: Request, id_dataset: UUID, datos: NuevoReporte, db: Session = Depends(get_db)):
@@ -216,8 +204,8 @@ def resumen_datasets(usuario_autenticado: str = Depends(verificar_token), db: Se
     ),
     responses={
         401: ERROR_401,
-        404: {**ERROR_404, "description": "El reporte no existe"},
-        409: {"model": ErrorRespuesta, "description": "Transición de estado no permitida"},
+        404: error("El reporte no existe", "Reporte no encontrado."),
+        409: error("Transición de estado no permitida", "Un reporte resuelto no se puede reabrir ni modificar."),
     },
 )
 def cambiar_estado_reporte(
@@ -253,11 +241,7 @@ def cambiar_estado_reporte(
     response_model=MensajeRespuesta,
     summary="Eliminar un reporte",
     description="Para reportes duplicados o sin sentido. Solo administradores.",
-    responses={
-        401: ERROR_401,
-        403: {"model": ErrorRespuesta, "description": "La sesión no es de un administrador"},
-        404: {**ERROR_404, "description": "El reporte no existe"},
-    },
+    responses={401: ERROR_401, 403: ERROR_403, 404: error("El reporte no existe", "Reporte no encontrado.")},
 )
 def eliminar_reporte(id_reporte: int, usuario_autenticado: str = Depends(requiere_admin), db: Session = Depends(get_db)):
     reporte = obtener_reporte(db, id_reporte)

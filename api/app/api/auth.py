@@ -2,13 +2,15 @@ import os
 from datetime import datetime, timedelta, timezone
 import jwt
 from fastapi import APIRouter, Depends, HTTPException, status, Request, Response
-from pydantic import BaseModel, Field
+from fastapi.security import APIKeyCookie
+from pydantic import BaseModel, ConfigDict, Field
 from dotenv import load_dotenv
 from sqlalchemy.orm import Session
 
 from app.db_core.connection import get_db
 from app.db_core.models import UsuarioModel
 from app.limiter import limiter
+from app.api.esquemas import MensajeRespuesta, ERROR_401, ERROR_429, error
 from app.security import verificar_password
 
 router = APIRouter(tags=["Autenticación"])
@@ -24,9 +26,18 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 30
 ES_PRODUCCION = os.getenv("ENVIRONMENT", "local").lower() == "production"
 
 
-def verificar_token(request: Request) -> str:
+# Declara en OpenAPI cómo se autentica la API: un JWT en la cookie HttpOnly "access_token" que crea POST /api/login.
+# En /docs basta con ejecutar primero /api/login: el navegador guarda la cookie y la envía en las siguientes pruebas.
+# auto_error=False para responder con los mensajes propios de verificar_token
+esquema_cookie = APIKeyCookie(
+    name="access_token",
+    auto_error=False,
+    description="JWT de sesión (30 min) en una cookie HttpOnly. Se obtiene con POST /api/login.",
+)
+
+
+def verificar_token(token: str | None = Depends(esquema_cookie)) -> str:
     """Verifica la validez del token JWT almacenado en la cookie HTTP-only."""
-    token = request.cookies.get("access_token")
     if not token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -65,8 +76,27 @@ class CredencialesAdmin(BaseModel):
     usuario: str = Field(..., max_length=50)
     password: str = Field(..., max_length=128) # Evita contraseñas enormes que solo gastan CPU al calcular el hash
 
+    model_config = ConfigDict(json_schema_extra={"examples": [{"usuario": "admin_leon", "password": "Admin_Leon_2026"}]})
 
-@router.post("/api/login")
+
+class UsuarioActual(BaseModel):
+    username: str
+    rol: str = Field(description="admin | editor")
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"username": "admin_leon", "rol": "admin"}]})
+
+
+@router.post(
+    "/api/login",
+    response_model=MensajeRespuesta,
+    summary="Iniciar sesión",
+    description=(
+        "Valida usuario y contraseña y guarda un JWT de 30 minutos en la cookie HttpOnly `access_token` "
+        "(no se devuelve en el cuerpo, así un script inyectado no puede leerlo). Límite: 5 intentos por minuto por IP. "
+        "Con los valores de `.env.example`: usuario `admin_leon`, contraseña `Admin_Leon_2026`."
+    ),
+    responses={401: error("Usuario o contraseña incorrectos", "Usuario o contraseña incorrectos"), 429: ERROR_429},
+)
 @limiter.limit("5/minute")
 def login_admin(request: Request, response: Response, credenciales: CredencialesAdmin, db: Session = Depends(get_db)):
     usuario_db = db.query(UsuarioModel).filter(UsuarioModel.username == credenciales.usuario).first()
@@ -111,14 +141,25 @@ def login_admin(request: Request, response: Response, credenciales: Credenciales
     return {"mensaje": "Autenticación exitosa"}
 
 
-@router.post("/api/logout")
+@router.post(
+    "/api/logout",
+    response_model=MensajeRespuesta,
+    summary="Cerrar sesión",
+    description="Borra la cookie de sesión. No requiere sesión: sin cookie, simplemente no hay nada que borrar.",
+)
 def logout(response: Response):
     """Cierra la sesión destruyendo la cookie HTTP-only."""
     response.delete_cookie(key="access_token")
     return {"mensaje": "Sesión cerrada exitosamente"}
 
 
-@router.get("/api/auth/me")
+@router.get(
+    "/api/auth/me",
+    response_model=UsuarioActual,
+    summary="Usuario de la sesión",
+    description="Usuario y rol de la sesión actual. El panel lo usa para mostrar u ocultar las opciones de administrador.",
+    responses={401: ERROR_401, 404: error("La cuenta de la sesión ya no existe", "Usuario no encontrado")},
+)
 def obtener_usuario_actual(usuario: str = Depends(verificar_token), db: Session = Depends(get_db)):
     """Devuelve el rol y usuario autenticado leyendo la cookie HTTP-only."""
     u = db.query(UsuarioModel).filter(UsuarioModel.username == usuario).first()

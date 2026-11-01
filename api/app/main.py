@@ -13,6 +13,8 @@ from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from sqlalchemy.orm import Session
 from sqlalchemy import text
+from pydantic import BaseModel, ConfigDict, Field
+from typing import Literal, Optional
 
 # Módulos internos de la aplicación
 from app.api import manipulate_datasets, pages, search, auth, contact, users, reportes
@@ -104,7 +106,35 @@ async def lifespan(app: FastAPI):
     # (nada que limpiar al apagar por ahora)
 
 
-app = FastAPI(title="API Buscador Semántico Gubernamental", lifespan=lifespan)
+DESCRIPCION_API = """
+API del Portal de Datos Abiertos del Municipio de León: búsqueda semántica de datasets, descarga en varios formatos,
+buzón ciudadano, reportes de problemas (SC-001) y administración del catálogo.
+
+**Cómo probar los endpoints protegidos desde esta página:** ejecuta primero `POST /api/login` (con los valores de
+`.env.example`: `admin_leon` / `Admin_Leon_2026`). El navegador guarda la cookie de sesión y la envía en las pruebas
+siguientes. Los endpoints con candado la requieren; algunos además exigen rol de administrador (403 si no lo es).
+
+**Seguridad:** JWT en cookie HttpOnly (30 min), contraseñas con Argon2, validación de entradas con Pydantic (422),
+límite de peticiones por IP (429), CORS restringido a `ALLOWED_ORIGINS` y cabeceras de seguridad (CSP, HSTS).
+"""
+
+GRUPOS_API = [
+    {"name": "Búsqueda Semántica", "description": "Consulta del catálogo en lenguaje natural. Público."},
+    {"name": "Gestión y Descarga de Datasets", "description": "Descarga y vista previa (públicas); alta, edición, baja y bitácora (panel)."},
+    {"name": "Reportes de datasets (SC-001)", "description": "Los ciudadanos reportan problemas en un dataset y el equipo los atiende. Ver docs/solicitudes_cambio.md."},
+    {"name": "Contacto", "description": "Buzón ciudadano."},
+    {"name": "Autenticación", "description": "Inicio y cierre de sesión."},
+    {"name": "Administración de Usuarios", "description": "Funcionarios con acceso al panel. Solo administradores."},
+    {"name": "Monitoreo", "description": "Estado del servicio para Docker y Azure (health checks)."},
+]
+
+app = FastAPI(
+    title="API Buscador Semántico Gubernamental",
+    description=DESCRIPCION_API,
+    version="2.0.0",
+    openapi_tags=GRUPOS_API,
+    lifespan=lifespan,
+)
 
 # --- RATE LIMITING ---
 app.state.limiter = limiter
@@ -181,22 +211,59 @@ async def agregar_cabeceras_seguridad(request: Request, call_next):
 
 # --- ENDPOINTS DE MONITOREO Y HEALTH CHECKS ---
 
-@app.get("/api/status", tags=["Monitoreo"])
+class EstadoServidor(BaseModel):
+    mensaje: str = Field(examples=["Servidor en línea."])
+
+
+class EstadoVida(BaseModel):
+    status: Literal["alive"]
+
+
+class Componentes(BaseModel):
+    db_relacional: Literal["ok", "error"]
+    nlp_chromadb: Literal["ok", "cargando"]
+    indice_vectorial: Literal["ok", "incompatible"]
+
+
+class EstadoListo(BaseModel):
+    status: Literal["ready", "unhealthy"]
+    ready: bool
+    components: Componentes
+    modelo: str = Field(description="Modelo de embeddings que usa la app")
+    errores: Optional[list[str]] = Field(default=None, description="Solo cuando ready es false")
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{
+        "status": "ready",
+        "ready": True,
+        "components": {"db_relacional": "ok", "nlp_chromadb": "ok", "indice_vectorial": "ok"},
+        "modelo": "intfloat/multilingual-e5-small",
+    }]})
+
+
+@app.get("/api/status", tags=["Monitoreo"], response_model=EstadoServidor, summary="Servidor en línea",
+         description="Responde mientras el proceso atiende peticiones.")
 def status_check():
-    """Monitor básico original de estado."""
     return {"mensaje": "Servidor en línea."}
 
-@app.get("/api/health/live", tags=["Monitoreo"])
+@app.get("/api/health/live", tags=["Monitoreo"], response_model=EstadoVida, summary="Liveness probe",
+         description="El proceso está vivo. Si deja de responder, Docker o Azure reinician el contenedor.")
 def liveness_check():
-    """Liveness Probe: Comprueba que Uvicorn esté vivo y despachando peticiones."""
     return {"status": "alive"}
 
-@app.get("/api/health/ready", tags=["Monitoreo"])
+@app.get(
+    "/api/health/ready",
+    tags=["Monitoreo"],
+    response_model=EstadoListo,
+    response_model_exclude_none=True,
+    summary="Readiness probe",
+    description=(
+        "La app está lista para recibir tráfico: terminó la carga del modelo y de ChromaDB, el índice se generó con el "
+        "mismo modelo que usa la app y la base relacional responde. Devuelve el estado de cada componente siempre; el "
+        "healthcheck de docker compose y el panel de administración lo usan."
+    ),
+    responses={503: {"model": EstadoListo, "description": "Algún componente no está listo (mismo formato, con `errores`)"}},
+)
 def readiness_check(response: Response, db: Session = Depends(get_db)):
-    """
-    Readiness Probe: Comprueba que el warm-up haya concluido,
-    que ChromaDB esté en RAM y que la base relacional responda consultas.
-    """
     errores = []
     # Estado por componente, siempre presente (también con 503): el panel de administración lo muestra tal cual
     componentes = {
