@@ -90,6 +90,10 @@ def extraer_codigo(destino: Path) -> str:
     return commit
 
 
+def archivos(n: int) -> str:
+    return f"{n} archivo" if n == 1 else f"{n} archivos"
+
+
 def leeme(commit: str, n_evidencias: int, n_presentacion: int) -> str:
     return f"""# {NOMBRE_COMPLETO} · 2.º Parcial de Ingeniería de Software
 
@@ -125,8 +129,8 @@ Detalles, cómo detener y problemas comunes: `04_Codigo/README.md`.
 | `04_Codigo/` | Proyecto completo: `frontend/` (nginx), `api/` (FastAPI, pruebas en `api/tests/`), `db/` (datos de ejemplo y objetos de BD), `docker-compose.yml`, `.env.example`, `CLAUDE.md` y `README.md` | B1–B5, C2 |
 | `05_Cambios/` | `solicitudes_cambio.md`: SC-001, reportar problemas en un dataset | B6 |
 | `06_IA/` | `bitacora_prompts.md`: 3 prompts clave y qué se ajustó en cada uno | C3 |
-| `07_Evidencias/` | Capturas: Swagger, prueba negativa, estados vacío y de error, pruebas ({n_evidencias} archivos) | B3–B6 |
-| `08_Presentacion/` | Presentación en vivo ({n_presentacion} archivos) | D |
+| `07_Evidencias/` | Capturas: contenedores, Swagger, búsqueda, estados vacío y de error, SC-001 y pruebas; la salida de pytest incluye las pruebas negativas (409, 422, 429) ({archivos(n_evidencias)}) | B2–B6 |
+| `08_Presentacion/` | Presentación en vivo y guion de la demo ({archivos(n_presentacion)}) | D |
 
 ## Dónde ver cada requisito en la aplicación
 
