@@ -23,3 +23,5 @@ logs/
 __pycache__/
 *.py[cod]
 *$py.class
+# Carpeta que arma docs/entrega/armar_entrega.py
+salida_entrega/
