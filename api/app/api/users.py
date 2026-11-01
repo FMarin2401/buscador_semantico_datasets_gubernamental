@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.orm import Session
 from typing import Literal
 
@@ -8,6 +8,7 @@ from app.db_core.models import UsuarioModel
 from app.db_core.auditoria import registrar_evento_auditoria
 from app.api.auth import requiere_admin
 from app.security import cifrar_password
+from app.api.esquemas import MensajeRespuesta, ERROR_401, ERROR_403, error
 
 router = APIRouter(tags=["Administración de Usuarios"])
 
@@ -16,8 +17,31 @@ class NuevoUsuarioSchema(BaseModel):
     password: str = Field(min_length=6, max_length=72)
     rol: Literal["admin", "editor"] = "editor"
 
+    model_config = ConfigDict(json_schema_extra={"examples": [{"username": "jperez", "password": "Temporal_2026", "rol": "editor"}]})
 
-@router.get("/api/admin/usuarios")
+
+class UsuarioResumen(BaseModel):
+    id: int
+    username: str
+    rol: Literal["admin", "editor"]
+
+
+class ListaUsuarios(BaseModel):
+    usuarios: list[UsuarioResumen]
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"usuarios": [
+        {"id": 1, "username": "admin_leon", "rol": "admin"},
+        {"id": 2, "username": "jperez", "rol": "editor"},
+    ]}]})
+
+
+@router.get(
+    "/api/admin/usuarios",
+    response_model=ListaUsuarios,
+    summary="Listar funcionarios",
+    description="Cuentas con acceso al panel (sin contraseñas). Solo administradores.",
+    responses={401: ERROR_401, 403: ERROR_403},
+)
 def listar_usuarios(
     usuario_autenticado: str = Depends(requiere_admin),
     db: Session = Depends(get_db)
@@ -30,7 +54,14 @@ def listar_usuarios(
         ]
     }
 
-@router.post("/api/admin/usuarios", status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/api/admin/usuarios",
+    status_code=status.HTTP_201_CREATED,
+    response_model=MensajeRespuesta,
+    summary="Dar de alta un funcionario",
+    description="La contraseña se guarda cifrada con Argon2. El rol solo puede ser `admin` o `editor`. Solo administradores.",
+    responses={401: ERROR_401, 403: ERROR_403, 409: error("El nombre de usuario ya existe", "El nombre de usuario ya existe en el sistema.")},
+)
 def crear_usuario(
     datos: NuevoUsuarioSchema,
     usuario_autenticado: str = Depends(requiere_admin),
@@ -57,7 +88,18 @@ def crear_usuario(
 
     return {"mensaje": "Usuario creado exitosamente"}
 
-@router.delete("/api/admin/usuarios/{id_usuario}")
+@router.delete(
+    "/api/admin/usuarios/{id_usuario}",
+    response_model=MensajeRespuesta,
+    summary="Dar de baja un funcionario",
+    description="Un administrador no puede borrar su propia cuenta. La bitácora conserva el nombre de la cuenta borrada. Solo administradores.",
+    responses={
+        400: error("Intento de borrar la propia cuenta", "No puedes eliminar tu propia cuenta mientras estás en sesión."),
+        401: ERROR_401,
+        403: ERROR_403,
+        404: error("El usuario no existe", "Usuario no encontrado."),
+    },
+)
 def eliminar_usuario(
     id_usuario: int,
     usuario_autenticado: str = Depends(requiere_admin),

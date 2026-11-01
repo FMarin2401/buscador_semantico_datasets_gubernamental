@@ -160,6 +160,7 @@ buscador_semantico_datasets_gubernamental/
 │   │       ├── users.py         # Gestión de funcionarios
 │   │       ├── contact.py       # Buzón ciudadano
 │   │       ├── reportes.py      # SC-001: reportes de problemas en datasets
+│   │       ├── esquemas.py      # Esquemas de error compartidos para OpenAPI
 │   │       └── pages.py         # Páginas HTML (solo si la imagen incluye el frontend)
 │   ├── alembic/                 # Migraciones (0001 esquema inicial, 0002 integridad referencial y reportes)
 │   ├── alembic.ini
@@ -174,6 +175,8 @@ buscador_semantico_datasets_gubernamental/
 │   │   ├── consultas_fuera_de_tema.json # 30 consultas que ningún dataset debería responder
 │   │   ├── resultados/          # Métricas en JSON (baseline, comparación, e5_small)
 │   │   └── experimentos/        # Documentación de cada experimento
+│   ├── tests/                   # Pruebas automatizadas con pytest (sección 11.1)
+│   ├── pytest.ini
 │   ├── data/                    # (ignorado por git) chroma_db, raw, clean, usuarios.db
 │   ├── logs/                    # (ignorado por git) auditoria.log
 │   ├── Dockerfile               # Imagen de la API para docker compose
@@ -431,6 +434,8 @@ El esquema se versiona con **Alembic** (`alembic/versions/`). La app aplica las 
 
 Leyenda de acceso: 🌐 público · 🔑 sesión válida (admin o editor) · 🛡️ solo administrador
 
+La referencia completa e interactiva está en **`/docs`** (Swagger) y `/redoc`: cada endpoint tiene resumen, descripción, esquemas de entrada y salida con ejemplos y sus códigos de respuesta, y se puede probar desde ahí (primero `POST /api/login`; el navegador guarda la cookie). La sesión se declara en OpenAPI como el esquema `APIKeyCookie` (`access_token`), así que los endpoints protegidos aparecen con candado. Los esquemas compartidos de error están en `app/api/esquemas.py`. La prueba `tests/test_documentacion.py` falla si un endpoint queda sin documentar.
+
 ### Búsqueda y catálogo
 
 | Método | Ruta | Acceso | Límite | Descripción |
@@ -476,9 +481,9 @@ Leyenda de acceso: 🌐 público · 🔑 sesión válida (admin o editor) · �
 | Método | Ruta | Acceso | Descripción |
 |---|---|---|---|
 | GET | `/api/admin/datasets` | 🔑 | Lista el catálogo para el panel |
-| POST | `/api/admin/subir` | 🔑 | Publica un dataset (`multipart/form-data`: `titulo` ≤ 200, `descripcion` ≤ 2000, `dependencia` ≤ 200, `categoria` ≤ 100, `archivo`) |
-| PUT | `/api/admin/datasets/{id}` | 🔑 | Actualiza los metadatos y regenera el embedding |
-| DELETE | `/api/admin/datasets/{id}` | 🛡️ | Borra el vector, el CSV y el contador de descargas |
+| POST | `/api/admin/subir` | 🔑 | Publica un dataset (`multipart/form-data`: `titulo` ≤ 200, `descripcion` ≤ 2000, `dependencia` ≤ 200, `categoria` ≤ 100, `archivo`). `201`; `409` si el mismo archivo ya está publicado |
+| PUT | `/api/admin/datasets/{id}` | 🔑 | Actualiza los metadatos y regenera el embedding. `404` si no existe |
+| DELETE | `/api/admin/datasets/{id}` | 🛡️ | Borra el vector, el CSV, la fila de `datasets`, su contador y sus reportes. `404` si no existe |
 
 ### Auditoría
 
@@ -643,6 +648,28 @@ FastAPI sirve el frontend como plantillas Jinja2, sin build ni frameworks pesado
 - **Accesibilidad verificada** con Playwright en 17 pantallas (escritorio 1366 px y móvil 390 px): contraste WCAG AA en todo el texto, elementos táctiles de al menos 24 px y sin desborde horizontal en móvil.
 - El CSS es Mobile-First, con Flexbox y Grid.
 - La autorización se hace siempre en el servidor. El ocultamiento de opciones en el cliente es solo para la experiencia de usuario.
+
+---
+
+## 11.1 Pruebas automatizadas (`api/tests/`)
+
+Suite de **pytest** que ejercita la API completa con el `TestClient` de FastAPI:
+
+```bash
+docker compose exec api pytest      # Dentro del contenedor (pytest viene en la imagen)
+cd api && pytest                    # Sin Docker, con el entorno virtual
+```
+
+- **Aislamiento:** cada corrida trabaja en una carpeta temporal con su propia SQLite, ChromaDB, `data/raw` y logs (`tests/conftest.py`). No toca los datos de desarrollo ni el PostgreSQL del contenedor. Usa el modelo de embeddings real, porque las pruebas de búsqueda dependen de él.
+- **Sesiones:** inicia sesión una vez como administrador y como editor; los fixtures `como_admin`, `como_editor`, `sin_sesion` y `sesion(rol)` cambian la cookie. El rate limit se reinicia antes de cada prueba.
+
+| Archivo | Qué cubre |
+|---|---|
+| `test_reportes.py` | SC-001: creación pública, validaciones (`422`), dataset inexistente (`404`), límite (`429`), flujo de estados, **prueba negativa** (reabrir un reporte resuelto → `409`), retroceso (`409`), permisos de editor (`403`), bitácora, vista de resumen y borrado en cascada |
+| `test_datasets.py` | Publicar (`201`), duplicado por hash (`409`), categoría no oficial (`422`), archivo que no es CSV (`400`), editar y borrar (`404`, `403`), descargas en 4 formatos con su contador, vista previa, búsqueda semántica por significado y umbral |
+| `test_usuarios.py` | Login, cookie `HttpOnly`, mismo error para usuario inexistente, límite de intentos (`429`), token alterado, alta y baja de funcionarios, duplicado (`409`), rol inválido (`422`), no borrarse a sí mismo (`400`), editor sin acceso (`403`) |
+| `test_contacto.py` | Buzón: envío, validaciones y permisos |
+| `test_documentacion.py` | Que `/openapi.json` documente cada endpoint: resumen y descripción, esquema de respuesta, ejemplo en cada cuerpo de entrada, `401` y cookie en los protegidos, y algún código de error en los que reciben datos |
 
 ---
 
@@ -914,7 +941,7 @@ El análisis detallado de la evaluación y del cambio de modelo está en `eval/e
 | 5 | Nombres propios locales | 5 consultas siguen fuera del Top-5, casi todas por nombres que un modelo general no conoce ("oruga", "Tota Carbajal", "Poliforum"). Candidatas para **fine-tuning** o **búsqueda híbrida** (BM25 + embeddings) |
 | 6 | `analyze_csv.py` sin prueba real | La salida estructurada y los reintentos se probaron con un cliente simulado; falta una corrida contra la API de Gemini |
 | 7 | Catálogo sin paginación en el servidor | `/api/catalogos` devuelve todo y la paginación se hace en el cliente. Es suficiente para unos cientos de datasets |
-| 8 | Sin pruebas automatizadas | Las pruebas de cada fase se hicieron con `TestClient` y Playwright, pero no hay una suite de `pytest` en el repositorio |
+| 8 | Pruebas del frontend | La API tiene una suite de pytest (sección 11.1); el frontend se probó con Playwright durante el desarrollo, pero esas pruebas no están en el repositorio |
 | 9 | Configuración dispersa | `load_dotenv()` solo se llama en `auth.py` (y en `analyze_csv.py`). `main.py` lee `ADMIN_USER` porque importa `auth.py` antes del `lifespan`: funciona, pero depende del orden de los imports. Se puede centralizar con `pydantic-settings`, que ya está en `requirements.txt` |
 | 10 | Tamaño de la imagen | ~3.8 GB, de los que ~1 GB son PyTorch y sus dependencias. Se podría reducir con ONNX Runtime (ya instalado por ChromaDB) y quitando `build-essential` de los Dockerfile |
 | 11 | Llaves foráneas en SQLite | SQLite (Azure y desarrollo local) no aplica llaves foráneas por defecto; el ORM borra en cascada descargas y reportes, pero un `ON DELETE SET NULL` hacia `usuarios` no se aplica ahí. En PostgreSQL se aplican todas |

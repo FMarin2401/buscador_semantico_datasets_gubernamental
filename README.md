@@ -38,6 +38,7 @@ La base de datos está en una red interna a la que solo llega la API: ni el nave
 │   ├── alembic/         # Migraciones de la base relacional
 │   ├── scripts/         # Ingesta con Gemini, indexación en ChromaDB y evaluación
 │   ├── eval/            # Conjunto de evaluación del buscador
+│   ├── tests/           # Pruebas automatizadas (pytest)
 │   └── Dockerfile
 ├── db/
 │   ├── seed/            # Datos de ejemplo: catálogo revisado y 75 CSV del municipio
@@ -109,6 +110,16 @@ docker compose down -v         # Borra también los volúmenes: el siguiente "up
 | `ADMIN_USER y ADMIN_PASSWORD deben estar configuradas` en los logs | El `.env` no tiene esas variables. Cópialas de `.env.example`. |
 | No puedo entrar al panel tras cambiar `ADMIN_PASSWORD` | El administrador solo se crea en el primer arranque. Para empezar de cero: `docker compose down -v` y `docker compose up --build`. |
 | El build falla al descargar paquetes o el modelo | Requiere internet. Vuelve a ejecutar `docker compose up --build`: Docker reanuda desde la última capa completa. |
+
+## Pruebas automatizadas
+
+Con la aplicación levantada:
+
+```bash
+docker compose exec api pytest
+```
+
+Ejecuta la suite de `api/tests/` (60 pruebas) en una base temporal, sin tocar los datos de la aplicación. Incluye las reglas de negocio y sus pruebas negativas, por ejemplo reabrir un reporte resuelto (`409`) o publicar dos veces el mismo archivo (`409`).
 
 ## Desarrollo sin Docker (opcional)
 
