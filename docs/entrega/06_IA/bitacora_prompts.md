@@ -6,7 +6,7 @@
 
 ## Cómo se armó esta bitácora
 
-Los cinco prompts son **textuales**, copiados del historial de sesiones de Claude Code (`~/.claude/projects/.../*.jsonl`), con sus erratas. No se reescribieron para que se vieran mejor: lo que se evalúa aquí es cómo se dirigió el trabajo.
+Los tres prompts son **textuales**, copiados del historial de sesiones de Claude Code (`~/.claude/projects/.../*.jsonl`), con sus erratas. No se reescribieron para que se vieran mejor: lo que se evalúa aquí es cómo se dirigió el trabajo.
 
 En casi todos los casos el prompt inicial fue corto, y lo importante pasó **en la respuesta al plan que propuso Claude**: ahí di el contexto con su porqué, recorté el alcance y cambié el orden antes de aprobar. Por eso cada entrada documenta el intercambio completo:
 
@@ -26,7 +26,15 @@ Elementos que se revisan en cada entrada:
 | **Plan revisado antes de aprobarlo** | Pedir un plan, leerlo y corregirlo antes de que se ejecute |
 | **Sin mitos** | No usar mayúsculas, amenazas ni frases como "eres el mejor experto": no mejoran el resultado; el contexto concreto sí |
 
-Ninguno de los cinco prompts usa mitos. Lo que hizo que las respuestas fueran útiles fue el contexto concreto (la cuenta de estudiante, que los datos son de prueba, la rúbrica en PDF), no el tono.
+Ninguno de los tres prompts usa mitos. Lo que hizo que las respuestas fueran útiles fue el contexto concreto (la cuenta de estudiante, que los datos son de prueba, la rúbrica en PDF), no el tono.
+
+Los tres se eligieron porque, juntos, cubren los cuatro elementos:
+
+| Prompt | Contexto con su porqué | Restricción de alcance | Formato de salida | Plan revisado |
+|---|---|---|---|---|
+| 1. Documentación técnica | | ✓ | ✓ | |
+| 2. Plan de la revisión de código | ✓ | | | ✓ |
+| 3. Rúbrica del 2.º parcial | ✓ | ✓ | ✓ | ✓ |
 
 ---
 
@@ -96,70 +104,7 @@ Claude reordenó las fases. Además movió el ajuste de `--forwarded-allow-ips` 
 
 ---
 
-## Prompt 3: Tamaño de la imagen de Docker
-
-**Fecha:** 22 de octubre de 2026 · **Elementos:** restricción de alcance
-
-### Prompt
-
-> sumesmoslo a la fase 3 lo del .dockerignore, deten el contenedor, oye entonces porque sigue pesando casi 4gb si ya se quito lo de gpu de nvidia¡
-
-### Lo que propuso Claude
-
-Analizó la imagen capa por capa: en realidad ocupa ~2.85 GB desempaquetada (Docker Desktop suma también las capas comprimidas). Mostró una tabla de qué ocupa espacio (PyTorch 769 MB, el modelo 480 MB, `build-essential` 344 MB...) y tres formas de reducirla: (1) quitar `build-essential` y las librerías de compilación del Dockerfile (−340 MB), (2) reemplazar PyTorch por ONNX Runtime (−1 GB, tocando el código del modelo) y (3) el `.dockerignore`, que casi no ahorra espacio pero es un arreglo de seguridad. **Recomendó sumar la opción 1 a la Fase 3** y dejar la 2 para más adelante.
-
-### Ajuste y por qué
-
-> nah esta bien, no hagamos 1 ni 2, solo hagamos lo del .dockerignore y sigamos con la fase 3
-
-- **Recorté el alcance a una sola opción, aunque Claude recomendaba sumar la 1.** Las opciones 1 y 2 cambiaban cómo se construye la imagen y, en el caso de ONNX, el código del modelo; había que reconstruir y volver a probar todo por un ahorro de espacio que en una demo no importa. El `.dockerignore` era seguro y evitaba un problema real: que la base de usuarios (con hashes de contraseñas) se copiara dentro de la imagen.
-- Preguntar **"por qué"** en lugar de pedir "redúcela" me dio primero el diagnóstico con números, y con eso pude decidir.
-
-### Resultado
-
-Solo se agregó el `.dockerignore` (con la exclusión de `data/*.db`) dentro del PR #5 de la Fase 3. Las otras opciones quedaron registradas como trabajo futuro en la documentación técnica.
-
-### Cómo lo escribiría hoy
-
-> La imagen de Docker pesa casi 4 GB aunque ya usamos PyTorch para CPU. Antes de cambiar nada, explícame qué ocupa el espacio, con una tabla por capa y por paquete, y propón opciones con su ahorro y su riesgo. Por ahora solo quiero cambios que no alteren cómo se construye la imagen; agrega el `.dockerignore` a la Fase 3.
-
-**Qué mejora:** pide el diagnóstico y el formato (tabla con ahorro y riesgo) y fija el criterio para elegir desde el principio.
-
----
-
-## Prompt 4: Persistencia de datos en Azure
-
-**Fecha:** 22 de octubre de 2026 · **Elementos:** contexto con su porqué, restricción de alcance
-
-### Prompt
-
-> oye me quede pensando que viste que no existe servidor postresql, y se corria dentro del contenedor, como se haria entonces?
-
-### Lo que propuso Claude
-
-Explicó que el código ya soporta PostgreSQL con la variable `DATABASE_URL`, pero que en Azure nunca se configuró, por eso producción usa SQLite dentro del contenedor. Recomendó crear un Azure Database for PostgreSQL (Flexible Server) y, como pasos siguientes, migrar los datasets a pgvector y los archivos a Blob Storage.
-
-### Ajuste y por qué
-
-> si, pues sigamos con sqlite pq creo que mi cuenta no lo incluye, 2 y 3 no lo hagamos
-
-- **Descarté la recomendación con una razón concreta:** la cuenta de estudiante probablemente no incluye PostgreSQL administrado, y no quiero pagar por una demo.
-- **Recorté el alcance explícitamente:** "2 y 3 no lo hagamos" (ni pgvector ni Blob Storage).
-- Claude guardó la decisión en la memoria del proyecto para no volver a proponerlo en sesiones futuras; quedó también como regla en `CLAUDE.md`.
-
-### Resultado
-
-Azure siguió con SQLite y máximo 1 réplica (PR #11 y la documentación del despliegue). En esa misma fase, Claude **corrigió una afirmación suya**: había dicho que el límite de intentos del login se podía saltar en producción, lo verificó contra los logs reales de Azure y no era así. El PR se renombró como "defensa adicional". Lección: lo que la IA afirma hay que verificarlo, igual que exige la regla 6 de este parcial.
-
-### Cómo lo escribiría hoy
-
-> En Azure la app usa SQLite dentro del contenedor porque nunca se configuró PostgreSQL. Explícame las opciones para que los datos persistan, con el costo aproximado de cada una. Restricción: es una demo con cuenta de estudiante y no voy a pagar servicios; si ninguna opción es gratuita, mantenemos SQLite y solo documentamos el riesgo.
-
-**Qué mejora:** la restricción de costo va antes de las opciones, así la respuesta ya descarta lo que no aplica.
-
----
-
-## Prompt 5: Contrastar el repositorio con la rúbrica del 2.º parcial
+## Prompt 3: Contrastar el repositorio con la rúbrica del 2.º parcial
 
 **Fecha:** 1 de noviembre de 2026 · **Elementos:** contexto con su porqué, formato de salida, restricción de alcance, plan revisado antes de aprobarlo
 
@@ -202,7 +147,7 @@ PR #16: tres contenedores (nginx, FastAPI, PostgreSQL) con red privada, `.env.ex
 ## Lo que aprendí
 
 1. **El contexto con su porqué vale más que cualquier truco de redacción.** "Cuenta de estudiante", "es solo una demo" y "no quiero pagar" cambiaron por completo las recomendaciones; ninguna instrucción en mayúsculas habría logrado eso.
-2. **Pedir el plan y revisarlo antes de aprobar** evitó trabajo en la dirección equivocada (Azure al principio, PostgreSQL de pago, optimizaciones riesgosas de la imagen).
-3. **Recortar el alcance de forma explícita** ("solo haz la documentación", "no hagamos 1 ni 2") mantuvo cada cambio pequeño y revisable en su propio PR.
+2. **Pedir el plan y revisarlo antes de aprobar** evitó trabajo en la dirección equivocada: Azure al principio del plan de octubre, y en noviembre un plan de verificación basado en un dato falso (que Docker no estaba instalado).
+3. **Recortar el alcance de forma explícita** ("solo haz la documentación", "vamos con el paso 1 en una nueva rama") mantuvo cada cambio pequeño y revisable en su propio PR.
 4. **Mis prompts iniciales eran demasiado cortos:** el contexto y las restricciones llegaban en el segundo mensaje. Ponerlos desde el primero (como en las versiones "Cómo lo escribiría hoy") ahorra una vuelta.
-5. **Hay que verificar lo que afirma la IA.** En dos ocasiones Claude corrigió algo que había dicho (la evaluación "en 0 %" y la vulnerabilidad del rate limit) después de comprobarlo con datos. Por eso cada cambio se verificó con pruebas, capturas o la app funcionando, no solo con el resumen de la IA.
+5. **Hay que verificar lo que afirma la IA.** En el prompt 1, Claude corrigió su propia afirmación de que la evaluación daba 0 % al revisarla con más cuidado. Por eso cada cambio del proyecto se verificó con pruebas, capturas o la app funcionando, no solo con el resumen de la IA.
