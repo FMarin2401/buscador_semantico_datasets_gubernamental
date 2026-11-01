@@ -25,3 +25,6 @@ __pycache__/
 *$py.class
 # Carpeta que arma docs/entrega/armar_entrega.py
 salida_entrega/
+
+# Capturas de la entrega: pueden mostrar datos personales; viajan solo en la carpeta de OneDrive
+docs/entrega/07_Evidencias/*.png
