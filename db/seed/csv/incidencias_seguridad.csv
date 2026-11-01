@@ -1,0 +1,6 @@
+id_reporte,fecha,colonia,tipo_incidente,nivel_prioridad,estado_atencion
+REP-2601,2026-09-01,Las Joyas,Fallo de alumbrado público,Media,Resuelto
+REP-2602,2026-09-02,Campestre,Ruido excesivo,Baja,Pendiente
+REP-2603,2026-09-02,San Juan Bosco,Obstrucción de vía pública,Alta,En proceso
+REP-2604,2026-09-03,León Moderno,Vandalismo en parque,Media,Resuelto
+REP-2605,2026-09-04,Centro,Accidente vial menor,Alta,Resuelto

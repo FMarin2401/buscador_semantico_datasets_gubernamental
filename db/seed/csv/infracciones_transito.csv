@@ -1,0 +1,4 @@
+Folio,Motivo,Monto_Multa,Latitud,Longitud,Fecha_Hora,Pagada
+INF-001,Pasar Luz Roja,1200.50,21.1189,-101.6780,2026-09-08 14:30:00,False
+INF-002,Estacionarse en Lugar Prohibido,850.00,21.1236,-101.6826,2026-09-08 10:15:00,True
+INF-003,Uso de Celular,1500.00,21.1158,-101.6547,2026-09-09 08:45:00,False

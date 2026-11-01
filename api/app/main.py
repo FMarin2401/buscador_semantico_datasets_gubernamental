@@ -106,13 +106,14 @@ app = FastAPI(title="API Buscador Semántico Gubernamental", lifespan=lifespan)
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-# Servidores de archivos estáticos
-app.mount("/css", StaticFiles(directory="frontend/css"), name="css")
-app.mount("/js", StaticFiles(directory="frontend/js"), name="js")
-app.mount("/assets", StaticFiles(directory="frontend/assets"), name="assets")
+# Servidores de archivos estáticos y páginas, solo si esta imagen incluye el frontend (ver pages.FRONTEND_DIR)
+if pages.FRONTEND_DIR:
+    app.mount("/css", StaticFiles(directory=f"{pages.FRONTEND_DIR}/css"), name="css")
+    app.mount("/js", StaticFiles(directory=f"{pages.FRONTEND_DIR}/js"), name="js")
+    app.mount("/assets", StaticFiles(directory=f"{pages.FRONTEND_DIR}/assets"), name="assets")
+    app.include_router(pages.router)
 
 # Registro modular de rutas
-app.include_router(pages.router)
 app.include_router(search.router)
 app.include_router(manipulate_datasets.router)
 app.include_router(auth.router)

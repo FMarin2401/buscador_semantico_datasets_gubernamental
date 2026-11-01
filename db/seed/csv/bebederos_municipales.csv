@@ -1,0 +1,4 @@
+ID_Bebedero,Ubicacion,Tipo_Filtro,Latitud,Longitud,Operativo
+BEB-01,Parque Metropolitano Entrada,Carbon Activado,21.1680,-101.6910,True
+BEB-02,Plaza Expiatorio,Osmosis,21.1188,-101.6734,False
+BEB-03,Deportiva EFM Pista,Carbon Activado,21.1050,-101.6350,True

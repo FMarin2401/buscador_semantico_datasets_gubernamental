@@ -1,0 +1,4 @@
+ID_Paradero,Nombre,Linea,Latitud,Longitud,Ultima_Limpieza,Estado_Torniquetes
+SIT-01,Poliforum,L-01,21.1158,-101.6547,2026-09-08,Operativo
+SIT-02,Centro Historico,L-01,21.1236,-101.6826,2026-09-08,Mantenimiento
+SIT-03,Hermanos Aldama,L-02,21.1100,-101.6650,2026-09-07,Operativo

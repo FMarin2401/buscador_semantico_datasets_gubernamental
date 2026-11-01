@@ -1,0 +1,4 @@
+ID_Estacion,Nombre,Unidades_Asignadas,Latitud,Longitud,Jefe_Turno
+BOM-01,Central Apolo,8,21.1250,-101.6800,Cmdte. Perez
+BOM-02,Subestacion 2 Joyas,3,21.1305,-101.7312,Oficial Ramirez
+BOM-03,Subestacion 3 Delta,4,21.0995,-101.6112,Oficial Gomez

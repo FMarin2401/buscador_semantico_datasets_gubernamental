@@ -1,0 +1,4 @@
+ID_Comedor,Nombre,Raciones_Diarias,Latitud,Longitud,Estatus
+DIF-01,Comedor San Juan,150,21.1280,-101.7080,Activo
+DIF-02,Comedor 10 de Mayo,200,21.0850,-101.6050,Activo
+DIF-03,Comedor Las Joyas,300,21.1320,-101.7310,Mantenimiento

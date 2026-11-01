@@ -1,8 +1,16 @@
+import os
+
 from fastapi import APIRouter, Request
 from fastapi.templating import Jinja2Templates
 
-router = APIRouter(tags=["Páginas Web"])
-templates = Jinja2Templates(directory="frontend")
+# Carpeta del frontend, si esta imagen lo incluye: "frontend" en la imagen de Azure (un solo contenedor) y
+# "../frontend" al correr la API a mano desde api/. En docker compose no existe ninguna: ahí el frontend
+# lo sirve su propio contenedor (nginx) y la API solo atiende /api y la documentación.
+FRONTEND_DIR = next((d for d in ("frontend", "../frontend") if os.path.isdir(d)), None)
+
+# Fuera de /docs: son páginas HTML, no parte de la API
+router = APIRouter(tags=["Páginas Web"], include_in_schema=False)
+templates = Jinja2Templates(directory=FRONTEND_DIR or "frontend")
 
 @router.get("/")
 async def vista_inicio(request: Request):

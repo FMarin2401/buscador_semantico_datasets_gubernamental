@@ -1,0 +1,13 @@
+venv/
+env/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+# Datos locales: en docker compose la API arranca vacía y carga la semilla de db/seed (ver docker-compose.yml).
+# Incluye la base de usuarios (hashes de contraseñas), que nunca debe viajar en una imagen.
+data/
+logs/
+# Resultados de evaluación: no se usan en tiempo de ejecución
+eval/

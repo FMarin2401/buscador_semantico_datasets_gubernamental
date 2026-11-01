@@ -1,0 +1,4 @@
+ID_Zona,Sector,Horario_Permitido,Latitud,Longitud,Tonelaje_Maximo
+CAR-01,Zona Piel,22:00-06:00,21.1180,-101.6650,3.5
+CAR-02,Centro Historico,23:00-05:00,21.1236,-101.6826,1.5
+CAR-03,Central de Abastos,24 Horas,21.0900,-101.6500,30.0

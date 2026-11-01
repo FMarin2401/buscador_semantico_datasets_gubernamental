@@ -1,0 +1,4 @@
+ID_Kiosco,Ubicacion,Atencion_Bilingue,Latitud,Longitud,Horario
+TUR-01,Arco de la Calzada,True,21.1165,-101.6705,09:00-18:00
+TUR-02,Templo Expiatorio,True,21.1188,-101.6734,10:00-19:00
+TUR-03,Central Camionera,False,21.1120,-101.6580,08:00-20:00

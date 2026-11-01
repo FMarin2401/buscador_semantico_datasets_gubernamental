@@ -1,0 +1,4 @@
+ID_Ruta,Sector,Dias_Servicio,Latitud,Longitud,Turno
+RB-1,Zona Centro,Lunes-Miercoles-Viernes,21.1200,-101.6800,Nocturno
+RB-2,Zona Norte,Martes-Jueves-Sabado,21.1550,-101.6900,Matutino
+RB-3,Zona Oriente,Lunes-Miercoles-Viernes,21.1000,-101.6100,Vespertino

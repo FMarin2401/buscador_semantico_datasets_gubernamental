@@ -1,18 +1,73 @@
+# Aplicación completa en tres contenedores:
+#   frontend (nginx)  -> único puerto publicado; sirve las páginas y reenvía /api y /docs a la API
+#   api (FastAPI)     -> búsqueda semántica (modelo e5 + ChromaDB embebida) y lógica de negocio
+#   db (PostgreSQL)   -> usuarios, bitácora, descargas y mensajes; solo la API lo alcanza
+#
+# Uso: cp .env.example .env && docker compose up --build
+
 services:
-  portal-datos-leon:
-    build: .
-    container_name: portal_datos_leon
+  db:
+    image: postgres:16.10-alpine
     restart: unless-stopped
-    ports:
-      - "8000:8000"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-portal}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-portal_local}
+      POSTGRES_DB: ${POSTGRES_DB:-portal_datos}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - red_privada
+
+  api:
+    build:
+      context: ./api
+      additional_contexts:
+        seed: ./db/seed # Datos de ejemplo que se copian a la imagen (ver api/Dockerfile)
+    restart: unless-stopped
     env_file:
       - .env
+    environment:
+      # El esquema lo crea Alembic al arrancar la API
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-portal}:${POSTGRES_PASSWORD:-portal_local}@db:5432/${POSTGRES_DB:-portal_datos}
     volumes:
-      # Persistir la base vectorial ChromaDB
-      - ./data/chroma_db:/app/data/chroma_db
-      # Persistir los archivos CSV originales
-      - ./data/raw:/app/data/raw
-      # Persistir la base de datos relacional (usuarios, bitácora, descargas)
-      - ./data/usuarios.db:/app/data/usuarios.db
-      # Persistir logs de auditoría física
-      - ./logs:/app/logs
+      - chroma:/app/data/chroma_db # Índice vectorial
+      - raw:/app/data/raw # CSV publicados
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      # Listo cuando el modelo cargó, el índice es compatible y PostgreSQL responde
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/api/health/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 180s
+    networks:
+      - red_privada
+      - red_web
+
+  frontend:
+    build: ./frontend
+    restart: unless-stopped
+    ports:
+      - "${PUERTO_WEB:-8080}:80"
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - red_web
+
+networks:
+  red_privada:
+    internal: true # Sin salida a internet ni acceso desde el host: solo api <-> db
+  red_web: {}
+
+volumes:
+  pgdata:
+  chroma:
+  raw:

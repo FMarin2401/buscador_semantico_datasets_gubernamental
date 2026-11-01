@@ -1,0 +1,4 @@
+ID_Modulo,Ubicacion,Cajas_Cobro,Latitud,Longitud,Acepta_Tarjeta
+PRE-01,Presidencia Municipal,5,21.1236,-101.6826,True
+PRE-02,Plaza Mayor,3,21.1505,-101.6995,True
+PRE-03,Soriana Satelite,2,21.1350,-101.7100,True

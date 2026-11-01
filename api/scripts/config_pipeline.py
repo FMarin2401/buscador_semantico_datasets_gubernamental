@@ -5,14 +5,17 @@
 #
 # El paso 2 es intencional: Gemini puede inventar una dependencia que suene oficial o una descripcion imprecisa.
 
-CARPETA_ORIGINALES = "data/entregados_municipio/" # CSV tal como los entrega el municipio
+# Las rutas son relativas a api/ (los scripts hacen chdir ahi). Los CSV del municipio y el catalogo revisado viven en
+# db/seed/ porque son tambien los datos de ejemplo de docker compose; dentro del contenedor se cambian con variables de entorno.
+import os
+
+CARPETA_ORIGINALES = os.getenv("CARPETA_ORIGINALES", "../db/seed/csv/") # CSV tal como los entrega el municipio
 CATALOGO_GEMINI = "data/clean/catalogo_maestro_procesado.csv" # Salida de Gemini, sin revisar
-CATALOGO_REVISADO = "data/clean/catalogo_maestro.csv" # Version revisada; es la unica que se indexa
+CATALOGO_REVISADO = os.getenv("CATALOGO_REVISADO", "../db/seed/catalogo_maestro.csv") # Version revisada; es la unica que se indexa
 CARPETA_RAW_PRODUCCION = "data/raw/" # CSV que sirve la app, nombrados con el ID del dataset
 
 # Categorias oficiales para los filtros del buscador. Gemini solo puede elegir una de estas.
 # Se definen en app/catalogo.py para que la API y el panel usen exactamente la misma lista.
-import os
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from app.catalogo import CATEGORIAS  # noqa: E402,F401
