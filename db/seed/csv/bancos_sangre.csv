@@ -1,0 +1,4 @@
+ID_Banco,Institucion,Tipo,Latitud,Longitud,Horario_Donacion
+SAN-01,Hospital General,Publico,21.1200,-101.6850,07:00-12:00
+SAN-02,Cruz Roja Mexicana,ONG,21.1130,-101.6580,07:00-14:00
+SAN-03,Hospital Aranda de la Parra,Privado,21.1205,-101.6810,08:00-18:00

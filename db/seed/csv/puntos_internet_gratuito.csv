@@ -1,0 +1,4 @@
+ID_Punto,Ubicacion,Ancho_Banda_Mbps,Latitud,Longitud,Usuarios_Simultaneos
+WIFI-01,Plaza Principal,100,21.1236,-101.6826,500
+WIFI-02,Parque Hidalgo,50,21.1270,-101.6850,200
+WIFI-03,Estacion Delta SIT,100,21.0995,-101.6112,300

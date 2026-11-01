@@ -1,0 +1,4 @@
+ID_Semaforo,Interseccion,Conectado_C4,Latitud,Longitud,Ultimo_Mantenimiento
+SEM-01,Lopez Mateos y Francisco Villa,True,21.1085,-101.6425,2026-08-15
+SEM-02,Insurgentes y Campestre,True,21.1450,-101.7010,2026-09-01
+SEM-03,Torres Landa y Hermanos Aldama,False,21.1005,-101.6705,2026-07-20

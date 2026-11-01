@@ -1,0 +1,6 @@
+id_estacion,nombre,ubicacion,capacidad,latitud,longitud,estado
+BICI-001,Poliforum,Blvd. Adolfo López Mateos Ote.,25,21.1158,-101.6558,Activa
+BICI-002,Arco de la Calzada,Prolongación Calzada de los Héroes,15,21.1189,-101.6725,Activa
+BICI-003,Plaza Principal,Zona Centro,20,21.1219,-101.6826,Activa
+BICI-004,Parque Metropolitano,Blvd. Adolfo López Mateos Nte.,30,21.1683,-101.6917,Mantenimiento
+BICI-005,Universidad Iberoamericana,Blvd. Jorge Vértiz Campero,20,21.1342,-101.6189,Activa

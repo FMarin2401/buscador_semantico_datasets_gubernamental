@@ -1,0 +1,4 @@
+ID_Caseta,Sector,Colonia,Latitud,Longitud,Operativa_24h
+POL-01,Delegacion Centro,Centro Historico,21.1230,-101.6820,True
+POL-02,Delegacion Joyas,Las Joyas,21.1300,-101.7350,True
+POL-03,Caseta Parque,Panorama,21.1450,-101.6880,False

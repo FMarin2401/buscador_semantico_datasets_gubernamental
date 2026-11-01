@@ -3,7 +3,7 @@
 **Proyecto:** Portal de Datos Abiertos del Municipio de León, Guanajuato
 **Autor:** [Francisco Marin Castillo](https://frankmarincas.dev/)
 **Repositorio:** https://github.com/FMarin2401/buscador_semantico_datasets_gubernamental
-**Última actualización:** 2026-10-22
+**Última actualización:** 2026-11-01
 
 ---
 	
@@ -84,12 +84,34 @@ flowchart LR
     end
 
     subgraph Ingesta offline
-        CSV[data/entregados_municipio] --> S1[analyze_csv.py] -->|Gemini| CATG[catalogo_maestro_procesado.csv]
+        CSV[db/seed/csv] --> S1[analyze_csv.py] -->|Gemini| CATG[catalogo_maestro_procesado.csv]
         CATG -->|revisión humana| CAT[catalogo_maestro.csv]
         CAT --> S2[migrate_chroma.py] --> CH
         S2 --> FS
     end
 ```
+
+### Contenedores (docker compose)
+
+```mermaid
+flowchart LR
+    B[Navegador] -->|HTTP :8080| FE[frontend<br/>nginx]
+    FE -->|HTTP / JSON<br/>/api, /docs| API[api<br/>FastAPI + e5 + ChromaDB]
+    API -->|SQL :5432| DB[(db<br/>PostgreSQL 16)]
+    subgraph red_web
+        FE
+        API
+    end
+    subgraph red_privada [red_privada, internal]
+        DB
+    end
+```
+
+- **frontend**: nginx sirve las páginas (las plantillas Jinja2 se renderizan a HTML estático al construir la imagen, con `frontend/render.py`) y reenvía `/api`, `/docs`, `/redoc` y `/openapi.json` a la API. Todo queda en el mismo origen, así que la cookie de sesión y la CSP `connect-src 'self'` funcionan igual que con un solo contenedor. Es el único servicio con puerto publicado.
+- **api**: FastAPI con el modelo de embeddings y ChromaDB embebida (volúmenes `chroma` y `raw`). Antes de iniciar, ejecuta `scripts/migrate_chroma.py` sobre la semilla de `db/seed/`.
+- **db**: PostgreSQL en una red `internal`: no tiene salida a internet ni es accesible desde el host; solo la API lo alcanza. El esquema lo crea Alembic al arrancar la API.
+
+En Azure se usa un solo contenedor (`Dockerfile.azure`) con API y frontend juntos y SQLite: ver [15. Despliegue con Docker](#15-despliegue-con-docker).
 
 ### Persistencia híbrida
 
@@ -112,56 +134,66 @@ El *readiness probe* solo responde `200` cuando el warm-up terminó, el índice 
 
 ## 3. Estructura del repositorio
 
+Las rutas de la API que aparecen en el resto de este documento (`app/...`, `scripts/...`, `data/...`) son relativas a la carpeta `api/`.
+
 ```
 buscador_semantico_datasets_gubernamental/
-├── app/
-│   ├── main.py                  # App FastAPI, lifespan, middlewares (CSP), CORS, health checks
-│   ├── nlp_model.py             # Modelo e5, prefijos query/passage, umbral de distancia
-│   ├── db_chroma.py             # Cliente ChromaDB y helpers (buscar, listar, guardar, upsert, modelo indexado)
-│   ├── security.py              # Cifrado y verificación de contraseñas (Argon2, migración de bcrypt)
-│   ├── limiter.py               # Instancia de SlowAPI (rate limit por IP)
-│   ├── db_core/
-│   │   ├── connection.py        # Engine SQLAlchemy (SQLite/PostgreSQL), SessionLocal, get_db
-│   │   ├── migraciones.py       # Aplica las migraciones de Alembic al arrancar
-│   │   └── models.py            # Modelos ORM
-│   └── api/
-│       ├── search.py            # /api/buscar, /api/catalogos
-│       ├── manipulate_datasets.py # CRUD de datasets, descargas, bitácora
-│       ├── auth.py              # Login/logout JWT, dependencias de autorización
-│       ├── users.py             # Gestión de funcionarios
-│       ├── contact.py           # Buzón ciudadano
-│       └── pages.py             # Rutas que sirven las páginas HTML
-├── alembic/                     # Migraciones de la base relacional (versions/0001_esquema_inicial.py)
-├── alembic.ini
-├── frontend/
+├── api/                         # Backend (contenedor "api")
+│   ├── app/
+│   │   ├── main.py              # App FastAPI, lifespan, middlewares (CSP), CORS, health checks
+│   │   ├── nlp_model.py         # Modelo e5, prefijos query/passage, umbral de distancia
+│   │   ├── db_chroma.py         # Cliente ChromaDB y helpers (buscar, listar, guardar, upsert, modelo indexado)
+│   │   ├── security.py          # Cifrado y verificación de contraseñas (Argon2, migración de bcrypt)
+│   │   ├── limiter.py           # Instancia de SlowAPI (rate limit por IP)
+│   │   ├── catalogo.py          # Categorías oficiales
+│   │   ├── db_core/
+│   │   │   ├── connection.py    # Engine SQLAlchemy (SQLite/PostgreSQL), SessionLocal, get_db
+│   │   │   ├── migraciones.py   # Aplica las migraciones de Alembic al arrancar
+│   │   │   └── models.py        # Modelos ORM
+│   │   └── api/
+│   │       ├── search.py        # /api/buscar, /api/catalogos
+│   │       ├── manipulate_datasets.py # CRUD de datasets, descargas, bitácora
+│   │       ├── auth.py          # Login/logout JWT, dependencias de autorización
+│   │       ├── users.py         # Gestión de funcionarios
+│   │       ├── contact.py       # Buzón ciudadano
+│   │       └── pages.py         # Páginas HTML (solo si la imagen incluye el frontend)
+│   ├── alembic/                 # Migraciones de la base relacional (versions/0001_esquema_inicial.py)
+│   ├── alembic.ini
+│   ├── scripts/
+│   │   ├── config_pipeline.py   # Rutas y categorías oficiales compartidas por la ingesta
+│   │   ├── analyze_csv.py       # Generación de metadatos con Gemini
+│   │   ├── migrate_chroma.py    # Carga idempotente del catálogo a ChromaDB
+│   │   ├── evaluate_model.py    # Evaluación: Recall@k, MRR, consultas fuera de tema, calibración del umbral
+│   │   └── comparar_modelos.py  # Comparación de modelos de embeddings sin modificar ChromaDB
+│   ├── eval/
+│   │   ├── ground_truth.json    # 100 consultas coloquiales con su dataset esperado
+│   │   ├── consultas_fuera_de_tema.json # 30 consultas que ningún dataset debería responder
+│   │   ├── resultados/          # Métricas en JSON (baseline, comparación, e5_small)
+│   │   └── experimentos/        # Documentación de cada experimento
+│   ├── data/                    # (ignorado por git) chroma_db, raw, clean, usuarios.db
+│   ├── logs/                    # (ignorado por git) auditoria.log
+│   ├── Dockerfile               # Imagen de la API para docker compose
+│   └── requirements.txt
+├── frontend/                    # Contenedor "frontend"
 │   ├── *.html                   # Páginas (plantillas Jinja2)
 │   ├── css/style.css            # Estilos Mobile-First
 │   ├── js/                      # Lógica de cliente por página
-│   └── assets/                  # Logo y favicon
-├── scripts/
-│   ├── config_pipeline.py       # Rutas y categorías oficiales compartidas por la ingesta
-│   ├── analyze_csv.py           # Generación de metadatos con Gemini
-│   ├── migrate_chroma.py        # Carga idempotente del catálogo a ChromaDB
-│   ├── evaluate_model.py        # Evaluación: Recall@k, MRR, consultas fuera de tema, calibración del umbral
-│   └── comparar_modelos.py      # Comparación de modelos de embeddings sin modificar ChromaDB
-├── eval/
-│   ├── ground_truth.json        # 100 consultas coloquiales con su dataset esperado
-│   ├── consultas_fuera_de_tema.json # 30 consultas que ningún dataset debería responder
-│   ├── resultados/              # Métricas en JSON (baseline, comparación, e5_small)
-│   └── experimentos/            # Documentación de cada experimento
+│   ├── assets/                  # Logo y favicon
+│   ├── render.py                # Convierte las plantillas en HTML estático para nginx
+│   ├── nginx.conf               # Estáticos, cabeceras de seguridad y proxy a la API
+│   └── Dockerfile
+├── db/seed/                     # Datos de ejemplo: catalogo_maestro.csv (revisado) y csv/ (75 CSV del municipio)
 ├── docs/                        # Esta documentación y la revisión de código
-├── data/                        # (ignorado por git) chroma_db, raw, clean, entregados_municipio, usuarios.db
-├── logs/                        # (ignorado por git) auditoria.log
-├── Dockerfile
-├── docker-compose.yml
-└── requirements.txt
+├── docker-compose.yml           # frontend + api + db (PostgreSQL)
+├── Dockerfile.azure             # Imagen de un solo contenedor para Azure (+ Dockerfile.azure.dockerignore)
+└── .env.example                 # Variables de ejemplo para docker compose
 ```
 
 ---
 
 ## 4. Configuración y variables de entorno
 
-Las variables se leen del archivo `.env` en la raíz del proyecto. Ese archivo está excluido de git y de la imagen Docker.
+Las variables se leen del archivo `.env` en la raíz del proyecto (`cp .env.example .env`). Ese archivo está excluido de git y de las imágenes Docker; docker compose lo pasa al contenedor de la API.
 
 | Variable | Obligatoria | Descripción | Valor por defecto |
 |---|---|---|---|
@@ -170,8 +202,11 @@ Las variables se leen del archivo `.env` en la raíz del proyecto. Ese archivo e
 | `ADMIN_PASSWORD` | Sí, en el primer arranque | Contraseña del administrador inicial | — |
 | `GEMINI_API_KEY` | Solo para `analyze_csv.py` | API key de Google Gemini | — |
 | `GEMINI_MODEL` | No | Modelo de Gemini que usa `analyze_csv.py` | `gemini-3.6-flash` |
-| `ALLOWED_ORIGINS` | No | Orígenes CORS permitidos, separados por comas | `http://localhost:8000` |
-| `DATABASE_URL` | No | URL de PostgreSQL. Si no se define, se usa SQLite en `data/usuarios.db` | — |
+| `ALLOWED_ORIGINS` | No | Orígenes CORS permitidos, separados por comas | `http://localhost:8000` (en `.env.example`: `http://localhost:8080`) |
+| `DATABASE_URL` | No | URL de PostgreSQL. Si no se define, se usa SQLite en `data/usuarios.db`. Docker compose la arma con las variables `POSTGRES_*` | — |
+| `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | No (compose) | Credenciales del contenedor `db` | `portal` / `portal_local` / `portal_datos` |
+| `PUERTO_WEB` | No (compose) | Puerto del host donde se publica el frontend | `8080` |
+| `CARPETA_ORIGINALES` / `CATALOGO_REVISADO` | No | Rutas de la semilla para la ingesta. La imagen de la API las apunta a `/app/seed/` | `../db/seed/csv/` y `../db/seed/catalogo_maestro.csv` |
 | `ENVIRONMENT` | No | Con el valor `production`, la cookie de sesión lleva el flag `Secure` | `local` |
 | `LOG_LEVEL` | No | Nivel de logging. `DEBUG` registra el detalle de cada búsqueda | `INFO` |
 
@@ -182,7 +217,7 @@ GEMINI_API_KEY=tu_api_key
 SECRET_KEY=una_cadena_larga_y_aleatoria
 ADMIN_USER=admin_leon
 ADMIN_PASSWORD=contraseña_segura
-ALLOWED_ORIGINS=http://localhost:8000
+ALLOWED_ORIGINS=http://localhost:8080
 # DATABASE_URL=postgresql://usuario:pass@host:5432/portal
 # ENVIRONMENT=production
 # LOG_LEVEL=DEBUG
@@ -194,30 +229,39 @@ ALLOWED_ORIGINS=http://localhost:8000
 
 ## 5. Instalación y ejecución
 
-### Local
+### Con Docker (recomendado)
 
 ```bash
 git clone https://github.com/FMarin2401/buscador_semantico_datasets_gubernamental.git
 cd buscador_semantico_datasets_gubernamental
+cp .env.example .env
+docker compose up --build
+```
 
+La aplicación queda en `http://localhost:8080` y la documentación de la API en `http://localhost:8080/docs` y `/redoc`. El README de la raíz detalla cómo detener, reiniciar y los problemas comunes.
+
+### Local sin Docker
+
+```bash
 python -m venv venv
-source venv/bin/activate          # Windows: venv\Scripts\activate
-pip install -r requirements.txt   # Incluye torch para CPU desde el índice de PyTorch
-
-# Crear el archivo .env (ver sección 4)
-
+source venv/bin/activate              # Windows: venv\Scripts\activate
+pip install -r api/requirements.txt   # Incluye torch para CPU desde el índice de PyTorch
+cd api
+python scripts/migrate_chroma.py      # Indexa db/seed en data/chroma_db
 uvicorn app.main:app --reload
 ```
 
-La aplicación queda disponible en `http://localhost:8000`, y la documentación interactiva de la API en `http://localhost:8000/docs` (Swagger) y `http://localhost:8000/redoc`.
+La aplicación queda disponible en `http://localhost:8000` con SQLite, y la API sirve también el frontend desde `../frontend`.
 
 Al arrancar, la app crea o actualiza las tablas relacionales con Alembic; no hace falta ningún paso manual. ChromaDB crea `data/chroma_db` automáticamente.
 
 ### Carga inicial del catálogo
 
-Si arrancas con una base vectorial vacía, consulta la sección [12. Scripts](#12-scripts-de-ingesta-y-evaluación) para poblarla desde los CSV del municipio. También puedes publicar datasets uno por uno desde el panel de administración.
+En Docker la semilla se carga sola. Sin Docker, si arrancas con una base vectorial vacía, consulta la sección [12. Scripts](#12-scripts-de-ingesta-y-evaluación) para poblarla desde los CSV del municipio. También puedes publicar datasets uno por uno desde el panel de administración.
 
 ### Cambios en el esquema de la base relacional
+
+Desde `api/`:
 
 ```bash
 alembic revision --autogenerate -m "descripcion del cambio"  # Revisar el archivo generado en alembic/versions/
@@ -558,13 +602,13 @@ Se pueden ejecutar desde cualquier carpeta: cada script se ubica en la raíz del
 ### Pipeline de ingesta
 
 ```
-data/entregados_municipio/*.csv
+db/seed/csv/*.csv
         │  analyze_csv.py (Gemini)
         ▼
 data/clean/catalogo_maestro_procesado.csv   ← salida sin revisar
         │  revisión humana (intencional)
         ▼
-data/clean/catalogo_maestro.csv             ← versión revisada
+db/seed/catalogo_maestro.csv             ← versión revisada
         │  migrate_chroma.py
         ▼
 ChromaDB + data/raw/{id}.csv
@@ -574,7 +618,7 @@ La revisión humana es intencional: Gemini puede inventar una dependencia que su
 
 ### 12.1 `scripts/analyze_csv.py` — metadatos con IA
 
-1. Lee cada CSV de `data/entregados_municipio/` que todavía no esté en el catálogo.
+1. Lee cada CSV de `db/seed/csv/` que todavía no esté en el catálogo.
 2. Envía una muestra de **5 filas** a Gemini (`GEMINI_MODEL`, por defecto `gemini-3.6-flash`).
 3. Usa **salida estructurada**: un esquema Pydantic con `titulo`, `descripcion`, `dependencia` y `categoria`. `categoria` es un `Enum` con las 10 categorías oficiales, así que Gemini no puede inventar otra.
 4. Ante errores temporales (429, 5xx o fallas de red) reintenta con **backoff exponencial** (2, 4, 8, 16 s). Un error de la solicitud (4xx) no se reintenta.
@@ -590,7 +634,7 @@ python scripts/analyze_csv.py --solo-columnas   # Privacidad: envía solo los en
 
 ### 12.2 `scripts/migrate_chroma.py` — carga idempotente
 
-1. Lee `data/clean/catalogo_maestro.csv` (la versión revisada).
+1. Lee `db/seed/catalogo_maestro.csv` (la versión revisada).
 2. **Reutiliza el ID** de los datasets que ya están indexados (los busca por `archivo_original`), así que conservan su CSV en `data/raw/` y su contador de descargas. Los nuevos reciben un `uuid5` determinista.
 3. Calcula `hash_sha256`, para que el panel detecte duplicados.
 4. Recalcula los embeddings **de todos los datasets**, incluidos los subidos desde el panel, en lote, y los guarda con `upsert`.
@@ -666,29 +710,32 @@ python scripts/comparar_modelos.py minilm e5-small --salida eval/resultados/comp
 
 ## 15. Despliegue con Docker
 
-### Imagen (`Dockerfile`)
-
-- Base `python:3.12-slim`, con las dependencias de sistema para compilar LXML.
-- **Descarga el modelo `intfloat/multilingual-e5-small` durante el build**, para que el contenedor arranque sin depender de Hugging Face.
-- Copia `data/chroma_db` y `data/raw` desde la máquina donde se construye: **sin volumen** (como en Azure Container Apps), esos son los datasets que sirve la app. `data/` no está en git, así que **hay que re-indexar con `migrate_chroma.py` antes de construir** si cambió el modelo o el catálogo. Si se olvida, el *readiness* responde `503` en lugar de servir búsquedas incorrectas.
-- Uvicorn arranca con `--proxy-headers --forwarded-allow-ips=*` para respetar `X-Forwarded-Proto`, porque Azure termina el HTTPS. Con `*`, Uvicorn toma la **primera** IP de `X-Forwarded-For`, que detrás de un proxy que conserve la cabecera podría falsificar el cliente; por eso el rate limit no usa esa IP, sino la última (ver [13. Seguridad](#13-seguridad)). En Azure la cabecera trae una sola IP, la real.
-
-### Compose (`docker-compose.yml`)
+### Compose (`docker-compose.yml`): tres contenedores
 
 ```bash
-docker compose up -d --build
+cp .env.example .env
+docker compose up --build
 ```
 
-Volúmenes persistentes:
+| Servicio | Construcción | Puerto en el host | Redes | Volúmenes |
+|---|---|---|---|---|
+| `frontend` | `frontend/Dockerfile`: etapa Python que renderiza las plantillas (`render.py`) y etapa `nginx:1.27.5-alpine` | `${PUERTO_WEB:-8080}` → 80 | `red_web` | — |
+| `api` | `api/Dockerfile`, con `db/seed` como contexto adicional (`seed`) copiado a `/app/seed` | ninguno | `red_web`, `red_privada` | `chroma` → `/app/data/chroma_db`, `raw` → `/app/data/raw` |
+| `db` | `postgres:16.10-alpine` | ninguno | `red_privada` (`internal: true`) | `pgdata` |
 
-| Host | Contenedor | Contenido |
-|---|---|---|
-| `./data/chroma_db` | `/app/data/chroma_db` | Índice vectorial |
-| `./data/raw` | `/app/data/raw` | Archivos CSV publicados |
-| `./data/usuarios.db` | `/app/data/usuarios.db` | Base SQLite |
-| `./logs` | `/app/logs` | Logs de auditoría |
+- **Orden de arranque:** `db` (healthcheck `pg_isready`) → `api` (healthcheck `/api/health/ready`, con `start_period` de 180 s para la carga del modelo) → `frontend`.
+- **Arranque de la API:** `python scripts/migrate_chroma.py && exec uvicorn ...`. El script es idempotente: el primer arranque indexa los 75 datasets de la semilla y los siguientes los dejan igual. Después, el `lifespan` aplica las migraciones de Alembic en PostgreSQL y crea el administrador inicial.
+- **Imagen de la API:** igual que la de Azure (modelo descargado durante el build, `curl` para el healthcheck), pero sin el frontend y sin `data/`: arranca vacía y se llena con la semilla. Como no existe la carpeta `frontend`, no monta las páginas (`pages.FRONTEND_DIR` es `None`).
+- **nginx:** reenvía `/api/`, `/docs`, `/redoc` y `/openapi.json` con `X-Forwarded-For $proxy_add_x_forwarded_for` (el limiter usa la última IP, la del cliente) y `client_max_body_size 26m`. Agrega a las páginas las mismas cabeceras de seguridad y CSP que el middleware de `main.py`; si cambian allá, hay que cambiarlas en `frontend/nginx.conf`.
+- **Reiniciar desde cero:** `docker compose down -v` borra los volúmenes; el siguiente `up` vuelve a cargar la semilla.
 
-> Si `./data/usuarios.db` no existe en el host antes del primer `up`, Docker crea un **directorio** con ese nombre y SQLite falla. Crea el archivo antes con `touch data/usuarios.db`, o usa `DATABASE_URL` con PostgreSQL.
+### Imagen de Azure (`Dockerfile.azure`)
+
+- Se construye desde la raíz: copia `api/` a `/app` y `frontend/` a `/app/frontend`, así FastAPI sirve las páginas y la API en un solo contenedor. Usa su propio `Dockerfile.azure.dockerignore`.
+- Base `python:3.12-slim`, con las dependencias de sistema para compilar LXML.
+- **Descarga el modelo `intfloat/multilingual-e5-small` durante el build**, para que el contenedor arranque sin depender de Hugging Face.
+- Copia `api/data/chroma_db` y `api/data/raw` desde la máquina donde se construye: **sin volumen** (como en Azure Container Apps), esos son los datasets que sirve la app. `api/data/` no está en git, así que **hay que re-indexar con `migrate_chroma.py` antes de construir** si cambió el modelo o el catálogo. Si se olvida, el *readiness* responde `503` en lugar de servir búsquedas incorrectas.
+- Uvicorn arranca con `--proxy-headers --forwarded-allow-ips=*` para respetar `X-Forwarded-Proto`, porque Azure termina el HTTPS. Con `*`, Uvicorn toma la **primera** IP de `X-Forwarded-For`, que detrás de un proxy que conserve la cabecera podría falsificar el cliente; por eso el rate limit no usa esa IP, sino la última (ver [13. Seguridad](#13-seguridad)). En Azure la cabecera trae una sola IP, la real.
 
 ### Azure Container Apps
 
@@ -710,8 +757,8 @@ Volúmenes persistentes:
 Para publicar una versión nueva:
 
 ```bash
-python scripts/migrate_chroma.py --simular   # Debe mostrar 0 cambios: la imagen copia esta Chroma
-docker build -t acrportaldatos6462.azurecr.io/portal-datos-leon:vN .
+(cd api && python scripts/migrate_chroma.py --simular)   # Debe mostrar 0 cambios: la imagen copia esta Chroma
+docker build -f Dockerfile.azure -t acrportaldatos6462.azurecr.io/portal-datos-leon:vN .
 az acr login -n acrportaldatos6462
 docker push acrportaldatos6462.azurecr.io/portal-datos-leon:vN
 az containerapp update -n app-buscador-datos -g rg-portal-datos --image acrportaldatos6462.azurecr.io/portal-datos-leon:vN
@@ -756,7 +803,7 @@ Marcado = aplicado en el despliegue actual de Azure.
 - [ ] Configurar `DATABASE_URL` hacia PostgreSQL. *No aplica a la demo: se decidió seguir con SQLite efímera.*
 - [x] Servir detrás de HTTPS (la cabecera HSTS ya está activa).
 - [x] Re-indexar con `migrate_chroma.py` antes de construir la imagen si cambió el modelo o el catálogo.
-- [ ] Respaldar periódicamente `data/chroma_db`, `data/raw` y `data/clean`. *Importante: `data/` no está en git y la imagen copia la Chroma local, así que la copia de tu máquina es la única. Hay un respaldo de la versión MiniLM en `~/.cache/respaldo_chroma_minilm_2026-10-22`.*
+- [ ] Respaldar periódicamente `api/data/chroma_db` y `api/data/raw`. *Importante: `api/data/` no está en git y la imagen copia la Chroma local, así que la copia de tu máquina es la única. Hay un respaldo de la versión MiniLM en `~/.cache/respaldo_chroma_minilm_2026-10-22`.*
 - [x] Mantener `LOG_LEVEL` en `INFO` (el valor por defecto).
 - [x] Guardar `SECRET_KEY` y `ADMIN_PASSWORD` como secretos, no como variables en texto plano.
 - [x] Configurar los probes de startup, readiness y liveness.
@@ -818,4 +865,4 @@ El análisis detallado de la evaluación y del cambio de modelo está en `eval/e
 | 7 | Catálogo sin paginación en el servidor | `/api/catalogos` devuelve todo y la paginación se hace en el cliente. Es suficiente para unos cientos de datasets |
 | 8 | Sin pruebas automatizadas | Las pruebas de cada fase se hicieron con `TestClient` y Playwright, pero no hay una suite de `pytest` en el repositorio |
 | 9 | Configuración dispersa | `load_dotenv()` solo se llama en `auth.py` (y en `analyze_csv.py`). `main.py` lee `ADMIN_USER` porque importa `auth.py` antes del `lifespan`: funciona, pero depende del orden de los imports. Se puede centralizar con `pydantic-settings`, que ya está en `requirements.txt` |
-| 10 | Tamaño de la imagen | ~3.8 GB, de los que ~1 GB son PyTorch y sus dependencias. Se podría reducir con ONNX Runtime (ya instalado por ChromaDB) y quitando `build-essential` del Dockerfile |
+| 10 | Tamaño de la imagen | ~3.8 GB, de los que ~1 GB son PyTorch y sus dependencias. Se podría reducir con ONNX Runtime (ya instalado por ChromaDB) y quitando `build-essential` de los Dockerfile |

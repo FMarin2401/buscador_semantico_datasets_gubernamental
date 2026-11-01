@@ -1,0 +1,4 @@
+ID_Lugar,Nombre,Año_Construccion,Latitud,Longitud,Entrada_Libre
+T-01,Templo Expiatorio,1921,21.1188,-101.6734,True
+T-02,Arco de la Calzada,1896,21.1165,-101.6705,True
+T-03,Teatro Manuel Doblado,1880,21.1215,-101.6810,False

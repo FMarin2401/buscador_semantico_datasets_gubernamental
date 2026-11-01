@@ -1,0 +1,76 @@
+archivo_original,titulo,descripcion,dependencia,categoria
+accidentes_viales.csv,Accidentes Viales,Registro de colisiones y percances viales con ubicación y daños.,Dirección General de Movilidad,Movilidad
+apoyos_sociales.csv,Apoyos Sociales,Padrón de beneficiarios de programas de asistencia y calentadores solares.,Dirección General de Desarrollo Social y Humano,Desarrollo Social
+arboles_protegidos.csv,Árboles Protegidos,Catálogo de especímenes arbóreos notables y protegidos en el municipio.,Dirección General de Medio Ambiente,Medio Ambiente
+asociaciones_civiles.csv,Asociaciones Civiles,Directorio de organizaciones sin fines de lucro registradas.,Secretaría del Ayuntamiento,Administración y Finanzas
+atencion_victimas.csv,Atención a Víctimas,Centros de apoyo psicológico y legal para personas en situación de vulnerabilidad.,Dirección General de Prevención del Delito,Seguridad
+bacheo_obras.csv,Registro de Bacheo y Pavimentación,Vías intervenidas metros cuadrados rehabilitados y presupuesto asignado.,Dirección General de Obra Pública,Infraestructura y Obras
+bancos_sangre.csv,Bancos de Sangre,Directorio de centros de donación autorizados en el municipio.,Dirección General de Salud Municipal,Salud
+bases_taxi_autorizadas.csv,Bases de Taxis Autorizadas,Ubicación de sitios oficiales de transporte de pasajeros.,Dirección General de Movilidad,Movilidad
+bebederos_municipales.csv,Bebederos Públicos,Puntos de hidratación instalados en espacios públicos.,Dirección General de Medio Ambiente,Medio Ambiente
+bibliotecas_municipales.csv,Red de Bibliotecas Municipales,Ubicación horarios y servicios de bibliotecas públicas.,Dirección General de Educación,Educación
+bicis_leon.csv,Infraestructura Ciclista Bicis León,Estaciones y rutas habilitadas para el sistema de bicicletas.,Dirección General de Movilidad,Movilidad
+calidad_aire_pm.csv,Monitoreo de Calidad del Aire,Registros horarios de partículas PM2.5 PM10 y ozono.,Dirección General de Medio Ambiente,Medio Ambiente
+camaras_c4_vigilancia.csv,Cámaras de Videovigilancia C4,Ubicación y características de postes de monitoreo de seguridad.,Secretaría de Seguridad Prevención y Protección Ciudadana,Seguridad
+centros_acopio_neumaticos.csv,Centros de Acopio de Neumáticos,Lugares autorizados para la recolección de llantas usadas.,Dirección General de Medio Ambiente,Medio Ambiente
+centros_desarrollo_comunitario.csv,Centros de Desarrollo Comunitario,Espacios de talleres y capacitación social por polígono.,Dirección General de Desarrollo Social y Humano,Desarrollo Social
+ciclovias_municipales.csv,Red de Ciclovías,Tramos y kilómetros de carriles confinados y compartidos.,Dirección General de Movilidad,Movilidad
+clinicas_salud.csv,Directorio de Clínicas Municipales,Ubicación de centros de atención primaria y especialidades.,Dirección General de Salud Municipal,Salud
+comedores_dif.csv,Comedores Comunitarios DIF,Ubicación y raciones diarias de comedores de asistencia alimentaria.,Sistema DIF León,Desarrollo Social
+comerciantes_ambulantes.csv,Padrón de Comerciantes Ambulantes,Permisos vigentes para comercio en vía pública.,Dirección General de Comercio y Consumo,Economía
+creditos_emprendedores.csv,Apoyos a Emprendedores,Créditos municipales otorgados a negocios locales.,Dirección General de Economía,Economía
+cruceros_peligrosos_semaforizacion.csv,Cruceros Viales Peligrosos,Intersecciones con mayor siniestralidad analizadas.,Dirección General de Movilidad,Movilidad
+esculturas_via_publica.csv,Esculturas en Vía Pública,Catálogo de monumentos y piezas artísticas al aire libre.,Instituto Cultural de León,Cultura y Deporte
+estacionamientos_concesionados.csv,Estacionamientos Concesionados,Cajones y tarifas de aparcamientos públicos regulados.,Dirección General de Movilidad,Movilidad
+estaciones_bomberos.csv,Estaciones de Bomberos,Ubicación y unidades asignadas del cuerpo de bomberos.,Dirección General de Protección Civil,Seguridad
+esterilizaciones_mascotas.csv,Campañas de Esterilización Animal,Jornadas de control poblacional para mascotas.,Dirección General de Salud Municipal,Salud
+ferias_empleo.csv,Ferias de Empleo Municipales,Eventos de vinculación laboral y vacantes ofertadas.,Dirección General de Economía,Economía
+fugas_gas_bomberos.csv,Reportes de Fugas de Gas,Atención de emergencias por cilindros y tanques estacionarios.,Dirección General de Protección Civil,Seguridad
+fugas_sapal.csv,Fugas de Agua SAPAL,Reportes y estatus de reparaciones en la red hidráulica.,Sistema de Agua Potable y Alcantarillado de León (SAPAL),Infraestructura y Obras
+guarderias_municipales.csv,Padrón de Guarderías Municipales,Estancias infantiles con certificación vigente de protección civil.,Dirección General de Desarrollo Social y Humano,Desarrollo Social
+incidencia_delictiva.csv,Reportes de Incidencia Delictiva,Estadística mensual de llamadas al 911 por tipo de delito.,Secretaría de Seguridad Prevención y Protección Ciudadana,Seguridad
+incidencias_seguridad.csv,Incidencias de Seguridad,Registro operativo de eventos atendidos por corporaciones.,Secretaría de Seguridad Prevención y Protección Ciudadana,Seguridad
+infracciones_transito.csv,Infracciones de Tránsito,Folios de multas aplicadas por faltas al reglamento vial.,Dirección General de Movilidad,Movilidad
+infraestructura_escuelas_publicas.csv,Infraestructura de Escuelas Públicas,Planteles de educación básica y sus características físicas.,Dirección General de Educación,Educación
+inspecciones_ecologia.csv,Inspecciones de Ecología,Verificaciones a empresas por emisiones y descargas.,Dirección General de Medio Ambiente,Medio Ambiente
+inspecciones_negocios_pc.csv,Inspecciones de Protección Civil,Dictámenes de seguridad en establecimientos comerciales.,Dirección General de Protección Civil,Seguridad
+inspecciones_salubridad_mercados.csv,Inspecciones de Salubridad en Mercados,Evaluaciones sanitarias en centros de abasto.,Dirección General de Salud Municipal,Salud
+juzgados_civicos.csv,Directorio de Juzgados Cívicos,Ubicación y jueces de turno para faltas administrativas.,Secretaría del Ayuntamiento,Administración y Finanzas
+kioscos_turismo.csv,Kioscos de Información Turística,Puntos de atención al visitante en zonas emblemáticas.,Dirección General de Hospitalidad y Turismo,Economía
+licencias_construccion.csv,Licencias de Construcción,Permisos otorgados para obra habitacional y comercial.,Dirección General de Gestión Urbana,Infraestructura y Obras
+luminarias_led_instaladas.csv,Modernización de Luminarias LED,Puntos con nueva iluminación pública instalada.,Dirección General de Obra Pública,Infraestructura y Obras
+mantenimiento_areas_verdes.csv,Mantenimiento de Áreas Verdes,Parques y jardines bajo programación de poda.,Dirección General de Medio Ambiente,Medio Ambiente
+mercados_artesanias.csv,Mercados de Artesanías,Locales dedicados a la venta de productos típicos y calzado.,Dirección General de Economía,Economía
+mercados_publicos.csv,Padrón de Mercados Públicos,Ubicación locales activos y horarios de centrales de abasto.,Dirección General de Comercio y Consumo,Economía
+modulos_policia.csv,Módulos de Policía y Casetas,Ubicación de comandancias y sectores de vigilancia.,Secretaría de Seguridad Prevención y Protección Ciudadana,Seguridad
+modulos_tesoreria_predial.csv,Módulos de Tesorería para Predial,Puntos de cobro y recaudación fiscal municipal.,Tesorería Municipal,Administración y Finanzas
+padron_cafeterias_certificadas.csv,Padrón de Cafeterías Certificadas,Negocios locales con distintivos de calidad y comercio justo.,Dirección General de Economía,Economía
+padron_contratistas.csv,Padrón de Contratistas de Obra Pública,Directorio de empresas constructoras registradas.,Dirección General de Obra Pública,Infraestructura y Obras
+padron_tianguis_barrios.csv,Padrón de Tianguis en Barrios,Días de instalación y ubicación de mercados sobre ruedas.,Dirección General de Comercio y Consumo,Economía
+panteones_municipales.csv,Panteones Municipales,Capacidad ubicación y horarios de cementerios públicos.,Dirección General de Salud Municipal,Salud
+paraderos_sit_mantenimiento.csv,Mantenimiento de Paraderos SIT,Estatus y limpiezas de estaciones del transporte integrado.,Dirección General de Movilidad,Movilidad
+permisos_espectaculos_vivos.csv,Permisos para Espectáculos en Vivo,Aforos y autorizaciones para eventos masivos.,Dirección General de Fiscalización y Control,Administración y Finanzas
+plantas_tratamiento.csv,Plantas de Tratamiento de Aguas,Infraestructura de saneamiento operada por el organismo operador.,Sistema de Agua Potable y Alcantarillado de León (SAPAL),Infraestructura y Obras
+pozos_extraccion_sapal.csv,Pozos de Extracción SAPAL,Caudal y profundidad de fuentes de abastecimiento hídrico.,Sistema de Agua Potable y Alcantarillado de León (SAPAL),Infraestructura y Obras
+presupuesto_participativo.csv,Proyectos de Presupuesto Participativo,Obras elegidas y votadas por los ciudadanos en colonias.,Dirección General de Desarrollo Social y Humano,Desarrollo Social
+puntos_internet_gratuito.csv,Puntos de Internet Gratuito,Plazas y espacios públicos con conectividad WiFi abierta.,Dirección General de Innovación,Administración y Finanzas
+puntos_reciclaje.csv,Puntos de Reciclaje y Acopio,Contenedores y estaciones para separación de residuos.,Dirección General de Medio Ambiente,Medio Ambiente
+quejas_ruido_ambiental.csv,Quejas por Ruido Ambiental,Reportes ciudadanos por contaminación acústica atendidos.,Dirección General de Medio Ambiente,Medio Ambiente
+reciclaje_electronicos.csv,Recolección de Residuos Electrónicos,Campañas de acopio de aparatos tecnológicos en desuso.,Dirección General de Medio Ambiente,Medio Ambiente
+refugios_fauna_silvestre.csv,Refugios de Fauna Silvestre,Espacios de resguardo y atención a animales rescatados.,Dirección General de Medio Ambiente,Medio Ambiente
+reportes_luminarias.csv,Reportes de Fallas en Alumbrado Público,Folios de atención a luminarias apagadas o dañadas.,Dirección General de Obra Pública,Infraestructura y Obras
+reportes_maltrato_animal.csv,Reportes de Maltrato Animal,Denuncias ciudadanas canalizadas para rescate animal.,Dirección General de Salud Municipal,Salud
+riesgos_inundacion.csv,Zonas de Riesgo por Inundación,Historial y polígonos vulnerables durante la temporada de lluvias.,Dirección General de Protección Civil,Seguridad
+rutas_basura.csv,Rutas de Recolección de Basura,Días sectores y turnos del servicio de aseo público.,Dirección General de Gestión Ambiental,Medio Ambiente
+rutas_desfiles_eventos.csv,Rutas de Desfile y Eventos Cívicos,Vialidades cerradas y trayectos de paradas oficiales.,Dirección General de Movilidad,Movilidad
+semaforos_vehiculares.csv,Semáforos Vehiculares Inteligentes,Intersecciones sincronizadas y conectadas al C4.,Dirección General de Movilidad,Movilidad
+sitios_turisticos.csv,Sitios Históricos y Turísticos,Catálogo de atractivos patrimoniales y culturales de la ciudad.,Dirección General de Hospitalidad y Turismo,Economía
+talleres_cultura.csv,Talleres de Casas de la Cultura,Disciplinas artísticas impartidas en centros culturales.,Instituto Cultural de León,Cultura y Deporte
+torneos_barrios.csv,Torneos Deportivos en Barrios,Ligas de fútbol y disciplinas comunitarias de COMUDE.,Comisión Municipal de Cultura Física y Deporte (COMUDE),Cultura y Deporte
+transporte_orugas.csv,Red del Sistema Integrado de Transporte,Coordenadas paraderos y horarios de rutas troncales.,Dirección General de Movilidad,Movilidad
+unidades_deportivas.csv,Unidades Deportivas COMUDE,Ubicación equipamiento y costos de espacios deportivos.,Comisión Municipal de Cultura Física y Deporte (COMUDE),Cultura y Deporte
+vacunacion_antirrabica.csv,Puntos de Vacunación Antirrábica,Jornadas de protección a la salud animal en colonias.,Dirección General de Salud Municipal,Salud
+verificentros_autorizados.csv,Centros de Verificación Vehicular,Líneas operativas autorizadas para control de emisiones.,Dirección General de Medio Ambiente,Medio Ambiente
+viveros_municipales.csv,Viveros Municipales,Producción de plantas y especies forestales para reforestación.,Dirección General de Medio Ambiente,Medio Ambiente
+zonas_ascenso_transporte_plataforma.csv,Zonas de Ascenso para Transporte de Plataforma,Espacios delimitados para abordaje de vehículos de aplicación.,Dirección General de Movilidad,Movilidad
+zonas_carga_comercial.csv,Zonas de Carga y Descarga,Horarios y tonelaje permitido para abastecimiento comercial.,Dirección General de Movilidad,Movilidad

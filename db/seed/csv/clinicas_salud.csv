@@ -1,0 +1,5 @@
+id_centro,nombre_clinica,tipo_atencion,direccion,horario,camas_disponibles
+SAL-01,Clínica Periférica Joyas,Primer Nivel,Blvd. Aristóteles s/n,08:00-20:00,5
+SAL-02,Centro de Salud Centro,Urgencias Menores,Miguel Alemán 120,24 Horas,15
+SAL-03,Unidad de Especialidades,Especializado,Blvd. San Juan Bosco,09:00-18:00,0
+SAL-04,Dispensario San Miguel,Primer Nivel,Tierra Blanca 405,08:00-16:00,2

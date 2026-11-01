@@ -1,0 +1,4 @@
+ID_Biblio,Nombre,Direccion,Latitud,Longitud,Conexion_Internet
+BIB-01,Biblioteca Central Estatal,Forum Cultural Guanajuato,21.1135,-101.6570,True
+BIB-02,Biblioteca Carlos Monsivais,Blvd. Aristoteles,21.1310,-101.7320,True
+BIB-03,Biblioteca Rosario Castellanos,Col. Azteca,21.1040,-101.6430,False

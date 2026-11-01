@@ -1,0 +1,4 @@
+ID_Planta,Nombre,Capacidad_Lps,Latitud,Longitud,Tipo_Tratamiento
+PTAR-01,Municipal,2500,21.0750,-101.6550,Biologico Secundario
+PTAR-02,Las Joyas,150,21.1320,-101.7350,Lodos Activados
+PTAR-03,Periodistas,50,21.1100,-101.6200,Filtracion

@@ -6,17 +6,14 @@ ENV/
 # Credenciales y variables de entorno
 .env
 
-# Directorio de datos del proyecto 
-data/entregados_municipio/
-data/raw/
-data/clean/
-data/chroma_db/
+# Datos de ejecución de la API (api/data). Los datos de ejemplo sí se versionan, en db/seed/
+api/data/raw/
+api/data/clean/
+api/data/chroma_db/
 
 # Bases de datos locales y archivos SQLite
 *.db
 *.sqlite3
-data/*.db
-data/usuarios.db
 
 # logs
 logs/

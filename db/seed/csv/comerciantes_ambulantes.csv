@@ -1,0 +1,4 @@
+Folio,Giro,Zona_Autorizada,Latitud,Longitud,Horario,Estatus
+AMB-001,Alimentos,Zona Piel,21.1180,-101.6650,08:00-18:00,Activo
+AMB-002,Artesanias,Plaza de los Martires,21.1236,-101.6826,10:00-20:00,Activo
+AMB-003,Ropa,Tianguis Linea de Fuego,21.1300,-101.6900,07:00-16:00,Suspendido

@@ -1,0 +1,4 @@
+ID_Estacionamiento,Nombre,Cajones_Totales,Latitud,Longitud,Tarifa_Hora
+EST-01,Fundadores,350,21.1230,-101.6820,18.00
+EST-02,Expiatorio,200,21.1188,-101.6734,15.00
+EST-03,San Juan de Dios,120,21.1200,-101.6850,15.00

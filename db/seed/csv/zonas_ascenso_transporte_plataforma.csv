@@ -1,0 +1,4 @@
+ID_Zona,Ubicacion,Capacidad_Vehiculos,Latitud,Longitud,Horario_Permitido
+ZTE-01,Poliforum Acceso Principal,5,21.1158,-101.6547,24 Horas
+ZTE-02,Plaza Mayor Puerta 2,8,21.1505,-101.6995,07:00-23:00
+ZTE-03,Foro del Lago,4,21.1130,-101.6580,24 Horas

@@ -1,0 +1,4 @@
+ID_Mercado,Nombre,Colonia,Latitud,Longitud,Locales_Activos,Horario
+M01,Mercado Aldama,Centro,21.1210,-101.6845,350,07:00-18:00
+M02,Mercado Descargue Estrella,Centro,21.1195,-101.6860,420,04:00-17:00
+M03,Mercado San Juan Bosco,San Juan Bosco,21.1290,-101.7065,115,08:00-16:00

@@ -1,0 +1,4 @@
+ID_Arbol,Especie,Edad_Aprox,Latitud,Longitud,Estado_Salud
+ARB-001,Mezquite,120,21.1690,-101.6920,Sano
+ARB-002,Jacaranda,85,21.1155,-101.6690,Sano
+ARB-003,Sabino,150,21.1005,-101.6320,Requiere poda

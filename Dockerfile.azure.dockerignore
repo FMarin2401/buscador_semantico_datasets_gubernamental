@@ -1,0 +1,16 @@
+# Contexto de Dockerfile.azure (la raíz del repositorio)
+**/venv/
+**/env/
+**/__pycache__/
+**/*.pyc
+.git/
+.env
+# La base de usuarios (hashes de contraseñas) y los catálogos intermedios no viajan en la imagen.
+# api/data/chroma_db y api/data/raw sí: sin volumen, son los datasets que sirve la app en Azure.
+api/data/*.db
+api/data/clean/
+api/logs/
+api/eval/
+docs/
+db/
+*.pdf
