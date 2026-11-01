@@ -193,6 +193,8 @@ buscador_semantico_datasets_gubernamental/
 │   ├── seed/                    # Datos de ejemplo: catalogo_maestro.csv (revisado) y csv/ (75 CSV del municipio)
 │   └── objetos_bd.sql           # Índice y vista de PostgreSQL, con su justificación
 ├── docs/                        # Esta documentación, la revisión de código y solicitudes_cambio.md
+│   └── entrega/                 # Entregables del 2.º parcial: 01_Arquitectura (C4, DAR), 02_Datos (DER, DDA), 03_API (Diseño de API)
+├── CLAUDE.md                    # Instrucciones permanentes del proyecto (convenciones, reglas, comandos)
 ├── docker-compose.yml           # frontend + api + db (PostgreSQL)
 ├── Dockerfile.azure             # Imagen de un solo contenedor para Azure (+ Dockerfile.azure.dockerignore)
 └── .env.example                 # Variables de ejemplo para docker compose
