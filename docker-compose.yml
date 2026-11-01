@@ -1,7 +1,7 @@
 # Aplicación completa en tres contenedores:
 #   frontend (nginx)  -> único puerto publicado; sirve las páginas y reenvía /api y /docs a la API
 #   api (FastAPI)     -> búsqueda semántica (modelo e5 + ChromaDB embebida) y lógica de negocio
-#   db (PostgreSQL)   -> usuarios, bitácora, descargas y mensajes; solo la API lo alcanza
+#   db (PostgreSQL)   -> usuarios, datasets, reportes, bitácora, descargas y mensajes; solo la API lo alcanza
 #
 # Uso: cp .env.example .env && docker compose up --build
 

@@ -19,6 +19,7 @@
             <button type="button" class="admin-tab-btn" data-target="tab-subir">Publicar Dataset</button>
             <button type="button" class="admin-tab-btn" data-target="tab-gestionar">Gestionar Catálogo</button>
             <button type="button" class="admin-tab-btn" data-target="tab-mensajes">Buzón Ciudadano</button>
+            <button type="button" class="admin-tab-btn" data-target="tab-reportes">Reportes de Datasets</button>
             <button type="button" class="admin-tab-btn" data-target="tab-usuarios">Equipo y Accesos</button>
             <hr class="admin-divider">
             <a href="/" class="admin-tab-btn btn-admin">Ver Portal Público</a>
@@ -180,6 +181,57 @@
                 <div id="numerosPaginacionMensajes" class="numeros-paginacion"></div>
                 <button type="button" id="btnMensajesPagSiguiente" class="btn-secundario-pag">Siguiente</button>
             </nav>
+        </section>
+        <section id="tab-reportes" class="pestana-admin pestana-oculta">
+            <h2>Reportes de Datasets</h2>
+            <p>Problemas que reportan los ciudadanos desde la ficha de cada dataset. Un reporte avanza de <em>abierto</em> a <em>en revisión</em> y a <em>resuelto</em>; no retrocede.</p>
+
+            <div class="filter-group" style="max-width: 280px;">
+                <label for="filtroEstadoReporte" class="admin-label">ESTADO</label>
+                <select id="filtroEstadoReporte" class="form-input">
+                    <option value="">Todos</option>
+                    <option value="abierto" selected>Abiertos</option>
+                    <option value="en_revision">En revisión</option>
+                    <option value="resuelto">Resueltos</option>
+                </select>
+            </div>
+
+            <div class="tabla-desplazable" tabindex="0" role="region" aria-label="Tabla de reportes de datasets">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th scope="col">Folio</th>
+                        <th scope="col">Dataset</th>
+                        <th scope="col">Tipo</th>
+                        <th scope="col">Descripción</th>
+                        <th scope="col">Fecha</th>
+                        <th scope="col">Estado</th>
+                        <th scope="col" class="text-center">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="tablaCuerpoReportes">
+                    <tr><td colspan="7" class="text-center">Cargando reportes...</td></tr>
+                </tbody>
+            </table>
+            </div>
+
+            <h3 style="margin-top: 35px;">Datasets con reportes</h3>
+            <div class="tabla-desplazable" tabindex="0" role="region" aria-label="Resumen de reportes por dataset">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th scope="col">Dataset</th>
+                        <th scope="col">Dependencia</th>
+                        <th scope="col" class="text-center">Pendientes</th>
+                        <th scope="col" class="text-center">Total reportes</th>
+                        <th scope="col" class="text-center">Descargas</th>
+                    </tr>
+                </thead>
+                <tbody id="tablaCuerpoResumenReportes">
+                    <tr><td colspan="5" class="text-center">Cargando...</td></tr>
+                </tbody>
+            </table>
+            </div>
         </section>
         <section id="tab-usuarios" class="pestana-admin pestana-oculta">
             <h2>Gestión de Funcionarios</h2>

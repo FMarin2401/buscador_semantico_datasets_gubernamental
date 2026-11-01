@@ -93,6 +93,30 @@
             <div id="modalVistaPrevia"></div>
             <h5 class="ficha-subtitulo">Descargar</h5>
             <div id="modalDownloadLinks"></div>
+
+            <h5 class="ficha-subtitulo">¿Encontraste un problema?</h5>
+            <button type="button" class="btn-outline" id="btnMostrarReporte" aria-expanded="false" aria-controls="formReporte">Reportar un problema</button>
+            <form id="formReporte" class="form-reporte" hidden>
+                <div class="filter-group">
+                    <label for="tipoReporte" class="admin-label">TIPO DE PROBLEMA</label>
+                    <select id="tipoReporte" class="form-input" required>
+                        <option value="datos_incorrectos">Datos incorrectos</option>
+                        <option value="desactualizado">Información desactualizada</option>
+                        <option value="archivo_danado">El archivo no abre o está dañado</option>
+                        <option value="otro">Otro</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="descripcionReporte" class="admin-label">DESCRIPCIÓN</label>
+                    <textarea id="descripcionReporte" class="form-input" rows="3" minlength="10" maxlength="1000" placeholder="Qué está mal y dónde (mínimo 10 caracteres)" required></textarea>
+                </div>
+                <div class="filter-group">
+                    <label for="emailReporte" class="admin-label">CORREO (OPCIONAL, PARA AVISARTE)</label>
+                    <input type="email" id="emailReporte" class="form-input" maxlength="254" placeholder="correo@ejemplo.com">
+                </div>
+                <button type="submit" class="btn-primary" id="btnEnviarReporte">Enviar reporte</button>
+            </form>
+            <p id="msgReporte" class="admin-mensaje" role="status" aria-live="polite"></p>
         </div>
         <footer class="modal-footer">
             <button type="button" class="btn-outline btn-cerrar-modal">Cerrar</button>

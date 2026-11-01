@@ -2,7 +2,8 @@ from fastapi import APIRouter, Depends, status, HTTPException, Request
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, EmailStr, Field
 from app.db_core.connection import get_db
-from app.db_core.models import MensajeContactoModel, BitacoraAuditoriaModel
+from app.db_core.models import MensajeContactoModel
+from app.db_core.auditoria import registrar_evento_auditoria
 from app.api.auth import verificar_token, requiere_admin
 from app.limiter import limiter
 
@@ -49,12 +50,7 @@ def eliminar_mensaje(
     db.delete(mensaje)
     
     # Registro en la bitácora de auditoría
-    log_auditoria = BitacoraAuditoriaModel(
-        usuario=usuario_autenticado,
-        accion="Eliminación Mensaje",
-        detalles=f"Mensaje de {remitente} (ID: {id_mensaje})"
-    )
-    db.add(log_auditoria)
+    registrar_evento_auditoria(db, usuario_autenticado, "Eliminación Mensaje", f"Mensaje de {remitente} (ID: {id_mensaje})")
     db.commit()
 
     return {"mensaje": "Mensaje eliminado exitosamente"}

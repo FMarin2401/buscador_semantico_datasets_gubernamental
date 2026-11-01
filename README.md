@@ -25,7 +25,7 @@ Plataforma de búsqueda inteligente, analítica y gestión de datos abiertos par
 |---|---|---|---|
 | `frontend` | nginx (`frontend/Dockerfile`) | Sirve las páginas y reenvía `/api`, `/docs`, `/redoc` y `/openapi.json` a la API | **8080** |
 | `api` | Python 3.12 (`api/Dockerfile`) | FastAPI, modelo de embeddings y ChromaDB | ninguno (red interna) |
-| `db` | `postgres:16` | Usuarios, bitácora, descargas y mensajes | ninguno (red privada) |
+| `db` | `postgres:16` | Usuarios, datasets, reportes, bitácora, descargas y mensajes | ninguno (red privada) |
 
 La base de datos está en una red interna a la que solo llega la API: ni el navegador ni el frontend pueden conectarse a ella.
 
@@ -39,8 +39,10 @@ La base de datos está en una red interna a la que solo llega la API: ni el nave
 │   ├── scripts/         # Ingesta con Gemini, indexación en ChromaDB y evaluación
 │   ├── eval/            # Conjunto de evaluación del buscador
 │   └── Dockerfile
-├── db/seed/             # Datos de ejemplo: catálogo revisado y 75 CSV del municipio
-├── docs/                # Documentación técnica
+├── db/
+│   ├── seed/            # Datos de ejemplo: catálogo revisado y 75 CSV del municipio
+│   └── objetos_bd.sql   # Índice y vista de PostgreSQL, con su justificación
+├── docs/                # Documentación técnica y solicitudes de cambio (SC-001)
 ├── docker-compose.yml
 ├── Dockerfile.azure     # Imagen de un solo contenedor para Azure Container Apps
 └── .env.example

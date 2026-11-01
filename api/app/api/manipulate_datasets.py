@@ -22,7 +22,9 @@ from app.nlp_model import generar_embedding_documento, texto_para_indexar
 from app.api.auth import verificar_token, requiere_admin
 from app.limiter import limiter
 from app.db_core.connection import get_db
-from app.db_core.models import BitacoraAuditoriaModel, DescargasDatasetModel
+from app.db_core.models import BitacoraAuditoriaModel, DescargasDatasetModel, DatasetModel, UsuarioModel
+from app.db_core.auditoria import registrar_evento_auditoria
+from app.db_core.sincronizacion import valores_desde_chroma
 
 router = APIRouter(tags=["Gestión y Descarga de Datasets"])
 logger = logging.getLogger(__name__)
@@ -62,16 +64,6 @@ def es_csv_legible(contenido: bytes) -> bool:
         except (pd.errors.ParserError, pd.errors.EmptyDataError, ValueError):
             return False
     return False
-
-def registrar_evento_auditoria(db: Session, usuario: str, accion: str, detalles: str):
-    """Inserta de manera transaccional un registro en la tabla de bitácora relacional."""
-    nuevo_log = BitacoraAuditoriaModel(
-        usuario=usuario,
-        accion=accion,
-        detalles=detalles
-    )
-    db.add(nuevo_log)
-    db.commit()
 
 @router.get("/api/admin/datasets")
 def listar_datasets_admin(usuario_autenticado: str = Depends(verificar_token)):
@@ -183,10 +175,25 @@ def publicar_dataset(
             status_code=500,
             detail="Error al guardar el dataset en la base vectorial."
         )
-    
-    # Registro dual: archivo plano y tabla de SQLite
+
+    # Registro relacional y evento de bitácora en una sola transacción. Si falla, se deshace lo de ChromaDB y el
+    # archivo, para que las dos bases no queden con catálogos distintos
+    try:
+        publicado_por_id = db.query(UsuarioModel.id).filter(UsuarioModel.username == usuario_autenticado).scalar()
+        db.add(DatasetModel(id=id_unico, publicado_por_id=publicado_por_id, **valores_desde_chroma(titulo, metadata)))
+        registrar_evento_auditoria(db, usuario_autenticado, "Publicación", f"{titulo} ({dependencia})")
+        db.commit()
+    except Exception:
+        db.rollback()
+        coleccion.delete(ids=[id_unico])
+        os.remove(ruta_archivo)
+        logger.exception(f"Error al registrar el dataset '{titulo}' en la base relacional")
+        raise HTTPException(
+            status_code=500,
+            detail="Error al guardar el dataset en la base de datos."
+        )
+
     logger.info(f"[BITACORA AUDITORIA] El usuario '{usuario_autenticado}' subió el dataset '{titulo}' con ID: {id_unico}.")
-    registrar_evento_auditoria(db, usuario_autenticado, "Publicación", f"{titulo} ({dependencia})")
 
     return {
         "mensaje": "Dataset publicado exitosamente", 
@@ -230,8 +237,17 @@ def actualizar_dataset(
             metadatas=[nuevo_metadata]
         )
 
-        logger.info(f"[BITACORA AUDITORIA] El usuario '{usuario_autenticado}' actualizó los metadatos del dataset con ID: {id_dataset}")
+        # Mismos valores en la tabla relacional (si faltara la fila, se crea; la sincronización del arranque la habría creado)
+        valores = valores_desde_chroma(datos.titulo, nuevo_metadata)
+        fila = db.get(DatasetModel, id_dataset)
+        if fila:
+            for campo, valor in valores.items():
+                setattr(fila, campo, valor)
+        else:
+            db.add(DatasetModel(id=id_dataset, **valores))
         registrar_evento_auditoria(db, usuario_autenticado, "Actualización", f"{datos.titulo} (ID: {id_dataset[:8]}...)")
+        db.commit()
+        logger.info(f"[BITACORA AUDITORIA] El usuario '{usuario_autenticado}' actualizó los metadatos del dataset con ID: {id_dataset}")
 
     except HTTPException:
         raise
@@ -268,11 +284,15 @@ def eliminar_dataset(
     if os.path.exists(ruta_csv):
         os.remove(ruta_csv)
 
-    db.query(DescargasDatasetModel).filter(DescargasDatasetModel.id_dataset == id_dataset).delete()
-    
-    # Registro dual: archivo plano y tabla de SQLite
+    # Al borrar la fila se borran también su contador de descargas y sus reportes (cascada en el ORM y en PostgreSQL)
+    fila = db.get(DatasetModel, id_dataset)
+    if fila:
+        db.delete(fila)
+
+    # Registro dual: archivo plano y tabla relacional
     logger.info(f"[BITACORA AUDITORIA] El usuario '{usuario_autenticado}' eliminó el dataset con ID: {id_dataset}")
     registrar_evento_auditoria(db, usuario_autenticado, "Eliminación", f"{nombre_dataset} (ID: {id_dataset[:8]}...)")
+    db.commit()
 
     return {"mensaje": "Dataset eliminado permanentemente"}
 
@@ -312,7 +332,8 @@ def descargar_dataset(
 ):
     id_dataset = str(id_dataset) # Solo un UUID válido llega a construir la ruta del archivo
     ruta_csv = f"data/raw/{id_dataset}.csv"
-    if not os.path.exists(ruta_csv):
+    # El contador tiene llave foránea a datasets: sin la fila, el dataset no existe para la base relacional
+    if not os.path.exists(ruta_csv) or not db.get(DatasetModel, id_dataset):
         raise HTTPException(status_code=404, detail="Dataset no encontrado")
 
     registro = db.query(DescargasDatasetModel).filter(DescargasDatasetModel.id_dataset == id_dataset).first()
