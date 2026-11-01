@@ -4,7 +4,8 @@ from sqlalchemy.orm import Session
 from typing import Literal
 
 from app.db_core.connection import get_db
-from app.db_core.models import UsuarioModel, BitacoraAuditoriaModel
+from app.db_core.models import UsuarioModel
+from app.db_core.auditoria import registrar_evento_auditoria
 from app.api.auth import requiere_admin
 from app.security import cifrar_password
 
@@ -51,12 +52,7 @@ def crear_usuario(
     )
     db.add(nuevo_admin)
 
-    log = BitacoraAuditoriaModel(
-        usuario=usuario_autenticado,
-        accion="Creación Usuario",
-        detalles=f"Alta de funcionario '{datos.username}' con rol '{datos.rol}'"
-    )
-    db.add(log)
+    registrar_evento_auditoria(db, usuario_autenticado, "Creación Usuario", f"Alta de funcionario '{datos.username}' con rol '{datos.rol}'")
     db.commit()
 
     return {"mensaje": "Usuario creado exitosamente"}
@@ -80,12 +76,7 @@ def eliminar_usuario(
     nombre = usuario_a_borrar.username
     db.delete(usuario_a_borrar)
 
-    log = BitacoraAuditoriaModel(
-        usuario=usuario_autenticado,
-        accion="Baja Usuario",
-        detalles=f"Eliminación de funcionario '{nombre}'"
-    )
-    db.add(log)
+    registrar_evento_auditoria(db, usuario_autenticado, "Baja Usuario", f"Eliminación de funcionario '{nombre}'")
     db.commit()
 
     return {"mensaje": f"Usuario '{nombre}' eliminado"}

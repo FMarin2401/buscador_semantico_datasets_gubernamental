@@ -1883,3 +1883,38 @@ ul.nav-links {
         grid-template-columns: 1fr;
     }
 }
+
+/* SC-001: formulario de reporte en la ficha y bandeja de reportes del panel */
+.form-reporte {
+    margin-top: 10px;
+}
+
+/* .btn-outline fija display y le ganaba al atributo hidden: el botón seguía visible tras enviar el reporte */
+.modal-body [hidden] {
+    display: none !important;
+}
+
+/* .modal-body p fija el color del texto; el mensaje del reporte debe conservar el color de su estado */
+.modal-body .admin-mensaje.msg-info { color: blue; }
+.modal-body .admin-mensaje.msg-success { color: green; }
+.modal-body .admin-mensaje.msg-danger { color: red; }
+
+.estado-reporte {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    white-space: nowrap;
+}
+
+.estado-abierto { background: #fdecea; color: #a61b1b; }
+.estado-en_revision { background: #fff4e5; color: #8a4b00; }
+.estado-resuelto { background: #e8f5e9; color: #1b5e20; }
+
+.acciones-reporte {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    flex-wrap: wrap;
+}

@@ -116,7 +116,7 @@ En Azure se usa un solo contenedor (`Dockerfile.azure`) con API y frontend junto
 ### Persistencia híbrida
 
 - **ChromaDB** guarda el índice semántico: el ID, el título, el embedding y los metadatos de cada dataset. Es la **fuente de verdad del catálogo**.
-- **La base relacional** guarda usuarios, mensajes de contacto, la bitácora de auditoría y los contadores de descargas. Su esquema se versiona con **Alembic**.
+- **La base relacional** guarda usuarios, mensajes de contacto, la bitácora de auditoría, los contadores de descargas, los reportes de la SC-001 y la tabla `datasets`, que es el registro relacional del catálogo de ChromaDB: existe para que descargas y reportes tengan llave foránea. Se sincroniza con ChromaDB al arrancar (`app/db_core/sincronizacion.py`) y en cada alta, edición o baja del panel. Su esquema se versiona con **Alembic**.
 - **El sistema de archivos** (`data/raw/{id}.csv`) guarda los archivos CSV originales. El nombre de cada archivo es el ID del dataset en ChromaDB.
 
 ### Ciclo de vida de la aplicación (`lifespan`)
@@ -125,8 +125,9 @@ Al arrancar, `app/main.py` hace lo siguiente:
 
 1. **Aplica las migraciones** de Alembic (`aplicar_migraciones()` en `app/db_core/migraciones.py`). Si la base ya tiene tablas pero no tiene control de versiones (bases creadas antes de Alembic con `create_all`), la registra automáticamente como la revisión inicial `0001`.
 2. Si la tabla `usuarios` está vacía, crea un administrador inicial con `ADMIN_USER` y `ADMIN_PASSWORD`. Si faltan esas variables, el arranque falla.
-3. **Comprueba la compatibilidad del índice**: compara el modelo con que se indexó ChromaDB (metadato `modelo_embeddings` de la colección) con el que usa la app. Si no coinciden, marca `app_state["modelo_compatible"] = False` y lo registra como error (ver [6. Protección contra índices incompatibles](#protección-contra-índices-incompatibles)).
-4. Ejecuta un **warm-up**: genera un embedding de prueba y lanza una consulta a ChromaDB para cargar el modelo y el índice en RAM. Si funciona, marca `app_state["warmup_ready"] = True`.
+3. **Sincroniza la tabla `datasets`** con ChromaDB (`sincronizar_datasets()`): inserta los que faltan, actualiza los que cambiaron y borra los que ya no están, con sus descargas y reportes.
+4. **Comprueba la compatibilidad del índice**: compara el modelo con que se indexó ChromaDB (metadato `modelo_embeddings` de la colección) con el que usa la app. Si no coinciden, marca `app_state["modelo_compatible"] = False` y lo registra como error (ver [6. Protección contra índices incompatibles](#protección-contra-índices-incompatibles)).
+5. Ejecuta un **warm-up**: genera un embedding de prueba y lanza una consulta a ChromaDB para cargar el modelo y el índice en RAM. Si funciona, marca `app_state["warmup_ready"] = True`.
 
 El *readiness probe* solo responde `200` cuando el warm-up terminó, el índice es compatible y la base relacional responde.
 
@@ -149,15 +150,18 @@ buscador_semantico_datasets_gubernamental/
 │   │   ├── db_core/
 │   │   │   ├── connection.py    # Engine SQLAlchemy (SQLite/PostgreSQL), SessionLocal, get_db
 │   │   │   ├── migraciones.py   # Aplica las migraciones de Alembic al arrancar
-│   │   │   └── models.py        # Modelos ORM
+│   │   │   ├── models.py        # Modelos ORM, con sus FK y CHECK
+│   │   │   ├── sincronizacion.py # Copia el catálogo de ChromaDB a la tabla datasets
+│   │   │   └── auditoria.py     # registrar_evento_auditoria()
 │   │   └── api/
 │   │       ├── search.py        # /api/buscar, /api/catalogos
 │   │       ├── manipulate_datasets.py # CRUD de datasets, descargas, bitácora
 │   │       ├── auth.py          # Login/logout JWT, dependencias de autorización
 │   │       ├── users.py         # Gestión de funcionarios
 │   │       ├── contact.py       # Buzón ciudadano
+│   │       ├── reportes.py      # SC-001: reportes de problemas en datasets
 │   │       └── pages.py         # Páginas HTML (solo si la imagen incluye el frontend)
-│   ├── alembic/                 # Migraciones de la base relacional (versions/0001_esquema_inicial.py)
+│   ├── alembic/                 # Migraciones (0001 esquema inicial, 0002 integridad referencial y reportes)
 │   ├── alembic.ini
 │   ├── scripts/
 │   │   ├── config_pipeline.py   # Rutas y categorías oficiales compartidas por la ingesta
@@ -182,8 +186,10 @@ buscador_semantico_datasets_gubernamental/
 │   ├── render.py                # Convierte las plantillas en HTML estático para nginx
 │   ├── nginx.conf               # Estáticos, cabeceras de seguridad y proxy a la API
 │   └── Dockerfile
-├── db/seed/                     # Datos de ejemplo: catalogo_maestro.csv (revisado) y csv/ (75 CSV del municipio)
-├── docs/                        # Esta documentación y la revisión de código
+├── db/
+│   ├── seed/                    # Datos de ejemplo: catalogo_maestro.csv (revisado) y csv/ (75 CSV del municipio)
+│   └── objetos_bd.sql           # Índice y vista de PostgreSQL, con su justificación
+├── docs/                        # Esta documentación, la revisión de código y solicitudes_cambio.md
 ├── docker-compose.yml           # frontend + api + db (PostgreSQL)
 ├── Dockerfile.azure             # Imagen de un solo contenedor para Azure (+ Dockerfile.azure.dockerignore)
 └── .env.example                 # Variables de ejemplo para docker compose
@@ -358,31 +364,64 @@ El script de ingesta pide a Gemini que incluya en la descripción **sinónimos y
 
 ```mermaid
 erDiagram
+    usuarios ||--o{ bitacora_auditoria : "registra (SET NULL)"
+    usuarios ||--o{ datasets : "publica (SET NULL)"
+    usuarios ||--o{ reportes_dataset : "atiende (SET NULL)"
+    datasets ||--o| descargas_datasets : "cuenta (CASCADE)"
+    datasets ||--o{ reportes_dataset : "recibe (CASCADE)"
+
     usuarios {
         int id PK
-        string username UK
-        string password_hash "Argon2 (o bcrypt antiguo)"
-        string rol "admin | editor"
+        varchar50 username UK "obligatorio"
+        varchar255 password_hash "Argon2 (o bcrypt antiguo)"
+        varchar20 rol "CHECK admin | editor"
     }
     mensajes_contacto {
         int id PK
-        string nombre
-        string email
+        varchar100 nombre
+        varchar254 email
         text mensaje
         datetime fecha_envio "UTC"
     }
     bitacora_auditoria {
         int id PK
-        string usuario
-        string accion
-        string detalles
-        datetime fecha_hora "UTC"
+        varchar50 usuario "nombre al momento del evento"
+        int usuario_id FK "opcional"
+        varchar50 accion
+        text detalles
+        datetime fecha_hora "UTC, indexada"
+    }
+    datasets {
+        varchar36 id PK "UUID, mismo que en ChromaDB"
+        varchar200 titulo
+        text descripcion
+        varchar200 dependencia
+        varchar100 categoria "CHECK categorías oficiales"
+        varchar255 archivo_original UK "opcional"
+        varchar64 hash_sha256 UK "opcional"
+        date fecha_actualizacion "opcional"
+        int publicado_por_id FK "opcional"
     }
     descargas_datasets {
-        string id_dataset PK "ID en ChromaDB"
-        int total_descargas
+        varchar36 id_dataset PK, FK
+        int total_descargas "CHECK >= 0"
+    }
+    reportes_dataset {
+        int id PK
+        varchar36 id_dataset FK
+        varchar30 tipo "CHECK 4 valores"
+        text descripcion
+        varchar254 email_contacto "opcional"
+        varchar20 estado "CHECK abierto | en_revision | resuelto"
+        datetime fecha_creacion "UTC"
+        datetime fecha_actualizacion "opcional"
+        int atendido_por_id FK "opcional"
     }
 ```
+
+- **Valores acotados:** `rol`, `categoria`, `tipo` y `estado` se validan en la API (Pydantic) y además con `CHECK` en la base, para que ningún otro cliente pueda guardar un valor fuera de la lista.
+- **Borrado:** al eliminar un dataset se borran su contador y sus reportes (`ON DELETE CASCADE` en PostgreSQL; el ORM también los borra, porque SQLite no aplica llaves foráneas por defecto). Al eliminar un usuario, sus referencias quedan en `NULL`; la bitácora conserva el nombre en `usuario`.
+- **Objetos adicionales:** índice `ix_reportes_estado_fecha` y vista `v_resumen_datasets`, documentados en `db/objetos_bd.sql`.
 
 El esquema se versiona con **Alembic** (`alembic/versions/`). La app aplica las migraciones pendientes al arrancar. Con una sola réplica es seguro; con varias, conviene ejecutarlas como un paso previo del despliegue.
 
@@ -463,6 +502,18 @@ Leyenda de acceso: 🌐 público · 🔑 sesión válida (admin o editor) · �
 | POST | `/api/contacto` | 🌐 | 5/min por IP | `nombre` (3–100), `email` válido, `mensaje` (10–2000) |
 | GET | `/api/admin/mensajes` | 🔑 | — | Lista los mensajes del buzón |
 | DELETE | `/api/admin/mensajes/{id}` | 🛡️ | — | Elimina un mensaje |
+
+### Reportes de datasets (SC-001)
+
+Ver [docs/solicitudes_cambio.md](solicitudes_cambio.md).
+
+| Método | Ruta | Acceso | Límite | Descripción |
+|---|---|---|---|---|
+| POST | `/api/datasets/{id}/reportes` | 🌐 | 5/min por IP | `tipo` (`datos_incorrectos`, `desactualizado`, `archivo_danado`, `otro`), `descripcion` (10–1000), `email_contacto` opcional. `201` en estado `abierto`; `404` si el dataset no existe |
+| GET | `/api/admin/reportes?estado=` | 🔑 | — | Lista los reportes, del más reciente al más antiguo |
+| GET | `/api/admin/reportes/resumen-datasets` | 🔑 | — | Descargas y reportes por dataset (vista `v_resumen_datasets`) |
+| PATCH | `/api/admin/reportes/{id}` | 🔑 | — | Cambia el estado. Solo avanza (`abierto` → `en_revision` → `resuelto`); otra transición o reabrir un resuelto devuelve `409` |
+| DELETE | `/api/admin/reportes/{id}` | 🛡️ | — | Elimina un reporte |
 
 ### Monitoreo
 
@@ -866,3 +917,5 @@ El análisis detallado de la evaluación y del cambio de modelo está en `eval/e
 | 8 | Sin pruebas automatizadas | Las pruebas de cada fase se hicieron con `TestClient` y Playwright, pero no hay una suite de `pytest` en el repositorio |
 | 9 | Configuración dispersa | `load_dotenv()` solo se llama en `auth.py` (y en `analyze_csv.py`). `main.py` lee `ADMIN_USER` porque importa `auth.py` antes del `lifespan`: funciona, pero depende del orden de los imports. Se puede centralizar con `pydantic-settings`, que ya está en `requirements.txt` |
 | 10 | Tamaño de la imagen | ~3.8 GB, de los que ~1 GB son PyTorch y sus dependencias. Se podría reducir con ONNX Runtime (ya instalado por ChromaDB) y quitando `build-essential` de los Dockerfile |
+| 11 | Llaves foráneas en SQLite | SQLite (Azure y desarrollo local) no aplica llaves foráneas por defecto; el ORM borra en cascada descargas y reportes, pero un `ON DELETE SET NULL` hacia `usuarios` no se aplica ahí. En PostgreSQL se aplican todas |
+| 12 | Vista y migraciones en SQLite | En SQLite, Alembic modifica una tabla recreándola (modo *batch*); si la tabla la usa `v_resumen_datasets`, una migración futura tendrá que borrar la vista antes y volver a crearla después |

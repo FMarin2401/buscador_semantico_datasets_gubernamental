@@ -118,6 +118,9 @@ window.onload = async function() {
         btn.addEventListener('click', cerrarFichaModal);
     });
 
+    document.getElementById('btnMostrarReporte')?.addEventListener('click', mostrarFormularioReporte);
+    document.getElementById('formReporte')?.addEventListener('submit', enviarReporte);
+
     const contenedorTarjetas = document.getElementById('contenedor-tarjetas');
     if (contenedorTarjetas) {
         contenedorTarjetas.addEventListener('click', (e) => {
@@ -481,6 +484,7 @@ function enlacesDescarga(idSeguro, titulo) {
 }
 
 let elementoAntesDelModal = null;
+let idDatasetFicha = null; // Dataset abierto en la ficha; lo usa el formulario de reporte (SC-001)
 
 function verFichaDetalle(idDataset) {
     const item = resultadosOriginales.find(d => String(d.id) === String(idDataset));
@@ -493,6 +497,8 @@ function verFichaDetalle(idDataset) {
     document.getElementById('modalCategoria').textContent = item.categoria || "General";
     document.getElementById('modalFecha').textContent = item.fecha_actualizacion || "Sin fecha";
     document.getElementById('modalDownloadLinks').innerHTML = enlacesDescarga(encodeURIComponent(item.id), titulo);
+    idDatasetFicha = item.id;
+    reiniciarFormularioReporte();
 
     elementoAntesDelModal = document.activeElement;
     document.getElementById('modalFicha').style.display = 'flex';
@@ -518,6 +524,74 @@ async function cargarVistaPrevia(idDataset) {
             </div>`;
     } catch (error) {
         contenedor.innerHTML = '<p class="vista-previa-estado">No se pudo cargar la vista previa. Puedes descargar el archivo completo.</p>';
+    }
+}
+
+// --- SC-001: reportar un problema en el dataset de la ficha ---
+
+function reiniciarFormularioReporte() {
+    const form = document.getElementById('formReporte');
+    if (!form) return;
+    form.reset();
+    form.hidden = true;
+    document.getElementById('btnMostrarReporte').hidden = false;
+    document.getElementById('btnMostrarReporte').setAttribute('aria-expanded', 'false');
+    const msg = document.getElementById('msgReporte');
+    msg.textContent = '';
+    msg.className = 'admin-mensaje';
+}
+
+function mostrarFormularioReporte() {
+    const boton = document.getElementById('btnMostrarReporte');
+    document.getElementById('formReporte').hidden = false;
+    boton.hidden = true;
+    boton.setAttribute('aria-expanded', 'true');
+    document.getElementById('tipoReporte').focus();
+}
+
+async function enviarReporte(e) {
+    e.preventDefault();
+    const btn = document.getElementById('btnEnviarReporte');
+    const msg = document.getElementById('msgReporte');
+    const email = document.getElementById('emailReporte').value.trim();
+    const payload = {
+        tipo: document.getElementById('tipoReporte').value,
+        descripcion: document.getElementById('descripcionReporte').value.trim(),
+        email_contacto: email || null,
+    };
+
+    btn.disabled = true;
+    msg.className = 'admin-mensaje msg-info';
+    msg.textContent = 'Enviando reporte...';
+
+    try {
+        const resp = await fetch(`/api/datasets/${encodeURIComponent(idDatasetFicha)}/reportes`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (resp.ok) {
+            const data = await resp.json();
+            document.getElementById('formReporte').hidden = true;
+            msg.className = 'admin-mensaje msg-success';
+            msg.textContent = `Gracias. Registramos tu reporte con el folio #${data.id}.`;
+        } else if (resp.status === 429) {
+            msg.className = 'admin-mensaje msg-danger';
+            msg.textContent = 'Demasiados reportes seguidos. Espera un minuto e inténtalo de nuevo.';
+        } else if (resp.status === 422) {
+            msg.className = 'admin-mensaje msg-danger';
+            msg.textContent = 'Revisa los datos: la descripción necesita al menos 10 caracteres y el correo debe ser válido.';
+        } else {
+            const err = await resp.json().catch(() => ({}));
+            msg.className = 'admin-mensaje msg-danger';
+            msg.textContent = `Error: ${err.detail || 'No se pudo enviar el reporte.'}`;
+        }
+    } catch (error) {
+        msg.className = 'admin-mensaje msg-danger';
+        msg.textContent = 'Error de conexión con el servidor.';
+    } finally {
+        btn.disabled = false;
     }
 }
 

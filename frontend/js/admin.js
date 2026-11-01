@@ -188,6 +188,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
+    document.getElementById('filtroEstadoReporte')?.addEventListener('change', cargarReportesAdmin);
+    document.getElementById('tablaCuerpoReportes')?.addEventListener('click', (e) => {
+        const boton = e.target.closest('button[data-id]');
+        if (!boton) return;
+        if (boton.dataset.estado) cambiarEstadoReporte(boton.dataset.id, boton.dataset.estado);
+        else if (boton.classList.contains('btn-borrar-reporte')) eliminarReporteAdmin(boton.dataset.id);
+    });
+
     const btnAntMsg = document.getElementById('btnMensajesPagAnterior');
     const btnSigMsg = document.getElementById('btnMensajesPagSiguiente');
 
@@ -266,6 +274,8 @@ function cambiarPestana(idPestana, botonClickeado) {
         renderizarDashboard();
     } else if (idPestana === 'tab-mensajes') {
         cargarMensajesAdmin();
+    } else if (idPestana === 'tab-reportes') {
+        cargarReportesAdmin();
     } else if (idPestana === 'tab-usuarios') {
         cargarUsuariosAdmin();
     }
@@ -713,6 +723,125 @@ async function eliminarMensajeAdmin(idMensaje) {
     } catch (error) {
         mostrarToast("Error de conexión al intentar eliminar el mensaje.", "error");
     }
+}
+
+// --- SC-001: reportes de datasets ---
+
+const ETIQUETAS_TIPO_REPORTE = {
+    datos_incorrectos: "Datos incorrectos",
+    desactualizado: "Desactualizado",
+    archivo_danado: "Archivo dañado",
+    otro: "Otro",
+};
+const ETIQUETAS_ESTADO_REPORTE = { abierto: "Abierto", en_revision: "En revisión", resuelto: "Resuelto" };
+// Mismas transiciones que valida la API (app/api/reportes.py): solo se ofrecen los botones permitidos
+const SIGUIENTES_ESTADOS = { abierto: ["en_revision", "resuelto"], en_revision: ["resuelto"], resuelto: [] };
+const TEXTO_BOTON_ESTADO = { en_revision: "Revisar", resuelto: "Resolver" };
+
+async function cargarReportesAdmin() {
+    const tbody = document.getElementById('tablaCuerpoReportes');
+    if (!tbody) return;
+    const estado = document.getElementById('filtroEstadoReporte')?.value || '';
+    tbody.innerHTML = '<tr><td colspan="7" class="text-center">Cargando reportes...</td></tr>';
+
+    try {
+        const url = estado ? `/api/admin/reportes?estado=${encodeURIComponent(estado)}` : '/api/admin/reportes';
+        const respuesta = await fetch(url);
+        if (!respuesta.ok) throw new Error(respuesta.status);
+        const data = await respuesta.json();
+        renderizarTablaReportes(data.reportes || []);
+    } catch (error) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center msg-danger">No se pudieron cargar los reportes. Intenta de nuevo.</td></tr>';
+    }
+    cargarResumenReportes();
+}
+
+function renderizarTablaReportes(reportes) {
+    const tbody = document.getElementById('tablaCuerpoReportes');
+    if (reportes.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center">No hay reportes con este estado.</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = reportes.map(r => {
+        const fecha = fechaUTC(r.fecha_creacion).toLocaleDateString('es-MX', {
+            year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+        });
+        const botonesEstado = SIGUIENTES_ESTADOS[r.estado].map(siguiente =>
+            `<button type="button" class="btn-secondary" data-id="${r.id}" data-estado="${siguiente}">${TEXTO_BOTON_ESTADO[siguiente]}</button>`
+        ).join('');
+        const botonBorrar = ES_ADMIN ? `<button type="button" class="btn-borrar-reporte btn-danger" data-id="${r.id}">Borrar</button>` : '';
+        const contacto = r.email_contacto ? `<br><small>${escaparHTML(r.email_contacto)}</small>` : '';
+        const atendido = r.atendido_por ? `<br><small>por ${escaparHTML(r.atendido_por)}</small>` : '';
+        return `
+            <tr>
+                <td>#${r.id}</td>
+                <td><strong>${escaparHTML(r.dataset)}</strong></td>
+                <td>${escaparHTML(ETIQUETAS_TIPO_REPORTE[r.tipo] || r.tipo)}</td>
+                <td>${escaparHTML(r.descripcion)}${contacto}</td>
+                <td>${escaparHTML(fecha)}</td>
+                <td><span class="estado-reporte estado-${r.estado}">${ETIQUETAS_ESTADO_REPORTE[r.estado]}</span>${atendido}</td>
+                <td class="text-center"><div class="acciones-reporte">${botonesEstado}${botonBorrar}</div></td>
+            </tr>`;
+    }).join('');
+}
+
+async function cargarResumenReportes() {
+    const tbody = document.getElementById('tablaCuerpoResumenReportes');
+    if (!tbody) return;
+    try {
+        const respuesta = await fetch('/api/admin/reportes/resumen-datasets');
+        if (!respuesta.ok) throw new Error(respuesta.status);
+        const data = await respuesta.json();
+        const datasets = data.datasets || [];
+        tbody.innerHTML = datasets.length === 0
+            ? '<tr><td colspan="5" class="text-center">Ningún dataset tiene reportes.</td></tr>'
+            : datasets.map(d => `
+                <tr>
+                    <td><strong>${escaparHTML(d.titulo)}</strong></td>
+                    <td>${escaparHTML(d.dependencia)}</td>
+                    <td class="text-center">${d.reportes_pendientes}</td>
+                    <td class="text-center">${d.total_reportes}</td>
+                    <td class="text-center">${d.total_descargas}</td>
+                </tr>`).join('');
+    } catch (error) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center msg-danger">No se pudo cargar el resumen.</td></tr>';
+    }
+}
+
+async function cambiarEstadoReporte(idReporte, estado) {
+    try {
+        const respuesta = await fetch(`/api/admin/reportes/${encodeURIComponent(idReporte)}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ estado })
+        });
+        if (respuesta.ok) {
+            mostrarToast(`Reporte #${idReporte}: ${ETIQUETAS_ESTADO_REPORTE[estado].toLowerCase()}.`, "success");
+        } else {
+            const data = await respuesta.json().catch(() => ({}));
+            mostrarToast(data.detail || "No se pudo cambiar el estado del reporte.", "error");
+        }
+    } catch (error) {
+        mostrarToast("Error de conexión al cambiar el estado del reporte.", "error");
+    }
+    cargarReportesAdmin();
+}
+
+async function eliminarReporteAdmin(idReporte) {
+    if (!confirm(`¿Eliminar el reporte #${idReporte}?`)) return;
+    try {
+        const respuesta = await fetch(`/api/admin/reportes/${encodeURIComponent(idReporte)}`, { method: 'DELETE' });
+        if (respuesta.ok) {
+            mostrarToast("Reporte eliminado.", "info");
+        } else {
+            const data = await respuesta.json().catch(() => ({}));
+            mostrarToast(data.detail || "No se pudo eliminar el reporte.", "error");
+        }
+    } catch (error) {
+        mostrarToast("Error de conexión al eliminar el reporte.", "error");
+    }
+    cargarReportesAdmin();
 }
 
 async function exportarBitacora() {

@@ -15,9 +15,10 @@ from sqlalchemy.orm import Session
 from sqlalchemy import text
 
 # Módulos internos de la aplicación
-from app.api import manipulate_datasets, pages, search, auth, contact, users
+from app.api import manipulate_datasets, pages, search, auth, contact, users, reportes
 from app.db_core.connection import SessionLocal, get_db
 from app.db_core.migraciones import aplicar_migraciones
+from app.db_core.sincronizacion import sincronizar_datasets
 from app.db_core.models import UsuarioModel
 from app.nlp_model import generar_embedding_consulta, NOMBRE_MODELO
 from app.db_chroma import coleccion, modelo_indexado, registrar_modelo_indexado
@@ -68,6 +69,9 @@ async def lifespan(app: FastAPI):
             db.add(nuevo_admin)
             db.commit()
             print("¡Administrador inicial registrado desde el .env!")
+
+        # Descargas y reportes tienen llave foránea a la tabla datasets: debe tener el mismo catálogo que ChromaDB
+        sincronizar_datasets(db)
     finally:
         db.close()
 
@@ -119,6 +123,7 @@ app.include_router(manipulate_datasets.router)
 app.include_router(auth.router)
 app.include_router(users.router)
 app.include_router(contact.router)
+app.include_router(reportes.router)
 
 # Configuración de CORS
 origenes_permitidos = os.getenv("ALLOWED_ORIGINS", "http://localhost:8000").split(",")
