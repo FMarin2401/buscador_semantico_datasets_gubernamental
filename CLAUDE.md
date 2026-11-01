@@ -51,6 +51,7 @@ docker compose logs -f api                # Logs de la API
 docker compose exec api pytest            # Pruebas (base temporal, no toca los datos)
 docker compose exec db psql -U portal -d portal_datos   # Consola de PostgreSQL
 docker compose down -v                    # Borrar todo y volver a los datos de ejemplo
+python3 docs/entrega/armar_entrega.py     # Armar la carpeta de entrega 00–08 (con la app levantada)
 
 # Sin Docker (desde api/, con el venv de la raíz: source ../env/bin/activate)
 uvicorn app.main:app --reload             # http://localhost:8000 con SQLite y el frontend
