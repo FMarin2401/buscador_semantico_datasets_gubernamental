@@ -67,7 +67,7 @@ Solo **Docker Desktop** (abierto y en ejecución). No hace falta instalar Python
    ```bash
    docker compose up --build
    ```
-   El primer build tarda varios minutos: descarga PyTorch y el modelo de embeddings. La aplicación está lista cuando aparece el contenedor `frontend` y los logs de la API muestran `Application startup complete`.
+   **El primer build tarda entre 15 y 20 minutos** (medido en una copia limpia): descarga PyTorch (~800 MB) y el modelo de embeddings. No está colgado; los siguientes arranques toman segundos. La aplicación está lista cuando el comando muestra `Container ...-frontend-1 Started` y los logs de la API dicen `Application startup complete`.
 
 3. Abrir la aplicación:
 
@@ -109,6 +109,7 @@ docker compose down -v         # Borra también los volúmenes: el siguiente "up
 | `env file .env not found` | Falta el paso 1: copiar `.env.example` a `.env`. |
 | `ADMIN_USER y ADMIN_PASSWORD deben estar configuradas` en los logs | El `.env` no tiene esas variables. Cópialas de `.env.example`. |
 | No puedo entrar al panel tras cambiar `ADMIN_PASSWORD` | El administrador solo se crea en el primer arranque. Para empezar de cero: `docker compose down -v` y `docker compose up --build`. |
+| El build parece detenido en `pip install` | Es normal la primera vez: descarga PyTorch y otras librerías grandes (15 a 20 minutos en total). |
 | El build falla al descargar paquetes o el modelo | Requiere internet. Vuelve a ejecutar `docker compose up --build`: Docker reanuda desde la última capa completa. |
 
 ## Pruebas automatizadas
