@@ -104,7 +104,7 @@ def leeme(commit: str, n_evidencias: int, n_presentacion: int) -> str:
 | **Proyecto** | {PROYECTO} |
 | **Repositorio** | {REPOSITORIO} (commit `{commit}`) |
 | **Aplicación local** | http://localhost:8080 · Swagger: http://localhost:8080/docs |
-| **Demo pública (Azure)** | https://buscador.frankmarincas.dev (versión anterior a este parcial: un solo contenedor, sin la SC-001; la entrega es la de `04_Codigo`) |
+| **Demo pública (Azure)** | https://buscador.frankmarincas.dev (misma versión, en un solo contenedor con SQLite por ser cuenta de estudiante; la entrega evaluable es la de `04_Codigo`) |
 
 Plataforma de datos abiertos del Municipio de León con **búsqueda semántica**: el ciudadano escribe con sus propias palabras ("dónde tiro mis llantas viejas") y el sistema encuentra el dataset por significado. Incluye descarga en CSV/JSON/XML/GeoJSON, buzón ciudadano, reportes de problemas en datasets (SC-001) y un panel de administración con roles.
 

@@ -827,7 +827,7 @@ docker compose up --build
 | URL de Azure | https://app-buscador-datos.reddune-b857c04d.mexicocentral.azurecontainerapps.io (sigue funcionando junto al dominio) |
 | DNS | Cloudflare: `CNAME buscador` → URL de Azure y `TXT asuid.buscador` con el código de verificación. El proxy de Cloudflare debe quedar **apagado** ("DNS only"): con él encendido, Azure no puede emitir el certificado y todas las visitas llegarían con IPs de Cloudflare, lo que rompería el rate limit |
 | Registro | `acrportaldatos6462.azurecr.io/portal-datos-leon` (ACR Basic) |
-| Versión desplegada | **`v7`** (desde 2026-10-22, con el rediseño del frontend). En el registro se conservan `v6` (fases 1 a 6 y e5, sin el rediseño) y `v5` (anterior a la revisión, con MiniLM) |
+| Versión desplegada | **`v8`** (desde 2026-11-01, la misma versión del 2.º parcial construida con `Dockerfile.azure`: SC-001, tabla `datasets` con llaves foráneas y Swagger completo, en un solo contenedor con SQLite). En el registro se conservan `v7` (rediseño del frontend), `v6` (fases 1 a 6 y e5) y `v5` (anterior a la revisión, con MiniLM) |
 | Recursos | 1 vCPU, 2 GiB |
 | Escala | Mínimo 0, máximo **1** réplica: se apaga cuando nadie lo usa (la primera visita espera la carga del modelo) y con una sola réplica la SQLite y el rate limit son consistentes |
 | Base relacional | SQLite dentro del contenedor (sin `DATABASE_URL`): los usuarios se recrean desde `ADMIN_USER`/`ADMIN_PASSWORD` y los datos del panel se pierden al reiniciar (aceptado para la demo) |
@@ -868,6 +868,14 @@ Verificado contra la URL pública después de desplegar:
 La `v7` agrega el rediseño del frontend (#14): salud real en el panel, categorías oficiales, tarjetas y ficha con vista previa, botones consistentes, móvil y accesibilidad. Solo cambió la imagen; probes, réplicas, secretos y dominio se conservaron.
 
 Verificado en `buscador.frankmarincas.dev`: readiness con estado por componente, `/api/categorias` (10), vista previa de un dataset, ícono de búsqueda SVG y panel sin estados fijos. En Chromium, en escritorio y móvil: tarjetas nuevas, ficha con vista previa, sin desborde horizontal y sin errores de consola ni de CSP.
+
+### Despliegue de `v8` (2026-11-01)
+
+Primera imagen construida con `Dockerfile.azure` desde la estructura `api/` + `frontend/`. Antes de construir, `migrate_chroma.py --simular` mostró 0 cambios (la imagen copia esa Chroma). Solo cambió la imagen; probes, réplicas, secretos y dominio se conservaron (revisión `app-buscador-datos--0000003`).
+
+Verificado en `buscador.frankmarincas.dev`: readiness `200` con los tres componentes en `ok`; al arrancar se aplicaron las migraciones `0001 → 0002` sobre la SQLite nueva y la tabla `datasets` se sincronizó con los 75 datasets; catálogo con 75; "dónde tiro mis llantas viejas" → *Centros de Acopio de Neumáticos*; `/openapi.json` versión 2.0.0 con las rutas de reportes; `POST` de un reporte a un dataset inexistente → `404`; `/api/admin/reportes` sin sesión → `401`; CSP y HSTS presentes. En Chromium, `/docs` muestra los 28 endpoints y el formulario de reporte de la ficha funciona, sin errores de consola.
+
+Para volver a la versión anterior: `az containerapp update ... --image acrportaldatos6462.azurecr.io/portal-datos-leon:v7`.
 
 ### Dominio propio (2026-10-22)
 
